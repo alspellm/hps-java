@@ -10,6 +10,8 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.hps.util.Pair;
+
 //This is for testing only and is not part of the Kalman fitting code
 class HelixTest3 { // Program for testing the Kalman fitting code
 
@@ -37,6 +39,8 @@ class HelixTest3 { // Program for testing the Kalman fitting code
                                    // piecewise helix
         boolean verbose = nTrials < 2;
 
+        KalmanParams kPar = new KalmanParams();
+        
         // Seed the random number generator
         long rndSeed = -3263009337738135404L;
         rnd = new Random();
@@ -51,7 +55,7 @@ class HelixTest3 { // Program for testing the Kalman fitting code
         FieldMap fM = null;
         FieldMap fMg = null;
         try {
-            fM = new FieldMap(mapFile, mapType, true, 21.17, 0., 457.2);
+            fM = new FieldMap(mapFile, mapType, false, 21.17, 0., 457.2);
             fMg = new FieldMap(mapFile, mapType, false, 21.17, 0., 457.2);     // for generating tracks
         } catch (IOException e) {
             System.out.format("Could not open or read the field map %s\n", mapFile);
@@ -181,6 +185,7 @@ class HelixTest3 { // Program for testing the Kalman fitting code
 
         double Q = -1.0;
         double p = 1.0;
+        double hitEfficiency = 1.0;
 
         Vec helixOrigin = new Vec(0., 0., 0.); // Pivot point of initial helix
         Vec Bpivot = fM.getField(helixOrigin);
@@ -269,7 +274,7 @@ class HelixTest3 { // Program for testing the Kalman fitting code
         printWriter.format("splot ");
         printWriter.format("$runga u 1:2:3 with lines lw 3, $helix u 1:2:3 with lines lw 3\n");
         printWriter.close();
-
+        
         Vec zhat = null;
         Vec uhat = null;
         Vec vhat = null;
@@ -342,12 +347,16 @@ class HelixTest3 { // Program for testing the Kalman fitting code
         Histogram[] hResidS4 = new Histogram[nLayers];
         Histogram[] hResidX = new Histogram[nLayers];
         Histogram[] hResidZ = new Histogram[nLayers];
+        Histogram[] hUnbias = new Histogram[nLayers];
+        Histogram[] hUnbiasSig = new Histogram[nLayers];
         for (int i = 0; i < nLayers; i++) {
             hResidS0[i] = new Histogram(100, -10., 0.2, String.format("Smoothed fit residual for plane %d", i), "sigmas", "hits");
             hResidS2[i] = new Histogram(100, -0.02, 0.0004, String.format("Smoothed fit residual for plane %d", i), "mm", "hits");
             hResidS4[i] = new Histogram(100, -0.1, 0.002, String.format("Smoothed true residual for plane %d", i), "mm", "hits");
             hResidX[i] = new Histogram(100, -0.8, 0.016, String.format("True residual in global X for plane %d", i), "mm", "hits");
             hResidZ[i] = new Histogram(100, -0.1, 0.002, String.format("True residual in global Z for plane %d", i), "mm", "hits");
+            hUnbias[i] = new Histogram(100, -0.2, 0.004, String.format("Unbiased residual for plant %d", i), "mm", "hits");
+            hUnbiasSig[i] = new Histogram(100, -10., 0.2, String.format("Unbiased residuals for layer %d", i), "sigmas", "hits");
         }
 
         Instant timestamp = Instant.now();
@@ -440,29 +449,30 @@ class HelixTest3 { // Program for testing the Kalman fitting code
                 // System.out.format(" Y: %10.6f is within %8.4f to %8.4f?\n",
                 // rDet.v[1],thisSi.yExtent[0],thisSi.yExtent[1]);
                 // }
-                if (rDet.v[0] > thisSi.xExtent[1] || rDet.v[0] < thisSi.xExtent[0] || rDet.v[1] > thisSi.yExtent[1]
-                        || rDet.v[1] < thisSi.yExtent[0]) {
-                    if (verbose) { System.out.format("     Intersection point is outside of the detector %d in layer %d\n", det, pln); }
-                    continue;
+                if (thisSi.Layer == startLayer || rnd.nextDouble() < hitEfficiency) { // Apply some hit inefficiency
+                    if (rDet.v[0] > thisSi.xExtent[1] || rDet.v[0] < thisSi.xExtent[0] || rDet.v[1] > thisSi.yExtent[1]
+                            || rDet.v[1] < thisSi.yExtent[0]) {
+                        if (verbose) { System.out.format("     Intersection point is outside of the detector %d in layer %d\n", det, pln); }
+                        continue;
+                    }
+                    // if (thisSi.Layer == 7 || thisSi.Layer == 8) continue; // !!!!!!!!!!!!
+    
+                    double[] gran = new double[2];
+                    if (perfect) {
+                        gran[0] = 0.;
+                        gran[1] = 0.;
+                    } else {
+                        //gran = gausRan();
+                        gran[0] = rnd.nextGaussian();
+                        gran[1] = rnd.nextGaussian();
+                    }
+                    double smear = resolution * gran[0];
+                    double m1 = rDet.v[1] + smear;
+                    hRes.entry(smear);
+                    if (verbose) { System.out.format("       Measurement 1= %10.7f,  Truth=%10.7f\n", m1, rDet.v[1]); }
+                    Measurement thisM1 = new Measurement(m1, resolution, 0., rscat, rDet.v[1]);
+                    thisSi.addMeasurement(thisM1);
                 }
-                // if (thisSi.Layer == 7 || thisSi.Layer == 8) continue; // !!!!!!!!!!!!
-
-                double[] gran = new double[2];
-                if (perfect) {
-                    gran[0] = 0.;
-                    gran[1] = 0.;
-                } else {
-                    //gran = gausRan();
-                    gran[0] = rnd.nextGaussian();
-                    gran[1] = rnd.nextGaussian();
-                }
-                double smear = resolution * gran[0];
-                double m1 = rDet.v[1] + smear;
-                hRes.entry(smear);
-                if (verbose) { System.out.format("       Measurement 1= %10.7f,  Truth=%10.7f\n", m1, rDet.v[1]); }
-                Measurement thisM1 = new Measurement(m1, resolution, 0., rscat, rDet.v[1]);
-                thisSi.addMeasurement(thisM1);
-
                 if (icm + 1 < SiModules.size()) {
                     Vec t1 = Tk.getMomGlobal(phiInt).unitVec();
                     if (verbose) {
@@ -542,6 +552,7 @@ class HelixTest3 { // Program for testing the Kalman fitting code
             int nS = 0;
             int frstLyr = 0;
             ArrayList<int[]> hitList = new ArrayList<int[]>(nAxial + nStereo);
+            //for (int i=0; i<SiModules.size(); ++i) {
             for (int i = SiModules.size() - 1; i >= 0; i--) {
                 SiModule si = SiModules.get(i);
                 if (si.Layer > startLayer) continue;
@@ -690,9 +701,10 @@ class HelixTest3 { // Program for testing the Kalman fitting code
             if (verbose) { initialCovariance.print("initial covariance guess"); }
             // Run the Kalman fit
             KalmanTrackFit2 kF = new KalmanTrackFit2(iTrial, SiModules, startLayer, nIteration, new Vec(0., location[frstLyr], 0.),
-                    initialHelixGuess, initialCovariance, fM, verbose);
-            if (!kF.success) { continue; }
+                    initialHelixGuess, initialCovariance, kPar, fM);
+            if (!kF.success) continue;
             KalTrack KalmanTrack = kF.tkr;
+            if (KalmanTrack == null) continue;
             KalmanTrack.originHelix();
             if (verbose) KalmanTrack.print("KalmanTrack");
 
@@ -716,8 +728,27 @@ class HelixTest3 { // Program for testing the Kalman fitting code
                     }
                 }
             }
-            for (MeasurementSite site : KalmanTrack.interceptVects.keySet()) {
-                Vec loc = KalmanTrack.interceptVects.get(site);
+            for (int layer=0; layer < nLayers; ++layer) {
+                Pair<Double, Double> resid = KalmanTrack.unbiasedResidual(layer);
+                if (resid.getSecondElement() > -999.) {
+                    double variance = resid.getSecondElement();
+                    double sigma = Math.sqrt(variance);
+                    double unbResid = resid.getFirstElement();
+                    hUnbias[layer].entry(unbResid);
+                    hUnbiasSig[layer].entry(unbResid/sigma);
+                    if (variance < resolution*resolution) {
+                        System.out.format("Event %d layer %d, unbiased residual variance too small: %10.5f, chi2=%9.2f, hits=%d, resid=%9.6f, lyrs:", 
+                                            iTrial, layer, variance, KalmanTrack.chi2, KalmanTrack.nHits, unbResid);
+                        for (MeasurementSite site : KalmanTrack.SiteList) {
+                            if (site.hitID < 0) continue;
+                            System.out.format(" %d ", site.m.Layer);
+                        }
+                        System.out.format("\n");
+                    }
+                }
+            }
+            for (MeasurementSite site : KalmanTrack.interceptVects().keySet()) {
+                Vec loc = KalmanTrack.interceptVects().get(site);
                 SiModule siM = site.m;
                 if (siM.Layer < 0) continue;
                 if (site.hitID < 0) { System.out.format("Missing hit ID on site with layer=%d", siM.Layer); }
@@ -927,6 +958,8 @@ class HelixTest3 { // Program for testing the Kalman fitting code
             hResidS4[i].plot(path + String.format("residS4_%d.gp", i), true, "gaus", " ");
             hResidX[i].plot(path + String.format("residX_%d.gp", i), true, "gaus", " ");
             hResidZ[i].plot(path + String.format("residZ_%d.gp", i), true, "gaus", " ");
+            hUnbias[i].plot(path + String.format("residUnbiased1_%d.gp", i), true, "gaus", " ");
+            hUnbiasSig[i].plot(path + String.format("residUnbiased2_%d.gp", i), true, "gaus", " ");
         }
     }
     /*

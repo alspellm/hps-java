@@ -171,7 +171,7 @@ public class KalmanDriverHPS extends Driver {
         bField = TrackUtils.getBField(det).magnitude();
         sensors = det.getSubdetector("Tracker").getDetectorElement().findDescendants(HpsSiSensor.class);
 
-        KI = new KalmanInterface(this.verbose, this.uniformB);
+        KI = new KalmanInterface(this.uniformB);
         KI.createSiModules(detPlanes, fm);
         
         System.out.format("KalmanDriver: the B field is assumed uniform? %b\n", uniformB);
@@ -562,9 +562,9 @@ public class KalmanDriverHPS extends Driver {
         List<Pair<double[], double[]>> MomsLocs = new ArrayList<Pair<double[], double[]>>();
         if (verbose)
             System.out.println("KalTrack intercepts and momenta:");
-        for (MeasurementSite site : trk.interceptVects.keySet()) {
-            Vec mom = trk.interceptMomVects.get(site);
-            Vec loc = trk.interceptVects.get(site);
+        for (MeasurementSite site : trk.interceptVects().keySet()) {
+            Vec mom = trk.interceptMomVects().get(site);
+            Vec loc = trk.interceptVects().get(site);
             double[] locTransformed = (KalmanInterface.KalmanToHpsSvt.rotate(loc)).v;
             double[] locTrans = CoordinateTransformations.transformVectorToDetector(new BasicHep3Vector(locTransformed)).v();
             double[] momTransformed = (KalmanInterface.KalmanToHpsSvt.rotate(mom)).v;
