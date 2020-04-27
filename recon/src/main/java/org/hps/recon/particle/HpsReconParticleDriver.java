@@ -300,6 +300,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
             beamPositionToUse[0] = beamPosition[0];
         }
         */
+        printDebug("[HpsReconParticleDriver] Event: " + event);
         if (makeMollerCols) {
             unconstrainedMollerCandidates = new ArrayList<ReconstructedParticle>();
             beamConMollerCandidates = new ArrayList<ReconstructedParticle>();
@@ -349,6 +350,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         for (ReconstructedParticle part : finalStateParticles) {
             // good electrons
             if (part.getCharge() == -1) {
+                printDebug("[HpsReconParticleDriver] Electron GofPID: " + part.getGoodnessOfPID());
                 if (part.getMomentum().magnitude() < cuts.getMaxElectronP()) {
                     if (includeUnmatchedTracksInFSP || part.getGoodnessOfPID() < cuts.getMaxMatchChisq()) {
                         goodFinalStateParticles.add(part);
@@ -356,6 +358,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
                 }
             } // good positrons
             else if (part.getCharge() == 1) {
+                printDebug("[HpsReconParticleDriver] Positron GofPID: " + part.getGoodnessOfPID());
                 if (includeUnmatchedTracksInFSP || part.getGoodnessOfPID() < cuts.getMaxMatchChisq()) {
                     goodFinalStateParticles.add(part);
                 }
@@ -368,12 +371,16 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
     }
 
     public void findV0s(List<ReconstructedParticle> electrons, List<ReconstructedParticle> positrons) {
+        printDebug("[HpsReconParticleDriver] findV0s");
         List<ReconstructedParticle> goodElectrons = particleCuts(electrons);
         List<ReconstructedParticle> goodPositrons = particleCuts(positrons);
+        printDebug("[HpsReconParticleDriver] n goodElectrons: " + goodElectrons.size());
+        printDebug("[HpsReconParticleDriver] n goodPositrons: " + goodPositrons.size());
         for (ReconstructedParticle positron : goodPositrons) {
             for (ReconstructedParticle electron : goodElectrons) {
                 // Don't vertex a GBL track with a SeedTrack.
                 if (TrackType.isGBL(positron.getType()) != TrackType.isGBL(electron.getType())) {
+                    printDebug("[HpsReconParticleDriver] Cant Vertex GBL with SeedTrack!");
                     continue;
                 }
                 
@@ -476,6 +483,8 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         // Covert the tracks to BilliorTracks.
         BilliorTrack electronBTrack = toBilliorTrack(electron.getTracks().get(0));
         BilliorTrack positronBTrack = toBilliorTrack(positron.getTracks().get(0));
+        printDebug("[HpsReconParticleDriver] BillTrack electron: " + electronBTrack);
+        printDebug("[HpsReconParticleDriver] BillTrack positron: " + positronBTrack);
 
         // Create a vertex fitter from the magnetic field.
         // Note that the vertexing code uses the tracking frame coordinates
@@ -510,6 +519,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
 
         // Find a vertex based on the tracks.
         BilliorVertex vtx = vtxFitter.fitVertex(billiorTracks);
+        printDebug("[HpsReconParticleDriver] BilliorVertex vtx: " + vtx);
 
         int minLayEle = 6;
         int minLayPos = 6;
@@ -517,6 +527,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         for (TrackerHit temp : allTrackHits) {
             // Retrieve the sensor associated with one of the hits. This will
             // be used to retrieve the layer number
+            printDebug("[HpsReconParticleDriver] electron TrackerHit: " + temp);
             HpsSiSensor sensor = (HpsSiSensor) ((RawTrackerHit) temp.getRawHits().get(0)).getDetectorElement();
 
             // Retrieve the layer number by using the sensor
@@ -529,6 +540,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         for (TrackerHit temp : allTrackHits) {
             // Retrieve the sensor associated with one of the hits. This will
             // be used to retrieve the layer number
+            printDebug("[HpsReconParticleDriver] positron TrackerHit: " + temp);
             HpsSiSensor sensor = (HpsSiSensor) ((RawTrackerHit) temp.getRawHits().get(0)).getDetectorElement();
 
             // Retrieve the layer number by using the sensor
@@ -562,6 +574,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
             vtxFitter.setReferencePosition(newRefPoint.v());
 
             BilliorVertex vtxNew = vtxFitter.fitVertex(shiftedTracks);
+            printDebug("[HpsReconParticleDriver] BilliorVertex vtxNew: " + vtxNew);
             vtxNew.setLayerCode(vtx.getLayerCode());
             vtxNew.setProbability(DOF[constraint.ordinal()]);
             return vtxNew;
@@ -579,6 +592,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         //boolean posIsTop = (positron.getTracks().get(0).getTrackerHits().get(0).getPosition()[2] > 0);
         
         //This eleIsTop/posIsTop logic is valid for all track types [both Helix+GBL and Kalman]
+        printDebug("[HpsReconParticleDriver] makeV0Candidates");
         boolean eleIsTop = (electron.getTracks().get(0).getTrackStates().get(0).getTanLambda() > 0);
         boolean posIsTop = (positron.getTracks().get(0).getTrackStates().get(0).getTanLambda() > 0);
         
@@ -603,8 +617,9 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         // Handle UNCONSTRAINED case, to make decisions whether we store the vertexes.
         // This is done here so that we either store all types, or none, but never a mix.
         BilliorVertex vtxFit = fitVertex(Constraint.UNCONSTRAINED, electron, positron);
-
+        printDebug("[HpsReconParticleDriver] BilliorVertex: " + vtxFit);
         ReconstructedParticle candidate = makeReconstructedParticle(electron, positron, vtxFit);
+        printDebug("[HpsReconParticleDriver] ReconParticle candidate: " + candidate);
 
         if (candidate.getMomentum().magnitude() > cuts.getMaxVertexP()) {
             return;
