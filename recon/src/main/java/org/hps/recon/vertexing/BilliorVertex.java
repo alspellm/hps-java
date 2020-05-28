@@ -155,8 +155,9 @@ public class BilliorVertex implements Vertex {
     }
     
     public void setProbability(int dof) {
+        //System.out.println("[BilliorVertex] _chi2: " + _chiSq);
         _probability = ChisqProb.gammq(dof, _chiSq);
-        System.out.println("[BilliorVertex] probability: " + _probability);
+        //System.out.println("[BilliorVertex] probability: " + _probability);
     }
 
     public void setStoreCovTrkMomList(boolean input) {

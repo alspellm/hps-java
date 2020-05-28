@@ -351,6 +351,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
             // good electrons
             if (part.getCharge() == -1) {
                 printDebug("[HpsReconParticleDriver] Electron GofPID: " + part.getGoodnessOfPID());
+                printDebug("[HpsReconParticleDriver] Max Match Chisq: " + cuts.getMaxMatchChisq());
                 if (part.getMomentum().magnitude() < cuts.getMaxElectronP()) {
                     if (includeUnmatchedTracksInFSP || part.getGoodnessOfPID() < cuts.getMaxMatchChisq()) {
                         goodFinalStateParticles.add(part);
@@ -371,7 +372,6 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
     }
 
     public void findV0s(List<ReconstructedParticle> electrons, List<ReconstructedParticle> positrons) {
-        printDebug("[HpsReconParticleDriver] findV0s");
         List<ReconstructedParticle> goodElectrons = particleCuts(electrons);
         List<ReconstructedParticle> goodPositrons = particleCuts(positrons);
         printDebug("[HpsReconParticleDriver] n goodElectrons: " + goodElectrons.size());
@@ -483,6 +483,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         // Covert the tracks to BilliorTracks.
         BilliorTrack electronBTrack = toBilliorTrack(electron.getTracks().get(0));
         BilliorTrack positronBTrack = toBilliorTrack(positron.getTracks().get(0));
+        printDebug("[HpsReconParticleDriver] Constraint: " + constraint);
         printDebug("[HpsReconParticleDriver] BillTrack electron: " + electronBTrack);
         printDebug("[HpsReconParticleDriver] BillTrack positron: " + positronBTrack);
 
@@ -519,16 +520,15 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
 
         // Find a vertex based on the tracks.
         BilliorVertex vtx = vtxFitter.fitVertex(billiorTracks);
-        printDebug("[HpsReconParticleDriver] BilliorVertex vtx: " + vtx);
-
         int minLayEle = 6;
         int minLayPos = 6;
         List<TrackerHit> allTrackHits = electron.getTracks().get(0).getTrackerHits();
         for (TrackerHit temp : allTrackHits) {
             // Retrieve the sensor associated with one of the hits. This will
             // be used to retrieve the layer number
-            printDebug("[HpsReconParticleDriver] electron TrackerHit: " + temp);
+            //printDebug("[HpsReconParticleDriver] electron TrackerHit: " + temp);
             HpsSiSensor sensor = (HpsSiSensor) ((RawTrackerHit) temp.getRawHits().get(0)).getDetectorElement();
+            //printDebug("[HpsReconParticleDrier] sensor: " + sensor);
 
             // Retrieve the layer number by using the sensor
             int layer = (sensor.getLayerNumber() + 1) / 2;
@@ -540,8 +540,9 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         for (TrackerHit temp : allTrackHits) {
             // Retrieve the sensor associated with one of the hits. This will
             // be used to retrieve the layer number
-            printDebug("[HpsReconParticleDriver] positron TrackerHit: " + temp);
+            //printDebug("[HpsReconParticleDriver] positron TrackerHit: " + temp);
             HpsSiSensor sensor = (HpsSiSensor) ((RawTrackerHit) temp.getRawHits().get(0)).getDetectorElement();
+            //printDebug("[HpsReconParticleDrier] sensor: " + sensor);
 
             // Retrieve the layer number by using the sensor
             int layer = (sensor.getLayerNumber() + 1) / 2;
@@ -550,7 +551,9 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
             }
         }
         vtx.setLayerCode(minLayPos + minLayEle);
+        printDebug("DoF: " + DOF[constraint.ordinal()]);
         vtx.setProbability(DOF[constraint.ordinal()]);
+        printDebug("[HpsReconParticleDriber] vtx.setProbability");
 
         // mg 8/14/17 
         // if this is an unconstrained or BS constrained vertex, propogate the 
@@ -574,7 +577,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
             vtxFitter.setReferencePosition(newRefPoint.v());
 
             BilliorVertex vtxNew = vtxFitter.fitVertex(shiftedTracks);
-            printDebug("[HpsReconParticleDriver] BilliorVertex vtxNew: " + vtxNew);
+            //printDebug("[HpsReconParticleDriver] BilliorVertex vtxNew: " + vtxNew);
             vtxNew.setLayerCode(vtx.getLayerCode());
             vtxNew.setProbability(DOF[constraint.ordinal()]);
             return vtxNew;
@@ -592,7 +595,6 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         //boolean posIsTop = (positron.getTracks().get(0).getTrackerHits().get(0).getPosition()[2] > 0);
         
         //This eleIsTop/posIsTop logic is valid for all track types [both Helix+GBL and Kalman]
-        printDebug("[HpsReconParticleDriver] makeV0Candidates");
         boolean eleIsTop = (electron.getTracks().get(0).getTrackStates().get(0).getTanLambda() > 0);
         boolean posIsTop = (positron.getTracks().get(0).getTrackStates().get(0).getTanLambda() > 0);
         
@@ -609,6 +611,8 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         if(requireClustersForV0){
             double eleClusTime = ClusterUtilities.getSeedHitTime(electron.getClusters().get(0));
             double posClusTime = ClusterUtilities.getSeedHitTime(positron.getClusters().get(0));
+            printDebug("[HpsReconParticleDriver] eleClusTime: " + eleClusTime);
+            printDebug("[HpsReconParticleDriver] posClusTime: " + posClusTime);
 
             if (Math.abs(eleClusTime - posClusTime) > cuts.getMaxVertexClusterDt()) {
                 return;
@@ -644,7 +648,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         // Create candidate particles for the other two constraints.
         for (Constraint constraint : Constraint.values()) {
             if(constraint == Constraint.UNCONSTRAINED) continue;           // Skip the UNCONSTRAINED case, done already
-            
+            printDebug("[HpsReconParticleDriver] Handling other constraints: " + constraint);
             // Generate a candidate vertex and particle.
             vtxFit = fitVertex(constraint, electron, positron);
 

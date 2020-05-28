@@ -518,7 +518,6 @@ public abstract class ReconParticleDriver extends Driver {
                 // the tracking strategy used in finding the track associated with
                 // this particle.
                 ((BaseReconstructedParticle) particle).setType(track.getType());
-                printDebug("[ReconParticleDriver] track.getType(): " + track.getType());
 
                 // Derive the charge of the particle from the track.
                 int charge = (int) Math.signum(track.getTrackStates().get(0).getOmega());
@@ -737,6 +736,9 @@ public abstract class ReconParticleDriver extends Driver {
 
         // VERBOSE :: Output the number of clusters in the event.
         printDebug("Clusters :: " + clusters.size());
+        for(Cluster clustername : clusters) {
+            printDebug("Cluster:" + clustername);
+        }
 
         // Get all collections of the type Track from the event. This is
         // required in case an event contains different track collection
@@ -789,9 +791,7 @@ public abstract class ReconParticleDriver extends Driver {
         // Separate the reconstructed particles into electrons and
         // positrons so that V0 candidates can be generated from them.
         for (ReconstructedParticle finalStateParticle : finalStateParticles) {
-            System.out.println("[ReconParticleDriver] Particle ID:" + finalStateParticle.getParticleIDs());
             //System.out.println("[ReconParticleDriver] Particle Tracks:" + finalStateParticle.getTracks());
-            System.out.println("[ReconParticleDriver] startVertex:" + finalStateParticle.getStartVertex());
             // If the charge is positive, assume an electron.
             if (finalStateParticle.getCharge() > 0) {
                 positrons.add(finalStateParticle);
