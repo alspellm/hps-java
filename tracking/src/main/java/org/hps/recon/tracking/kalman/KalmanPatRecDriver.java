@@ -11,7 +11,6 @@ import hep.physics.vec.BasicHep3Vector;
 
 import org.hps.recon.tracking.CoordinateTransformations;
 import org.hps.recon.tracking.MaterialSupervisor;
-import org.hps.recon.tracking.TrackUtils;
 import org.hps.recon.tracking.TrackData;
 import org.hps.recon.tracking.TrackResidualsData;
 import org.hps.recon.tracking.MaterialSupervisor.ScatteringDetectorVolume;
@@ -25,7 +24,6 @@ import org.lcsim.event.RawTrackerHit;
 import org.lcsim.event.RelationalTable;
 import org.lcsim.event.Track;
 import org.lcsim.event.TrackerHit;
-import org.lcsim.event.base.BaseTrackState;
 import org.lcsim.event.base.BaseLCRelation;
 import org.lcsim.event.base.BaseRelationalTable;
 import org.lcsim.geometry.Detector;
@@ -51,11 +49,14 @@ public class KalmanPatRecDriver extends Driver {
     private int nTracks;
     private int nEvents;
     private double executionTime;
+    private double interfaceTime;
+    private double plottingTime;
     private KalmanParams kPar;
     private KalmanPatRecPlots kPlot;
     private Logger logger;
     
     // Parameters for the Kalman pattern recognition that can be set by the user in the steering file:
+    private int numPatRecIteration;    // Number of global iterations of the pattern recognition
     private int numKalmanIteration;    // Number of Kalman filter iterations per track in the final fit
     private double maxPtInverse;       // Maximum value of 1/pt for the seed and the final track
     private double maxD0;              // Maximum dRho (or D0) at the target plane for a seed and the final track
@@ -120,12 +121,39 @@ public class KalmanPatRecDriver extends Driver {
     public void detectorChanged(Detector det) {
         logger = Logger.getLogger(KalmanPatRecDriver.class.getName());
         verbose = (logger.getLevel()==Level.FINE);
+        executionTime = 0.;
+        interfaceTime = 0.;
+        plottingTime = 0.;
         
         _materialManager = new MaterialSupervisor();
         _materialManager.buildModel(det);
 
         fm = det.getFieldMap();
-
+        /*
+        System.out.format("B field map vs y:\n");
+        double eCalLoc = 1394.;
+        for (double y=0.; y<1500.; y+=5.) {
+            double z1=-50.; 
+            double z2= 50.;
+            Vec B1 = new Vec(3, KalmanInterface.getFielD(new Vec(0., y, z1), fm));
+            Vec B2 = new Vec(3, KalmanInterface.getFielD(new Vec(0., y, 0.), fm));
+            Vec B3 = new Vec(3, KalmanInterface.getFielD(new Vec(0., y, z2), fm));
+            System.out.format("y=%6.1f z=%6.1f: %s z=0: %s z=%6.1f: %s\n", y, z1, B1.toString(), B2.toString(), z2, B3.toString());
+        }
+        System.out.format("B field map vs z at ECAL:\n");
+        for (double z=-200.; z<200.; z+=5.) {
+            double y=eCalLoc; 
+            Vec B = new Vec(3, KalmanInterface.getFielD(new Vec(0., y, z), fm));
+            System.out.format("x=0 y=%6.1f z=%6.1f: %s\n", y, z, B.toString());
+        }
+        System.out.format("B field map vs x at ECAL:\n");
+        for (double x=-200.; x<200.; x+=5.) {
+            double y=eCalLoc;
+            double z=20.;
+            Vec B = new Vec(3, KalmanInterface.getFielD(new Vec(x, y, z), fm));
+            System.out.format("x=%6.1f y=%6.1f z=%6.1f: %s\n", x, y, z, B.toString());
+        }
+        */
         detPlanes = new ArrayList<SiStripPlane>();
         List<ScatteringDetectorVolume> materialVols = ((MaterialSupervisor) (_materialManager)).getMaterialVolumes();
         for (ScatteringDetectorVolume vol : materialVols) {
@@ -135,9 +163,9 @@ public class KalmanPatRecDriver extends Driver {
         det.getSubdetector("Tracker").getDetectorElement().findDescendants(HpsSiSensor.class);
 
         // Instantiate the interface to the Kalman-Filter code and set up the geometry
-        KI = new KalmanInterface(uniformB);
+        KI = new KalmanInterface(uniformB, fm);
         KI.setSiHitsLimit(siHitsLimit);
-        KI.createSiModules(detPlanes, fm);
+        KI.createSiModules(detPlanes);
         
         decoder = det.getSubdetector("Tracker").getIDDecoder();
         if (doDebugPlots) {
@@ -148,6 +176,7 @@ public class KalmanPatRecDriver extends Driver {
         // We assume that if not set by the steering file, then the parameters will have the Java default values for the primitives
         // Note that all of the parameters have defaults hard coded in KalmanParams.java
         kPar = KI.getKalmanParams();
+        if (numPatRecIteration != 0) kPar.setGlbIterations(numPatRecIteration);
         if (numKalmanIteration != 0) kPar.setIterations(numKalmanIteration);
         if (maxPtInverse != 0.0) kPar.setMaxK(maxPtInverse);
         if (maxD0 != 0.0) kPar.setMaxdRho(maxD0);
@@ -169,6 +198,7 @@ public class KalmanPatRecDriver extends Driver {
         // Here we can replace or add search strategies to the pattern recognition (not, as yet, controlled by the steering file)
         // Layers are numbered 0 through 13, and the numbering here corresponds to the bottom tracker. The top-tracker lists are
         // appropriately translated from these. Each seed needs 3 stereo and 2 axial layers
+        
         kPar.clrStrategies();
         int[] list0 = {6, 7, 8, 9, 10};
         int[] list1 = {4, 5, 6, 7, 8};
@@ -333,9 +363,9 @@ public class KalmanPatRecDriver extends Driver {
                     }
                 }
                 
-                //Ecal extrapolation - For the moment done here, but should be moved inside the KalmanInterface (the field map needs to be passed to the KI once)
-                BaseTrackState ts_ecal = TrackUtils.getTrackExtrapAtEcalRK(KalmanTrackHPS,fm);
-                KalmanTrackHPS.getTrackStates().add(ts_ecal);
+                //Ecal extrapolation - For the moment done here, but should be moved inside the KalmanInterface (DONE)
+                //BaseTrackState ts_ecal = TrackUtils.getTrackExtrapAtEcalRK(KalmanTrackHPS,fm);
+                //KalmanTrackHPS.getTrackStates().add(ts_ecal);
                 
                 allClstrs.addAll(clstrs);
                 for (GBLStripClusterData clstr : clstrs) {
@@ -395,7 +425,17 @@ public class KalmanPatRecDriver extends Driver {
         
         nTracks += nKalTracks;
         
-        if (kPlot != null) kPlot.process(event, runTime, kPatList, rawtomc);
+        long endInterfaceTime = System.nanoTime();
+        runTime = (double)(endInterfaceTime - endTime)/1000000.;
+        interfaceTime += runTime;
+        
+        if (kPlot != null) {
+            kPlot.process(event, runTime, kPatList, outputFullTracks, rawtomc);
+            long endPlottingTime = System.nanoTime();
+            runTime = (double)(endPlottingTime - endInterfaceTime)/1000000.;
+            plottingTime += runTime;
+            
+        }
         
         KI.clearInterface();
         logger.log(Level.FINE, String.format("\n KalmanPatRecDriver.process: Done with event %d", evtNumb));
@@ -406,12 +446,24 @@ public class KalmanPatRecDriver extends Driver {
 
     @Override
     public void endOfData() {
-        System.out.format("KalmanPatRecDrive.endOfData: total pattern recognition execution time=%12.4f ms for %d events and %d tracks.\n", 
+        System.out.format("KalmanPatRecDriver.endOfData: total pattern recognition execution time=%12.4f ms for %d events and %d tracks.\n", 
                 executionTime, nEvents, nTracks);
-        if (kPlot != null) kPlot.output();
+        double evtTime = executionTime/(double)nEvents;
+        double tkrTime = executionTime/(double)nTracks;
+        System.out.format("                              Kalman Patrec Time per event = %9.4f; Time per track = %9.4f\n", evtTime, tkrTime);
+        evtTime = interfaceTime/(double)nEvents;
+        System.out.format("                              Kalman Interface Time per event = %9.4f\n", evtTime);
+        if (kPlot != null) {
+            kPlot.output();
+            evtTime = plottingTime/(double)nEvents;
+            System.out.format("                              Kalman Plotting Time per event = %9.4f\n", evtTime);
+        }
     }
     
     // Methods to set Kalman parameters from within the steering file
+    public void setNumPatRecIteration(int numPatRecIteration) {
+        this.numPatRecIteration = numPatRecIteration;
+    }
     public void setNumKalmanIteration(int numKalmanIteration) {
         this.numKalmanIteration = numKalmanIteration;
     }

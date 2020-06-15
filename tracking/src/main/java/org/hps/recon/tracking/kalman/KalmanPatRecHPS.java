@@ -38,6 +38,7 @@ class KalmanPatRecHPS {
     private ArrayList<ArrayList<SiModule>> moduleList;
     private Map<Measurement, KalHit> hitMap;
     private ArrayList<Double> yScat;
+    private ArrayList<Double> XLscat;
 
     private int eventNumber;
     private boolean verbose;
@@ -50,8 +51,8 @@ class KalmanPatRecHPS {
         logger = Logger.getLogger(KalmanPatRecHPS.class.getName());
         this.topBottom = topBottom;
         this.eventNumber = eventNumber;
-        //if (eventNumber == 754) logger.setLevel(Level.FINER);
-        //else logger.setLevel(Level.INFO);
+        if (eventNumber == 2374) logger.setLevel(Level.FINER);
+        else logger.setLevel(Level.INFO);
         this.verbose = (logger.getLevel()==Level.FINER || logger.getLevel()==Level.FINEST);
         this.kPar = kPar;
 
@@ -82,9 +83,13 @@ class KalmanPatRecHPS {
             moduleList.get(thisSi.Layer).add(thisSi);
         }
         yScat = new ArrayList<Double>(numLayers);  // List of approx. y locations where scattering in Si occurs
+        XLscat = new ArrayList<Double>(numLayers);
         
         if (verbose) System.out.format("Entering KalmanPatRecHPS for event %d, top-bottom=%d with %d modules, for %d trials.\n", 
-                                         eventNumber, topBottom, nModules, KalmanParams.nTries);
+                                         eventNumber, topBottom, nModules, kPar.nTrials);
+        
+        double rho = 2.329;                   // Density of silicon in g/cm^2
+        double radLen = (21.82 / rho) * 10.0; // Radiation length of silicon in millimeters
         for (int lyr = 0; lyr < numLayers; lyr++) {
             if (verbose) {
                 System.out.format("Layer %d modules:  ", lyr);
@@ -96,6 +101,7 @@ class KalmanPatRecHPS {
             if (moduleList.get(lyr).size() > 0) {
                 SiModule thisSi = moduleList.get(lyr).get(0);
                 yScat.add(thisSi.p.X().v[1]);
+                XLscat.add(thisSi.thickness/radLen);
             }
         }
         if (verbose) {
@@ -130,7 +136,7 @@ class KalmanPatRecHPS {
         // Loop over seed strategies, each with 2 non-stereo layers and 3 stereo layers
         // For each strategy generate a seed track for every hit combination
         // Keep only those pointing more-or-less back to the origin and not too curved
-        for (int trial = 0; trial < KalmanParams.nTries; trial++) {
+        for (int trial = KalmanParams.mxTrials - kPar.nTrials; trial < KalmanParams.mxTrials; trial++) {
             int candID = topBottom*1000 + trial*100 + 1;
             if (verbose) System.out.format("\nKalmanPatRecHPS: start of pass %d through the algorithm.\n", trial);
             
@@ -290,7 +296,7 @@ class KalmanPatRecHPS {
                     }
                     
                     SquareMatrix CovGuess = seed.covariance();
-                    CovGuess.scale(1000.);
+                    CovGuess.scale(100.);
                     // Create an state vector from the input seed to initialize the Kalman filter
                     StateVector sI = new StateVector(-1, seed.helixParams(), CovGuess, new Vec(0., 0., 0.), Bmag, tB, pivot);
                     TrackCandidate candidateTrack = new TrackCandidate(candID, seed.hits, kPar, hitMap, eventNumber);
@@ -427,7 +433,7 @@ class KalmanPatRecHPS {
                     MeasurementSite startSite=null;
                     if (lastSite.m.Layer < firstSite.m.Layer) startSite = lastSite;
                     else startSite = firstSite;
-                    startSite.aF.helix.C.scale(10000.);
+                    startSite.aF.helix.C.scale(10.);
                     filterTrack(candidateTrack, firstLayer, numLayers - 1, startSite.aF, trial, true, false);
                     if (!candidateTrack.filtered) {
                         if (verbose) { System.out.format("KalmanPatRecHPS: %d failed filtering of all layers. Try next seed.\n", candidateTrack.ID); }
@@ -945,10 +951,10 @@ class KalmanPatRecHPS {
             } else if (nAxial < kPar.minAxial) {
                 if (verbose) System.out.format("KalmanPatRecHPS: removing KalTrack %d for %d axial hits\n", tkr.ID,nAxial);
                 removeIt = true;
-            } else if (nAxial + nStereo < kPar.minHits1[KalmanParams.nTries - 1]) {
+            } else if (nAxial + nStereo < kPar.minHits1[KalmanParams.mxTrials - 1]) {
                 if (verbose) System.out.format("KalmanPatRecHPS: removing KalTrack %d for %d hits\n", tkr.ID,nStereo+nAxial);
                 removeIt = true;
-            } else if (nAxial + nStereo - nShared < kPar.minHits1[KalmanParams.nTries -1]) {
+            } else if (nAxial + nStereo - nShared < kPar.minHits1[KalmanParams.mxTrials -1]) {
                 if (verbose) System.out.format("KalmanPatRecHPS: removing KalTrack %d for %d shared hits\n", tkr.ID,nShared);
                 removeIt = true;
             }
@@ -1139,8 +1145,16 @@ class KalmanPatRecHPS {
                     }
                 } 
 
-                if (verbose) System.out.format("KalmanPatRecHPS.filterTrack: try prediction at layer %d, detector %d, %d hits, given hit=%d.\n",
-                        m.Layer, m.detector, m.hits.size(), hitno);
+                if (verbose) {
+                    System.out.format("KalmanPatRecHPS.filterTrack: try prediction at layer %d, detector %d, %d hits, given hit=%d.\n",
+                                       m.Layer, m.detector, m.hits.size(), hitno);
+                    //HelixState hx = null;
+                    //if (prevSite == null) hx = sI.helix; else hx = prevSite.aF.helix;
+                    //hx.print("predicting from ");
+                    //Vec originB = hx.toGlobal(hx.X0);
+                    //Vec newB = KalmanInterface.getField(originB, m.Bfield);
+                    //System.out.format("  B=%10.4f   t=%s\n", newB.mag(), newB.unitVec().toString());
+                }
                 newSite = new MeasurementSite(lyr, m, kPar.mxResid[trial], kPar.mxResidShare);
                 int rF;
                 double [] tRange = {tkrCandidate.tMax - kPar.mxTdif, tkrCandidate.tMin + kPar.mxTdif}; 
@@ -1272,7 +1286,7 @@ class KalmanPatRecHPS {
             return false;
         }
         
-        KalTrack tkr = new KalTrack(eventNumber, tkID, tkrCand.sites, yScat, kPar);
+        KalTrack tkr = new KalTrack(eventNumber, tkID, tkrCand.sites, yScat, XLscat, kPar);
         boolean redundant = false;
         for (KalTrack oldTkr : TkrList) {
             if (tkr.equals(oldTkr)) {
