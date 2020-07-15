@@ -41,7 +41,7 @@ class KalmanPatRecHPS {
     private ArrayList<Double> XLscat;
 
     private int eventNumber;
-    private boolean verbose;
+    private boolean verbose=true;
     private int nModules;
     private KalmanParams kPar;
     private Logger logger;
@@ -53,7 +53,7 @@ class KalmanPatRecHPS {
         this.eventNumber = eventNumber;
         if (eventNumber == 2374) logger.setLevel(Level.FINER);
         else logger.setLevel(Level.INFO);
-        this.verbose = (logger.getLevel()==Level.FINER || logger.getLevel()==Level.FINEST);
+        //this.verbose = (logger.getLevel()==Level.FINER || logger.getLevel()==Level.FINEST);
         this.kPar = kPar;
 
         TkrList = new ArrayList<KalTrack>();

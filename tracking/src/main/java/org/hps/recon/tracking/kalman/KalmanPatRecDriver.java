@@ -23,6 +23,7 @@ import org.lcsim.event.LCRelation;
 import org.lcsim.event.RawTrackerHit;
 import org.lcsim.event.RelationalTable;
 import org.lcsim.event.Track;
+import org.lcsim.event.Cluster;
 import org.lcsim.event.TrackerHit;
 import org.lcsim.event.base.BaseLCRelation;
 import org.lcsim.event.base.BaseRelationalTable;
@@ -42,7 +43,7 @@ public class KalmanPatRecDriver extends Driver {
     private MaterialSupervisor _materialManager;
     private org.lcsim.geometry.FieldMap fm;
     private KalmanInterface KI;
-    private boolean verbose = false;
+    private boolean verbose = true;
     private boolean uniformB = false;
     private String outputFullTrackCollectionName = "KalmanFullTracks";
     public AIDA aida;
@@ -120,7 +121,8 @@ public class KalmanPatRecDriver extends Driver {
     @Override
     public void detectorChanged(Detector det) {
         logger = Logger.getLogger(KalmanPatRecDriver.class.getName());
-        verbose = (logger.getLevel()==Level.FINE);
+        //verbose = (logger.getLevel()==Level.FINE);
+        verbose=true;
         executionTime = 0.;
         interfaceTime = 0.;
         plottingTime = 0.;
@@ -166,6 +168,7 @@ public class KalmanPatRecDriver extends Driver {
         KI = new KalmanInterface(uniformB, fm);
         KI.setSiHitsLimit(siHitsLimit);
         KI.createSiModules(detPlanes);
+        KI.enablePlots(true);
         
         decoder = det.getSubdetector("Tracker").getIDDecoder();
         if (doDebugPlots) {
@@ -349,6 +352,7 @@ public class KalmanPatRecDriver extends Driver {
                 //Here is where the tracks to be persisted are formed
                 Track KalmanTrackHPS = KI.createTrack(kTk, true);
                 if (KalmanTrackHPS == null) continue;
+                KI.trackClusterDistance(KalmanTrackHPS, event.get(Cluster.class,"EcalClusters"));
                 
                 //pT cut 
                 //double [] hParams_check = kTk.originHelixParms();
@@ -421,6 +425,7 @@ public class KalmanPatRecDriver extends Driver {
                 */
                     
             } // end of loop on tracks
+            KI.saveHistograms();
         } // end of loop on trackers
         
         nTracks += nKalTracks;

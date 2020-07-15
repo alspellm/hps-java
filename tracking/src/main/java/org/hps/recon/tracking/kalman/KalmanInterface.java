@@ -19,15 +19,24 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import java.io.IOException;
+
 import hep.physics.matrix.SymmetricMatrix;
 import hep.physics.vec.BasicHep3Matrix;
 import hep.physics.vec.BasicHep3Vector;
 import hep.physics.vec.Hep3Vector;
 import hep.physics.vec.VecOp;
 
+import hep.aida.IAnalysisFactory;
+import hep.aida.ITree;
+import hep.aida.IHistogram1D;
+import hep.aida.IHistogramFactory;
+import hep.aida.ref.rootwriter.RootFileStore;
+
 import org.hps.recon.tracking.MaterialSupervisor.SiStripPlane;
 import org.hps.recon.tracking.TrackUtils;
 import org.hps.recon.tracking.gbl.GBLStripClusterData;
+import org.hps.recon.tracking.CoordinateTransformations;
 import org.hps.util.Pair;
 import org.lcsim.detector.tracker.silicon.HpsSiSensor;
 import org.lcsim.event.EventHeader;
@@ -43,6 +52,7 @@ import org.lcsim.event.LCIOParameters.ParameterName;
 import org.lcsim.event.base.BaseRelationalTable;
 import org.lcsim.event.base.BaseTrack;
 import org.lcsim.event.base.BaseTrackState;
+import org.lcsim.event.Cluster;
 import org.lcsim.geometry.IDDecoder;
 import org.lcsim.recon.tracking.digitization.sisim.SiTrackerHitStrip1D;
 import org.lcsim.recon.tracking.digitization.sisim.TrackerHitType;
@@ -67,13 +77,39 @@ public class KalmanInterface {
     KalmanParams kPar;
     Random rnd;
     private Logger logger;
+
+    private ITree tree;
+    private IHistogramFactory histogramFactory;
+    private Map<String, IHistogram1D> plots1D;
+    private String rootFile = "track_cluster_res_plots.root";
     
     private static final double SVTcenter = 505.57;
     private static final double c = 2.99793e8; // Speed of light in m/s
+    boolean enablePlots = true;
     
+    public void enablePlots(boolean enablePlots) {
+        this.enablePlots = enablePlots;
+        if (enablePlots ==true) {
+            this.bookHistograms();
+        }
+    }
+
+    public void saveHistograms() {
+        RootFileStore store = new RootFileStore(rootFile);
+        try {
+            store.open();
+            store.add(tree);
+            store.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+        
+
     public void setSiHitsLimit(int limit) {
         _siHitsLimit = limit;
     }
+
     
     public int getSiHitsLimit() {
         return _siHitsLimit;
@@ -144,6 +180,7 @@ public class KalmanInterface {
         this.fM = fM;
         logger = Logger.getLogger(KalmanInterface.class.getName());
         verbose = logger.getLevel()==Level.FINE;
+        //verbose=true;
         if (verbose) {
             System.out.format("Entering the KalmanInterface constructor\n");
         } 
@@ -195,10 +232,55 @@ public class KalmanInterface {
         alphaCenter = conFac/ centerB.mag();
     }
 
+
+    private void bookHistograms() {
+
+        plots1D = new HashMap<String, IHistogram1D>();
+        tree = IAnalysisFactory.create().createTreeFactory().create();
+        histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
+
+        plots1D.put("Track @ Ecal xpos (RK - Kalman Method)",histogramFactory.createHistogram1D("Track @ Ecal xpos (RK - Kalman Method)",100, -50, 50));
+        plots1D.put("Track @ Ecal ypos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Track @ Ecal ypos (RK - Kalman Method)",100, -50, 50));
+        plots1D.put("Track @ Ecal zpos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Track @ Ecal zpos (RK - Kalman Method)",100, -50,50));
+
+
+        plots1D.put("Track @ Ecal - Ecal Cluster X Residual",histogramFactory.createHistogram1D("Track @ Ecal - Ecal Cluster X Residual",100, -50, 50));
+        plots1D.put("Track @ Ecal - Ecal Cluster Y Residual",histogramFactory.createHistogram1D( "Track @ Ecal - Ecal Cluster Y Residual",100, -50, 50));
+        plots1D.put("Track @ Ecal ypos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Track @ Ecal - Ecal Cluster Z Residual",100, -50,50));
+    }
+    public void trackClusterDistance(Track kalmanTrack, List<Cluster> Clusters)  {
+        
+        Track track = kalmanTrack;
+        List<Cluster> clusters = Clusters;
+        TrackState ts_ecal = track.getTrackStates().get(track.getTrackStates().size()-1);
+        double[] ts_ecalPos = ts_ecal.getReferencePoint();
+        System.out.println("LOOK HERE!. ReferencePoint via trackClusterMatching Method:" + ts_ecalPos[0] + " " + ts_ecalPos[1] + " " + ts_ecalPos[2]);
+        for(Cluster cluster : clusters) {
+            double[] clusterPos = cluster.getPosition();
+            System.out.println("Cluster Position: ");
+            for(int i=0; i < clusterPos.length; i++) {
+                System.out.println(clusterPos[i]);
+            }
+
+            double dr = Math.sqrt(Math.pow(clusterPos[0]-ts_ecalPos[0],2) + Math.pow(clusterPos[1]-ts_ecalPos[1],2));
+            double xdiff = clusterPos[0]-ts_ecalPos[0];
+            double ydiff = clusterPos[1]-ts_ecalPos[1];
+            double zdiff = clusterPos[2]-ts_ecalPos[2];
+            if(enablePlots) {
+                plots1D.get("Track @ Ecal - Ecal Cluster X Residual").fill(xdiff);
+                plots1D.get("Track @ Ecal - Ecal Cluster Y Residual").fill(ydiff);
+                plots1D.get("Track @ Ecal - Ecal Cluster Z Residual").fill(zdiff);
+            }
+        }
+    }
+
+
     // Return the reference to the parameter setting code for the driver to use
     public KalmanParams getKalmanParams() {
         return kPar;
     }
+    
+    
     
     // Transformation from HPS global coordinates to Kalman global coordinates
     public static Vec vectorGlbToKalman(double[] HPSvec) { 
@@ -517,15 +599,57 @@ public class KalmanInterface {
         }
         
         // Extrapolate to the ECAL and make a new trackState there.
-        BaseTrackState ts_ecal = TrackUtils.getTrackExtrapAtEcalRK(newTrack, fM);
-        newTrack.getTrackStates().add(ts_ecal);
+        //BaseTrackState ts_ecal = TrackUtils.getTrackExtrapAtEcalRK(newTrack, fM);
+
+        BaseTrackState ts_ecal_old = TrackUtils.getTrackExtrapAtEcalRK(newTrack, fM);
+        Hep3Vector tPos = new BasicHep3Vector(ts_ecal_old.getReferencePoint());
+        tPos = CoordinateTransformations.transformVectorToDetector(tPos);
+        System.out.println("Old Method: x: " + tPos.x() + ", y: " + tPos.y() + ", z: " + tPos.z());       
+        double[] ecaldir = {0.0,0.0,1.0};
+        double[] ecalloc = { 0.0, 0.0, 1394.0};
+        TrackState stateAtLast = TrackUtils.getTrackStateAtLocation(newTrack,TrackState.AtLastHit);
+        PropagatedTrackState ts_ecal = propagateTrackState(stateAtLast, ecalloc, ecaldir);
+        double[] ecalPos = ts_ecal.getIntersection();
+        double [][] ecalPosCov = ts_ecal.getIntersectionCov();
+        System.out.println("PropagatedTrackState location at ECAL: ");
+        System.out.println("x: " +  ecalPos[0]);
+        System.out.println("y: " +  ecalPos[1]);
+        System.out.println("z: " + ecalPos[2]);
+
+        System.out.println("Covariance of ECAL Propagation:");
+        for (double[] row : ecalPosCov) {
+            for( double v : row) {
+                System.out.print( v + " ");
+            }
+        }
+
+        //Difference between RK and Kalman extrapolation to Ecal
+        double xdiff = tPos.x() - ecalPos[0];
+        double ydiff = tPos.y() - ecalPos[1];
+        double zdiff = tPos.z() - ecalPos[2];
+        if(enablePlots) {
+            plots1D.get("Track @ Ecal xpos (RK - Kalman Method)").fill(xdiff);
+            plots1D.get("Track @ Ecal ypos (RK - Kalman Method)").fill(ydiff);
+            plots1D.get("Track @ Ecal zpos (RK - Kalman Method)").fill(zdiff);
+        }
+
+        //checking if reference point of extrapolated track persists when using
+        //transforming propagatedTrackState to TrackState
+        TrackState ets = ts_ecal.getTrackState();
+        double[] etsPos = ets.getReferencePoint();
+        System.out.println("TrackState x: " + etsPos[0] + ", y: " + etsPos[1] + ", z: " + etsPos[2]);       
+        //it does persist, can delete this above 3 lines
+
+        newTrack.getTrackStates().add(ts_ecal_old);
+        newTrack.getTrackStates().add(ts_ecal.getTrackState());
         
         // other track properties
         newTrack.setChisq(kT.chi2);
         newTrack.setNDF(kT.SiteList.size() - 5);
         newTrack.setTrackType(BaseTrack.TrackType.Y_FIELD.ordinal());
         newTrack.setFitSuccess(true);
-        
+
+
         return newTrack;
     }
 
