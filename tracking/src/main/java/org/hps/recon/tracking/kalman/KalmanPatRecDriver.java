@@ -23,7 +23,6 @@ import org.lcsim.event.LCRelation;
 import org.lcsim.event.RawTrackerHit;
 import org.lcsim.event.RelationalTable;
 import org.lcsim.event.Track;
-import org.lcsim.event.Cluster;
 import org.lcsim.event.TrackerHit;
 import org.lcsim.event.base.BaseLCRelation;
 import org.lcsim.event.base.BaseRelationalTable;
@@ -43,7 +42,7 @@ public class KalmanPatRecDriver extends Driver {
     private MaterialSupervisor _materialManager;
     private org.lcsim.geometry.FieldMap fm;
     private KalmanInterface KI;
-    private boolean verbose = true;
+    private boolean verbose = false;
     private boolean uniformB = false;
     private String outputFullTrackCollectionName = "KalmanFullTracks";
     public AIDA aida;
@@ -81,7 +80,6 @@ public class KalmanPatRecDriver extends Driver {
     private double beamSpotLoc;        // Beam spot location along the beam axis
     private boolean addResiduals;      // If true add the hit-on-track residuals to the LCIO event
     
-    boolean enablePlots = true;
     
     public String getOutputFullTrackCollectionName() {
         return outputFullTrackCollectionName;
@@ -122,8 +120,7 @@ public class KalmanPatRecDriver extends Driver {
     @Override
     public void detectorChanged(Detector det) {
         logger = Logger.getLogger(KalmanPatRecDriver.class.getName());
-        //verbose = (logger.getLevel()==Level.FINE);
-        verbose=true;
+        verbose = (logger.getLevel()==Level.FINE);
         executionTime = 0.;
         interfaceTime = 0.;
         plottingTime = 0.;
@@ -314,8 +311,6 @@ public class KalmanPatRecDriver extends Driver {
             logger.log(Level.INFO, String.format("KalmanPatRecDriver.process: null returned by KalmanPatRec. Skipping event %d", evtNumb));
             return;
         }
-
-        KI.enablePlots(enablePlots);
         
         RelationalTable rawtomc = new BaseRelationalTable(RelationalTable.Mode.MANY_TO_MANY, RelationalTable.Weighting.UNWEIGHTED);
         if (event.hasCollection(LCRelation.class, "SVTTrueHitRelations")) {
@@ -354,7 +349,6 @@ public class KalmanPatRecDriver extends Driver {
                 //Here is where the tracks to be persisted are formed
                 Track KalmanTrackHPS = KI.createTrack(kTk, true);
                 if (KalmanTrackHPS == null) continue;
-                KI.trackClusterDistance(KalmanTrackHPS, event.get(Cluster.class,"EcalClusters"));
                 
                 //pT cut 
                 //double [] hParams_check = kTk.originHelixParms();
@@ -427,7 +421,6 @@ public class KalmanPatRecDriver extends Driver {
                 */
                     
             } // end of loop on tracks
-
         } // end of loop on trackers
         
         nTracks += nKalTracks;
@@ -444,9 +437,6 @@ public class KalmanPatRecDriver extends Driver {
             
         }
         
-        if(enablePlots) {
-            KI.saveHistograms();
-        }
         KI.clearInterface();
         logger.log(Level.FINE, String.format("\n KalmanPatRecDriver.process: Done with event %d", evtNumb));
         
