@@ -84,7 +84,7 @@ public class KalmanInterface {
     
     private static final double SVTcenter = 505.57;
     private static final double c = 2.99793e8; // Speed of light in m/s
-    boolean enablePlots = true;
+    boolean enablePlots=true;
     
     public void enablePlots(boolean enablePlots) {
         this.enablePlots = enablePlots;
@@ -98,6 +98,7 @@ public class KalmanInterface {
         try {
             store.open();
             store.add(tree);
+            store.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -597,9 +598,11 @@ public class KalmanInterface {
         double ydiff = tPos.y() - ecalPos[1];
         double zdiff = tPos.z() - ecalPos[2];
         if(enablePlots) {
+            enablePlots(enablePlots);
             plots1D.get("Track @ Ecal xpos (RK - Kalman Method)").fill(xdiff);
             plots1D.get("Track @ Ecal ypos (RK - Kalman Method)").fill(ydiff);
             plots1D.get("Track @ Ecal zpos (RK - Kalman Method)").fill(zdiff);
+            saveHistograms();
         }
 
         newTrack.getTrackStates().add(ts_ecal_old);

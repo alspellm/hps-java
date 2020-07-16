@@ -20,9 +20,9 @@ import org.lcsim.event.Cluster;
 import org.hps.recon.tracking.CoordinateTransformations;
 
 
-public class KalTrackClusterMatching {
+public class KalTrackClusterEcalMatch {
 
-    boolean enablePlots = true;
+    boolean enablePlots;
     private ITree tree;
     private IHistogramFactory histogramFactory;
     private Map<String, IHistogram1D> plots1D;
@@ -41,6 +41,7 @@ public class KalTrackClusterMatching {
         try {
             store.open();
             store.add(tree);
+            store.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
