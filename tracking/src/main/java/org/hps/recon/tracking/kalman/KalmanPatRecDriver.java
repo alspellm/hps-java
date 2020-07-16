@@ -81,6 +81,7 @@ public class KalmanPatRecDriver extends Driver {
     private double beamSpotLoc;        // Beam spot location along the beam axis
     private boolean addResiduals;      // If true add the hit-on-track residuals to the LCIO event
     
+    boolean enablePlots = true;
     
     public String getOutputFullTrackCollectionName() {
         return outputFullTrackCollectionName;
@@ -168,7 +169,6 @@ public class KalmanPatRecDriver extends Driver {
         KI = new KalmanInterface(uniformB, fm);
         KI.setSiHitsLimit(siHitsLimit);
         KI.createSiModules(detPlanes);
-        KI.enablePlots(true);
         
         decoder = det.getSubdetector("Tracker").getIDDecoder();
         if (doDebugPlots) {
@@ -314,6 +314,8 @@ public class KalmanPatRecDriver extends Driver {
             logger.log(Level.INFO, String.format("KalmanPatRecDriver.process: null returned by KalmanPatRec. Skipping event %d", evtNumb));
             return;
         }
+
+        KI.enablePlots(enablePlots);
         
         RelationalTable rawtomc = new BaseRelationalTable(RelationalTable.Mode.MANY_TO_MANY, RelationalTable.Weighting.UNWEIGHTED);
         if (event.hasCollection(LCRelation.class, "SVTTrueHitRelations")) {
@@ -425,7 +427,7 @@ public class KalmanPatRecDriver extends Driver {
                 */
                     
             } // end of loop on tracks
-            KI.saveHistograms();
+
         } // end of loop on trackers
         
         nTracks += nKalTracks;
@@ -442,6 +444,9 @@ public class KalmanPatRecDriver extends Driver {
             
         }
         
+        if(enablePlots) {
+            KI.saveHistograms();
+        }
         KI.clearInterface();
         logger.log(Level.FINE, String.format("\n KalmanPatRecDriver.process: Done with event %d", evtNumb));
         
