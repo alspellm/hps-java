@@ -598,7 +598,6 @@ public class KalmanInterface {
         double ydiff = tPos.y() - ecalPos[1];
         double zdiff = tPos.z() - ecalPos[2];
         if(enablePlots) {
-            enablePlots(enablePlots);
             plots1D.get("Track @ Ecal xpos (RK - Kalman Method)").fill(xdiff);
             plots1D.get("Track @ Ecal ypos (RK - Kalman Method)").fill(ydiff);
             plots1D.get("Track @ Ecal zpos (RK - Kalman Method)").fill(zdiff);

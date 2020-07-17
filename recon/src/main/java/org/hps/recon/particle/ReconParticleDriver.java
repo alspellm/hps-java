@@ -543,6 +543,7 @@ public abstract class ReconParticleDriver extends Driver {
                 for (Cluster cluster : clusters) {
                     double clusTime = ClusterUtilities.getSeedHitTime(cluster);
                     double trkT = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
+                    System.out.println("TIME! " + trkT);
 
                     if (Math.abs(clusTime - trkT - cuts.getTrackClusterTimeOffset()) > cuts.getMaxMatchDt()) {
                         if (debug) {

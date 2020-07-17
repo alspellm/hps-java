@@ -16,6 +16,7 @@ import org.hps.recon.tracking.TrackResidualsData;
 import org.hps.recon.tracking.MaterialSupervisor.ScatteringDetectorVolume;
 import org.hps.recon.tracking.MaterialSupervisor.SiStripPlane;
 import org.hps.recon.tracking.gbl.GBLStripClusterData;
+//import org.hps.recon.tracking.TrackUtils;
 import org.hps.util.Pair;
 import org.lcsim.detector.tracker.silicon.HpsSiSensor;
 import org.lcsim.event.EventHeader;
@@ -174,6 +175,7 @@ public class KalmanPatRecDriver extends Driver {
         KI = new KalmanInterface(uniformB, fm);
         KI.setSiHitsLimit(siHitsLimit);
         KI.createSiModules(detPlanes);
+        KI.enablePlots(enablePlots);
         
         decoder = det.getSubdetector("Tracker").getIDDecoder();
         if (doDebugPlots) {
@@ -313,6 +315,7 @@ public class KalmanPatRecDriver extends Driver {
                 return;
             }
             for (KalTrack kTk : kPat.TkrList) {
+                System.out.println("[KalmanPatRecDriver] KalTrack time: " + kTk.getTime());
                 if (verbose) kTk.print(String.format(" PatRec for topBot=%d ",kPat.topBottom));
                 double [][] covar = kTk.originCovariance();
                 for (int ix=0; ix<5; ++ix) {
@@ -327,7 +330,7 @@ public class KalmanPatRecDriver extends Driver {
                 //Here is where the tracks to be persisted are formed
                 Track KalmanTrackHPS = KI.createTrack(kTk, true);
                 //Track to Ecal Cluster Matching Method
-                matcher.trackClusterDistance(KalmanTrackHPS,event.get(Cluster.class, "EcalClusters"));
+                matcher.trackClusterDistance(kTk, KalmanTrackHPS,event.get(Cluster.class, "EcalClusters"),event);
 
                 if (KalmanTrackHPS == null) continue;
                 
@@ -402,6 +405,9 @@ public class KalmanPatRecDriver extends Driver {
                 */
                     
             } // end of loop on tracks
+            if(enablePlots){
+                KI.saveHistograms();
+            }
         } // end of loop on trackers
         
         nTracks += nKalTracks;
