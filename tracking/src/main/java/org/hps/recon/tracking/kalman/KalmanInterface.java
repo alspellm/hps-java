@@ -238,10 +238,18 @@ public class KalmanInterface {
         tree = IAnalysisFactory.create().createTreeFactory().create();
         histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
 
-        plots1D.put("Track @ Ecal xpos (RK - Kalman Method)",histogramFactory.createHistogram1D("Track @ Ecal xpos (RK - Kalman Method)",100, -50, 50));
-        plots1D.put("Track @ Ecal ypos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Track @ Ecal ypos (RK - Kalman Method)",100, -50, 50));
-        plots1D.put("Track @ Ecal zpos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Track @ Ecal zpos (RK - Kalman Method)",100, -50,50));
+        plots1D.put("Positron_Track @ Ecal xpos (RK - Kalman Method)",histogramFactory.createHistogram1D("Positron_Track @ Ecal xpos (RK - Kalman Method)",100, -50, 50));
+        plots1D.put("Positron_Track @ Ecal ypos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Positron_Track @ Ecal ypos (RK - Kalman Method)",100, -50, 50));
+        plots1D.put("Positron_Track @ Ecal zpos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Positron_Track @ Ecal zpos (RK - Kalman Method)",100, -50,50));
 
+        plots1D.put("Electron_Track @ Ecal xpos (RK - Kalman Method)",histogramFactory.createHistogram1D("Electron_Track @ Ecal xpos (RK - Kalman Method)",100, -50, 50));
+        plots1D.put("Electron_Track @ Ecal ypos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Electron_Track @ Ecal ypos (RK - Kalman Method)",100, -50, 50));
+        plots1D.put("Electron_Track @ Ecal zpos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Electron_Track @ Ecal zpos (RK - Kalman Method)",100, -50,50));
+
+        plots1D.put("Positron_Track @ Ecal xpos (Kalman Method)",histogramFactory.createHistogram1D("Positron_Track @ Ecal xpos Kalman Method)",100, -1000, 1000));
+        plots1D.put("Positron_Track @ Ecal xpos (RK Method)",histogramFactory.createHistogram1D("Positron_Track @ Ecal xpos (RK Method)",100, -1000, 1000));
+        plots1D.put("Electron_Track @ Ecal xpos (Kalman Method)",histogramFactory.createHistogram1D("Electron_Track @ Ecal xpos (Kalman Method)",100, -1000, 1000));
+        plots1D.put("Electron_Track @ Ecal xpos (RK Method)",histogramFactory.createHistogram1D("Electron_Track @ Ecal xpos (RK Method)",100, -1000, 1000));
     }
 
 
@@ -593,14 +601,29 @@ public class KalmanInterface {
             }
         }
 
+        int charge = (int) Math.signum(newTrack.getTrackStates().get(0).getOmega());
+
         //Difference between RK and Kalman extrapolation to Ecal
         double xdiff = tPos.x() - ecalPos[0];
         double ydiff = tPos.y() - ecalPos[1];
         double zdiff = tPos.z() - ecalPos[2];
         if(enablePlots) {
-            plots1D.get("Track @ Ecal xpos (RK - Kalman Method)").fill(xdiff);
-            plots1D.get("Track @ Ecal ypos (RK - Kalman Method)").fill(ydiff);
-            plots1D.get("Track @ Ecal zpos (RK - Kalman Method)").fill(zdiff);
+            if(charge > 0){
+                plots1D.get("Positron_Track @ Ecal xpos (RK - Kalman Method)").fill(xdiff);
+                plots1D.get("Positron_Track @ Ecal ypos (RK - Kalman Method)").fill(ydiff);
+                plots1D.get("Positron_Track @ Ecal zpos (RK - Kalman Method)").fill(zdiff);
+
+                plots1D.get("Positron_Track @ Ecal xpos (Kalman Method)").fill(ecalPos[0]);
+                plots1D.get("Positron_Track @ Ecal xpos (RK Method)").fill(tPos.x());
+            }
+            else {
+                plots1D.get("Electron_Track @ Ecal xpos (RK - Kalman Method)").fill(xdiff);
+                plots1D.get("Electron_Track @ Ecal ypos (RK - Kalman Method)").fill(ydiff);
+                plots1D.get("Electron_Track @ Ecal zpos (RK - Kalman Method)").fill(zdiff);
+
+                plots1D.get("Electron_Track @ Ecal xpos (Kalman Method)").fill(ecalPos[0]);
+                plots1D.get("Electron_Track @ Ecal xpos (RK Method)").fill(tPos.x());
+            }
             saveHistograms();
         }
 
