@@ -62,17 +62,30 @@ public class KalTrackClusterEcalMatch {
         tree = IAnalysisFactory.create().createTreeFactory().create();
         histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
 
-        plots1D.put("Track-Cluster Timing Residual", histogramFactory.createHistogram1D("Track-Cluster Timing Residual", 100, -200, 200));
-        plots1D.put("Track Timing", histogramFactory.createHistogram1D("Track Timing", 100, -200, 200));
-        plots1D.put("Cluster Timing (43ns offset)", histogramFactory.createHistogram1D("Cluster Timing (43ns offset)", 100, -200, 200));
+        //Timing Plots
+        plots1D.put("ElectronTrack-Cluster_dt", histogramFactory.createHistogram1D("ElectronTrack-Cluster_dt", 100, -200, 200));
+        plots1D.put("PositronTrack-Cluster_dt", histogramFactory.createHistogram1D("PositronTrack-Cluster_dt", 100, -200, 200));
+        plots1D.put("PositronTrackTime", histogramFactory.createHistogram1D("PositronTrackTime", 100, -200, 200));
+        plots1D.put("ElectronTrackTime", histogramFactory.createHistogram1D("ElectronTrackTime", 100, -200, 200));
+        plots1D.put("Cluster_Timing_(43ns_offset)", histogramFactory.createHistogram1D("Cluster_Timing_(43ns_offset)", 100, -200, 200));
 
-        plots1D.put("Track @ Ecal - Ecal Cluster X Residual",histogramFactory.createHistogram1D("Track @ Ecal - Ecal Cluster X Residual",100, -50, 50));
-        plots1D.put("Track @ Ecal - Ecal Cluster Y Residual",histogramFactory.createHistogram1D( "Track @ Ecal - Ecal Cluster Y Residual",100, -50, 50));
-        plots1D.put("Track @ Ecal - Ecal Cluster Z Residual",histogramFactory.createHistogram1D( "Track @ Ecal - Ecal Cluster Z Residual",100, -50,50));
-
-        plots1D.put("RK Track @ Ecal - Ecal Cluster X Residual",histogramFactory.createHistogram1D("RK Track @ Ecal - Ecal Cluster X Residual",100, -50, 50));
-        plots1D.put("RK Track @ Ecal - Ecal Cluster Y Residual",histogramFactory.createHistogram1D( "RK Track @ Ecal - Ecal Cluster Y Residual",100, -50, 50));
-        plots1D.put("RK Track @ Ecal - Ecal Cluster Z Residual",histogramFactory.createHistogram1D( "RK Track @ Ecal - Ecal Cluster Z Residual",100, -50,50));
+        //Kalman Extrapolated Residuals
+        plots1D.put("PositronTrack@ECal_ECalCluster_dx",histogramFactory.createHistogram1D("PositronTrack@ECal_ECalCluster_dx",100, -50, 50));
+        plots1D.put("PositronTrack@ECal_ECalCluster_dy",histogramFactory.createHistogram1D( "PositronTrack@ECal_ECalCluster_dy",100, -50, 50));
+        plots1D.put("PositronTrack@ECal_ECalCluster_dz",histogramFactory.createHistogram1D( "PositronTrack@ECal_ECalCluster_dz",100, -50,50));
+        plots1D.put("PositronTrack@ECal_ECalCluster_dr",histogramFactory.createHistogram1D( "PositronTrack@ECal_ECalCluster_dr",100, -50,50));
+        plots1D.put("ElectronTrack@ECal_ECalCluster_dx",histogramFactory.createHistogram1D("ElectronTrack@ECal_ECalCluster_dx",100, -50, 50));
+        plots1D.put("ElectronTrack@ECal_ECalCluster_dy",histogramFactory.createHistogram1D( "ElectronTrack@ECal_ECalCluster_dy",100, -50, 50));
+        plots1D.put("ElectronTrack@ECal_ECalCluster_dz",histogramFactory.createHistogram1D( "ElectronTrack@ECal_ECalCluster_dz",100, -50,50));
+        plots1D.put("ElectronTrack@ECal_ECalCluster_dr",histogramFactory.createHistogram1D( "ElectronTrack@ECal_ECalCluster_dr",100, -50,50));
+        
+        //RK Extrapolated Residuals
+        plots1D.put("RK_PositronTrack@ECal_ECalCluster_dx",histogramFactory.createHistogram1D("RK_PositronTrack@ECal_ECalCluster_dx",100, -50, 50));
+        plots1D.put("RK_PositronTrack@ECal_ECalCluster_dy",histogramFactory.createHistogram1D( "RK_PositronTrack@ECal_ECalCluster_dy",100, -50, 50));
+        plots1D.put("RK_PositronTrack@ECal_ECalCluster_dz",histogramFactory.createHistogram1D( "RK_PositronTrack@ECal_ECalCluster_dz",100, -50,50));
+        plots1D.put("RK_ElectronTrack@ECal_ECalCluster_dx",histogramFactory.createHistogram1D("RK_ElectronTrack@ECal_ECalCluster_dx",100, -50, 50));
+        plots1D.put("RK_ElectronTrack@ECal_ECalCluster_dy",histogramFactory.createHistogram1D( "RK_ElectronTrack@ECal_ECalCluster_dy",100, -50, 50));
+        plots1D.put("RK_ElectronTrack@ECal_ECalCluster_dz",histogramFactory.createHistogram1D( "RK_ElectronTrack@ECal_ECalCluster_dz",100, -50,50));
     }
     public void trackClusterDistance(KalTrack kaltrack, Track kalmanTrackHPS, List<Cluster> Clusters, EventHeader event)  {
 
@@ -82,8 +95,11 @@ public class KalTrackClusterEcalMatch {
         KalTrack kTk = kaltrack;
         double kTkTime = kTk.getTime();
         System.out.println("kTkTime = : " + kTkTime);
+
         //KalmanTrackHPS
         Track track = kalmanTrackHPS;
+        int charge = (int) Math.signum(track.getTrackStates().get(0).getOmega());
+
         hitToRotated = TrackUtils.getHitToRotatedTable(e);
         hitToStrips = TrackUtils.getHitToStripsTable(e);
         if(hitToRotated == null){
@@ -97,55 +113,83 @@ public class KalTrackClusterEcalMatch {
         double[] ts_ecalPos = ts_ecal.getReferencePoint();
 
         //Track state at ecal via RK extrap
-        TrackState ts_ecal_RK = track.getTrackStates().get(track.getTrackStates().size()-2);
-        Hep3Vector ts_ecalPos_RK = new BasicHep3Vector(ts_ecal_RK.getReferencePoint());
+        TrackState ts_ecalRK = track.getTrackStates().get(track.getTrackStates().size()-2);
+        Hep3Vector ts_ecalPos_RK = new BasicHep3Vector(ts_ecalRK.getReferencePoint());
         ts_ecalPos_RK = CoordinateTransformations.transformVectorToDetector(ts_ecalPos_RK);
 
         System.out.println("LOOK HERE!. ReferencePoint via Kalman:" + ts_ecalPos[0] + " " + ts_ecalPos[1] + " " + ts_ecalPos[2]);
         System.out.println("LOOK HERE!. ReferencePoint via RK:" + ts_ecalPos_RK.x() + " " + ts_ecalPos_RK.y() + " " + ts_ecalPos_RK.z());
+
         if(enablePlots){
-            plots1D.get("Track Timing").fill(kTkTime);
+            if (charge > 0) {
+                plots1D.get("PositronTrackTime").fill(kTkTime);
+            }
+            else {
+                plots1D.get("ElectronTrackTime").fill(kTkTime);
+            }
         }
         for(Cluster cluster : clusters) {
             double clusTime = ClusterUtilities.getSeedHitTime(cluster);
-            double[] clusterPos = cluster.getPosition();
+            double[] clusPos = cluster.getPosition();
 
-            //double dr = Math.sqrt(Math.pow(clusterPos[0]-ts_ecalPos[0],2) + Math.pow(clusterPos[1]-ts_ecalPos[1],2));
+            //Track cluster distance 
+            double dr = Math.sqrt(Math.pow(clusPos[0]-ts_ecalPos[0],2) + Math.pow(clusPos[1]-ts_ecalPos[1],2));
             //cluster time offset for 2016 MC = 43ns
             double offset = 43;
 
             //track cluster diff in x/y via Kalman Extrap
-            double xdiff = clusterPos[0]-ts_ecalPos[0];
-            double ydiff = clusterPos[1]-ts_ecalPos[1];
-            double zdiff = clusterPos[2]-ts_ecalPos[2];
+            double dx = clusPos[0]-ts_ecalPos[0];
+            double dy = clusPos[1]-ts_ecalPos[1];
+            double dz = clusPos[2]-ts_ecalPos[2];
             //via RK Extrap
-            double xdiffRK = clusterPos[0]-ts_ecalPos_RK.x();
-            double ydiffRK = clusterPos[1]-ts_ecalPos_RK.y();
-            double zdiffRK = clusterPos[2]-ts_ecalPos_RK.z();
+            double dxRK = clusPos[0]-ts_ecalPos_RK.x();
+            double dyRK = clusPos[1]-ts_ecalPos_RK.y();
+            double dzRK = clusPos[2]-ts_ecalPos_RK.z();
 
             //Track Cluster Time Residual
-            double timediff = clusTime - offset - kTkTime;
+            double dt = clusTime - offset - kTkTime;
             double time_cut_max = 4.0;
             double time_cut_min = -4.0;
             
-            if(timediff >= time_cut_min && timediff <= time_cut_max){
+            if(dt >= time_cut_min && dt <= time_cut_max){
                 
                 System.out.println("HEY! trkT: " + kTkTime);
                 System.out.println("HEY! clusTime: " + clusTime);
-                System.out.println("HEY! timeResi: " + timediff);
+                System.out.println("HEY! timeResi: " + dt);
 
                 if(enablePlots) {
-                    //Time residual plot
-                    plots1D.get("Track-Cluster Timing Residual").fill(timediff);
-                    plots1D.get("Cluster Timing (43ns offset)").fill(clusTime-offset);
+                    plots1D.get("Cluster_Timing_(43ns_offset)").fill(clusTime-offset);
+                    if(charge > 0) {
+                        //Time residual plot
+                        plots1D.get("PositronTrack-Cluster_dt").fill(dt);
 
-                    plots1D.get("Track @ Ecal - Ecal Cluster X Residual").fill(xdiff);
-                    plots1D.get("Track @ Ecal - Ecal Cluster Y Residual").fill(ydiff);
-                    plots1D.get("Track @ Ecal - Ecal Cluster Z Residual").fill(zdiff);
+                        //Kalman Extrapolated Residuals
+                        plots1D.get("PositronTrack@ECal_ECalCluster_dx").fill(dx);
+                        plots1D.get("PositronTrack@ECal_ECalCluster_dy").fill(dy);
+                        plots1D.get("PositronTrack@ECal_ECalCluster_dz").fill(dz);
+                        plots1D.get("PositronTrack@ECal_ECalCluster_dr").fill(dr);
 
-                    plots1D.get("RK Track @ Ecal - Ecal Cluster X Residual").fill(xdiffRK);
-                    plots1D.get("RK Track @ Ecal - Ecal Cluster Y Residual").fill(ydiffRK);
-                    plots1D.get("RK Track @ Ecal - Ecal Cluster Z Residual").fill(zdiffRK);
+                        //RK Extrapolated Residuals
+                        plots1D.get("RK_PositronTrack@ECal_ECalCluster_dx").fill(dxRK);
+                        plots1D.get("RK_PositronTrack@ECal_ECalCluster_dy").fill(dyRK);
+                        plots1D.get("RK_PositronTrack@ECal_ECalCluster_dz").fill(dzRK);
+                    }
+                    else {
+
+                        //Time residual plot
+                        plots1D.get("ElectronTrack-Cluster_dt").fill(dt);
+
+                        //Kalman Extrapolated Residuals
+                        plots1D.get("ElectronTrack@ECal_ECalCluster_dx").fill(dx);
+                        plots1D.get("ElectronTrack@ECal_ECalCluster_dy").fill(dy);
+                        plots1D.get("ElectronTrack@ECal_ECalCluster_dz").fill(dz);
+                        plots1D.get("ElectronTrack@ECal_ECalCluster_dr").fill(dr);
+
+                        //RK Extrapolated Residuals
+                        plots1D.get("RK_ElectronTrack@ECal_ECalCluster_dx").fill(dxRK);
+                        plots1D.get("RK_ElectronTrack@ECal_ECalCluster_dy").fill(dyRK);
+                        plots1D.get("RK_ElectronTrack@ECal_ECalCluster_dz").fill(dzRK);
+                    }
                 }
             }
         }

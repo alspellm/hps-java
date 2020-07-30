@@ -315,7 +315,6 @@ public class KalmanPatRecDriver extends Driver {
                 return;
             }
             for (KalTrack kTk : kPat.TkrList) {
-                System.out.println("[KalmanPatRecDriver] KalTrack time: " + kTk.getTime());
                 if (verbose) kTk.print(String.format(" PatRec for topBot=%d ",kPat.topBottom));
                 double [][] covar = kTk.originCovariance();
                 for (int ix=0; ix<5; ++ix) {

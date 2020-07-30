@@ -41,7 +41,7 @@ class KalmanPatRecHPS {
     private ArrayList<Double> XLscat;
 
     private int eventNumber;
-    private boolean verbose=true;
+    private boolean verbose;
     private int nModules;
     private KalmanParams kPar;
     private Logger logger;
