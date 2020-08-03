@@ -84,7 +84,7 @@ public class KalmanInterface {
     
     private static final double SVTcenter = 505.57;
     private static final double c = 2.99793e8; // Speed of light in m/s
-    boolean enablePlots=true;
+    boolean enablePlots;
     
     public void enablePlots(boolean enablePlots) {
         this.enablePlots = enablePlots;
@@ -582,19 +582,13 @@ public class KalmanInterface {
         BaseTrackState ts_ecal_old = TrackUtils.getTrackExtrapAtEcalRK(newTrack, fM);
         Hep3Vector tPos = new BasicHep3Vector(ts_ecal_old.getReferencePoint());
         tPos = CoordinateTransformations.transformVectorToDetector(tPos);
-        System.out.println("Old Method: x: " + tPos.x() + ", y: " + tPos.y() + ", z: " + tPos.z());       
         double[] ecaldir = {0.0,0.0,1.0};
         double[] ecalloc = { 0.0, 0.0, 1394.0};
         TrackState stateAtLast = TrackUtils.getTrackStateAtLocation(newTrack,TrackState.AtLastHit);
         PropagatedTrackState ts_ecal = propagateTrackState(stateAtLast, ecalloc, ecaldir);
         double[] ecalPos = ts_ecal.getIntersection();
         double [][] ecalPosCov = ts_ecal.getIntersectionCov();
-        System.out.println("PropagatedTrackState location at ECAL: ");
-        System.out.println("x: " +  ecalPos[0]);
-        System.out.println("y: " +  ecalPos[1]);
-        System.out.println("z: " + ecalPos[2]);
 
-        System.out.println("Covariance of ECAL Propagation:");
         for (double[] row : ecalPosCov) {
             for( double v : row) {
                 System.out.print( v + " ");

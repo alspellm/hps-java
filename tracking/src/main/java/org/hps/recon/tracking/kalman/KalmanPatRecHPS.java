@@ -53,7 +53,7 @@ class KalmanPatRecHPS {
         this.eventNumber = eventNumber;
         if (eventNumber == 2374) logger.setLevel(Level.FINER);
         else logger.setLevel(Level.INFO);
-        //this.verbose = (logger.getLevel()==Level.FINER || logger.getLevel()==Level.FINEST);
+        this.verbose = (logger.getLevel()==Level.FINER || logger.getLevel()==Level.FINEST);
         this.kPar = kPar;
 
         TkrList = new ArrayList<KalTrack>();
