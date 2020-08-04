@@ -157,7 +157,7 @@
 	    <minVertexChisqProb> 0.0 </minVertexChisqProb>
 	    <maxVertexClusterDt> 2.5 </maxVertexClusterDt>
             <maxMatchDt>10</maxMatchDt>
-            <trackClusterTimeOffset>55</trackClusterTimeOffset>
+            <trackClusterTimeOffset>56</trackClusterTimeOffset>
         </driver>  
 
       <driver name="ReconParticleDriver_Kalman" type="org.hps.recon.particle.HpsReconParticleDriver" >
@@ -186,9 +186,10 @@
             <useCorrectedClusterPositionsForMatching>false</useCorrectedClusterPositionsForMatching>
             <applyClusterCorrections>false</applyClusterCorrections>
             <useTrackPositionForClusterCorrection>false</useTrackPositionForClusterCorrection>
-            <debug>false</debug>
+            <debug>true</debug>
             <makeMollerCols>false</makeMollerCols>
             <disablePID>true</disablePID>
+            <trackClusterMatching></trackClusterMatching>
         </driver>
 
 
