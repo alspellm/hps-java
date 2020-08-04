@@ -46,8 +46,6 @@ public abstract class ReconParticleDriver extends Driver {
     /**
      * Utility used to determine if a track and cluster are matched
      */
-    TrackClusterMatcher matcher;
-    KalTrackClusterEcalMatch kalMatcher;
 
     private String clusterParamFileName = null;
     String[] trackCollectionNames = {"GBLTracks"};
@@ -67,8 +65,11 @@ public abstract class ReconParticleDriver extends Driver {
     protected StandardCuts cuts = new StandardCuts();
     RelationalTable hitToRotated = null;
     RelationalTable hitToStrips = null;
+    KalTrackClusterEcalMatch kalmatcher;
+    TrackClusterMatcher matcher;
 
     protected boolean enableTrackClusterMatchPlots = false;
+    protected boolean enableKalTrackClusterMatchPlots = false;
 
     public void setTrackClusterMatchPlots(boolean input) {
         enableTrackClusterMatchPlots = input;
@@ -155,6 +156,10 @@ public abstract class ReconParticleDriver extends Driver {
      * LCIO collection name for calorimeter clusters.
      */
     private String ecalClustersCollectionName = "EcalClusters";
+    /**
+     * ECal Cluster time offset value
+     */
+    private double ecalClusterTimeOffset = 0.0;
     /**
      * LCIO collection name for tracks.
      */
@@ -303,6 +308,14 @@ public abstract class ReconParticleDriver extends Driver {
      * @param debug - <code>true</code> indicates that debug text should be
      * written and <code>false</code> that it should be suppressed.
      */
+
+    /**
+     * Set Ecal Cluster time offset in steering file (in nanoseconds)
+     */
+    public void setEcalClusterTimeOffset(double ecalClusterTimeOffset) {
+        this.ecalClusterTimeOffset = ecalClusterTimeOffset;
+    }
+
     public void setDebug(boolean debug) {
         this.debug = debug;
     }
@@ -420,6 +433,10 @@ public abstract class ReconParticleDriver extends Driver {
         clusterParamFileName = input;
     }
 
+    public void setEnableKalTrackClusterMatchPlots(boolean enableKalTrackClusterMatchPlots) {
+        this.enableKalTrackClusterMatchPlots = enableKalTrackClusterMatchPlots;
+    }
+
     /**
      * Updates the magnetic field parameters to match the appropriate values for
      * the current detector settings.
@@ -439,15 +456,19 @@ public abstract class ReconParticleDriver extends Driver {
             }
         }
 
-        kalMatcher = new KalTrackClusterEcalMatch();
-        //kalMatcher.enablePlots(enableTrackClusterMatchPlots);
-
-        matcher = new TrackClusterMatcher(clusterParamFileName);
-        matcher.enablePlots(enableTrackClusterMatchPlots);
-        matcher.setBeamEnergy(beamEnergy);
-        if (trackCollectionNames.length > 0 )
-            matcher.setRootFileName("tracks_"+trackCollectionNames[0]+"_cluster_matching_plots.root");
-        matcher.setBFieldMap(detector.getFieldMap());
+        if(trackClusterMatching != null) {
+            System.out.println("KalmanFullTracks cluster matching");
+            kalmatcher = new KalTrackClusterEcalMatch();
+            kalmatcher.enablePlots(enableTrackClusterMatchPlots);
+        }
+        else {
+            matcher = new TrackClusterMatcher(clusterParamFileName);
+            matcher.enablePlots(enableTrackClusterMatchPlots);
+            matcher.setBeamEnergy(beamEnergy);
+            if (trackCollectionNames.length > 0 )
+                matcher.setRootFileName("tracks_"+trackCollectionNames[0]+"_cluster_matching_plots.root");
+            matcher.setBFieldMap(detector.getFieldMap());
+        }
 
         // Set the magnetic field parameters to the appropriate values.
         Hep3Vector ip = new BasicHep3Vector(0., 0., 500.0);
@@ -463,6 +484,7 @@ public abstract class ReconParticleDriver extends Driver {
         } else {
             cuts.changeBeamEnergy(beamEnergy);
         }
+
     }
 
     public void setMaxMatchChisq(double input) {
@@ -789,70 +811,8 @@ public abstract class ReconParticleDriver extends Driver {
                     ((BaseReconstructedParticle) particle).setParticleIdUsed(new SimpleParticleID(11, 0, 0, 0));
                 }
 
-                // normalized distance of the closest match:
-                double smallestNSigma = Double.MAX_VALUE;
-
-                // try to find a matching cluster:
-                Cluster matchedCluster = null;
-
-                for (Cluster cluster : clusters) {
-                    double clusTime = ClusterUtilities.getSeedHitTime(cluster);
-                    double trkT = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
-                    System.out.println("TIME! " + trkT);
-
-                    if (Math.abs(clusTime - trkT - cuts.getTrackClusterTimeOffset()) > cuts.getMaxMatchDt()) {
-                        if (debug) {
-                            System.out.println("Failed cluster-track deltaT!");
-                            System.out.println(clusTime + "  " + trkT + "  " + cuts.getTrackClusterTimeOffset() + ">" + cuts.getMaxMatchDt());
-                        }
-                        continue;
-                    }
-
-                    //if the option to use corrected cluster positions is selected, then
-                    //create a copy of the current cluster, and apply corrections to it
-                    //before calculating nsigma.  Default is don't use corrections.  
-                    Cluster originalCluster = cluster;
-                    if (useCorrectedClusterPositionsForMatching) {
-                        cluster = new BaseCluster(cluster);
-                        double ypos = TrackUtils.getTrackStateAtECal(particle.getTracks().get(0)).getReferencePoint()[2];
-                        ClusterUtilities.applyCorrections(ecal, cluster, ypos, isMC);
-                    }
-
-                    // normalized distance between this cluster and track:
-                    final double thisNSigma = matcher.getNSigmaPosition(cluster, particle);
-                    if (enableTrackClusterMatchPlots) {
-                        if (TrackUtils.getTrackStateAtECal(track) != null) {
-                            matcher.isMatch(cluster, track);
-                        }
-                    }
-
-                    // ignore if matching quality doesn't make the cut:
-                    if (thisNSigma > MAXNSIGMAPOSITIONMATCH) {
-                        if (debug) {
-                            System.out.println("Failed cluster-track NSigma Cut!");
-                            System.out.println("match NSigma = " + thisNSigma + "; Max NSigma =  " + MAXNSIGMAPOSITIONMATCH);
-                        }
-                        continue;
-                    }
-
-                    // ignore if we already found a cluster that's a better match:
-                    if (thisNSigma > smallestNSigma) {
-                        if (debug) {
-                            System.out.println("Already found a better match than this!");
-                            System.out.println("match NSigma = " + thisNSigma + "; smallest NSigma =  " + smallestNSigma);
-                        }
-                        continue;
-                    }
-                    // we found a new best cluster candidate for this track:
-                    smallestNSigma = thisNSigma;
-                    matchedCluster = originalCluster;
-
-                    // prefer using GBL tracks to correct (later) the clusters, for some consistency:
-                    if (track.getType() >= 32 || !clusterToTrack.containsKey(matchedCluster)) {
-                        clusterToTrack.put(matchedCluster, track);
-                    }
-                }
-            
+                //TrackClusterEcalMatching
+                Cluster matchedCluster = kalmatcher.getKalmanMatchedCluster(track, charge, clusters, trackT, ecalClusterTimeOffset);
 
                 // If a cluster was found that matches the track...
                 if (matchedCluster != null) {
@@ -862,7 +822,7 @@ public abstract class ReconParticleDriver extends Driver {
                     printDebug("particle with cluster added: " + particle);
 
                     // use pid quality to store track-cluster matching quality:
-                    ((BaseReconstructedParticle) particle).setGoodnessOfPid(smallestNSigma);
+                    //((BaseReconstructedParticle) particle).setGoodnessOfPid(smallestNSigma);
 
                     // propogate pid to the cluster:
                     final int pid = particle.getParticleIDUsed().getPDG();
@@ -1045,7 +1005,7 @@ public abstract class ReconParticleDriver extends Driver {
         // create final state particles.
         // If running on Kalman Tracks, use Kalman Track Cluster Matching
         // algorithm
-        if(trackClusterMatching == "KalmanFullTracks")
+        if(trackClusterMatching != null)
             finalStateParticles.addAll(makeReconstructedParticles(clusters, trackCollections, event));
         else
             finalStateParticles.addAll(makeReconstructedParticles(clusters, trackCollections));
@@ -1153,8 +1113,16 @@ public abstract class ReconParticleDriver extends Driver {
     @Override
     protected void endOfData() {
         System.out.println("[ReconParticleDriver] endOfData()");
+        System.out.println("check " + trackClusterMatching);
         if (enableTrackClusterMatchPlots) {
-            matcher.saveHistograms();
+            if(trackClusterMatching != null){
+                System.out.println("Saving kalmatcher histograms");
+                kalmatcher.saveHistograms();
+            }
+            else {
+                matcher.saveHistograms();
+                System.out.println("Saving matcher histograms");
+            }
         }
     }
 

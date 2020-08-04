@@ -24,7 +24,6 @@ import org.lcsim.event.LCRelation;
 import org.lcsim.event.RawTrackerHit;
 import org.lcsim.event.RelationalTable;
 import org.lcsim.event.Track;
-import org.lcsim.event.Cluster;
 import org.lcsim.event.TrackerHit;
 import org.lcsim.event.base.BaseLCRelation;
 import org.lcsim.event.base.BaseRelationalTable;
@@ -328,8 +327,6 @@ public class KalmanPatRecDriver extends Driver {
                 
                 //Here is where the tracks to be persisted are formed
                 Track KalmanTrackHPS = KI.createTrack(kTk, true);
-                //Track to Ecal Cluster Matching Method
-                matcher.trackClusterDistance(kTk, KalmanTrackHPS,event.get(Cluster.class, "EcalClusters"),event);
 
                 if (KalmanTrackHPS == null) continue;
                 

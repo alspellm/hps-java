@@ -183,13 +183,15 @@
             <maxVertexClusterDt>2.5</maxVertexClusterDt>
             <maxMatchDt>10</maxMatchDt>
             <trackClusterTimeOffset>56</trackClusterTimeOffset>
+            <ecalClusterTimeOffset>56</ecalClusterTimeOffset>
             <useCorrectedClusterPositionsForMatching>false</useCorrectedClusterPositionsForMatching>
             <applyClusterCorrections>false</applyClusterCorrections>
             <useTrackPositionForClusterCorrection>false</useTrackPositionForClusterCorrection>
             <debug>true</debug>
             <makeMollerCols>false</makeMollerCols>
             <disablePID>true</disablePID>
-            <trackClusterMatching></trackClusterMatching>
+            <trackClusterMatching>KalmanFullTracks</trackClusterMatching>
+            <trackClusterMatchPlots>true</trackClusterMatchPlots>
         </driver>
 
 

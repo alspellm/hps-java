@@ -9,7 +9,6 @@ import hep.aida.ref.rootwriter.RootFileStore;
 import hep.physics.vec.Hep3Vector;
 import hep.physics.vec.BasicHep3Vector;
 
-import org.hps.recon.tracking.TrackUtils;
 import org.hps.recon.tracking.CoordinateTransformations;
 import org.hps.recon.ecal.cluster.ClusterUtilities;
 
@@ -22,8 +21,6 @@ import org.lcsim.event.Track;
 import org.lcsim.event.TrackState;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.RelationalTable;
-import org.lcsim.event.EventHeader;
-
 
 public class KalTrackClusterEcalMatch {
 
@@ -87,20 +84,13 @@ public class KalTrackClusterEcalMatch {
         plots1D.put("RK_ElectronTrack@ECal_ECalCluster_dy",histogramFactory.createHistogram1D( "RK_ElectronTrack@ECal_ECalCluster_dy",100, -50, 50));
         plots1D.put("RK_ElectronTrack@ECal_ECalCluster_dz",histogramFactory.createHistogram1D( "RK_ElectronTrack@ECal_ECalCluster_dz",100, -50,50));
     }
-    public void trackClusterDistance(KalTrack kaltrack, Track kalmanTrackHPS, List<Cluster> Clusters, EventHeader event)  {
-
-        EventHeader e = event;
-        //KalTrack track
-        KalTrack kTk = kaltrack;
-        double kTkTime = kTk.getTime();
+    public Cluster getKalmanMatchedCluster(Track kalmanTrackHPS, int Charge, List<Cluster> Clusters, double trackTime, double ecalClusterTimeOffset)  {
 
         //KalmanTrackHPS
         Track track = kalmanTrackHPS;
-        int charge = -1*(int)Math.signum(track.getTrackStates().get(0).getOmega());
+        int charge = Charge;
+        double trkTime = trackTime;
 
-        hitToRotated = TrackUtils.getHitToRotatedTable(e);
-        hitToStrips = TrackUtils.getHitToStripsTable(e);
-        double trkT = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
         List<Cluster> clusters = Clusters;
 
         //Track state at ecal via Kalman extrap
@@ -114,45 +104,60 @@ public class KalTrackClusterEcalMatch {
 
         if(enablePlots){
             if (charge > 0) {
-                plots1D.get("PositronTrackTime").fill(kTkTime);
+                plots1D.get("PositronTrackTime").fill(trkTime);
             }
             else {
-                plots1D.get("ElectronTrackTime").fill(kTkTime);
+                plots1D.get("ElectronTrackTime").fill(trkTime);
             }
         }
+
+        Cluster matchedCluster = null;
+        double smallestdt = Double.MAX_VALUE;
+
         for(Cluster cluster : clusters) {
             double clusTime = ClusterUtilities.getSeedHitTime(cluster);
             double[] clusPos = cluster.getPosition();
 
             //Track cluster distance 
             double dr = Math.sqrt(Math.pow(clusPos[0]-ts_ecalPos[0],2) + Math.pow(clusPos[1]-ts_ecalPos[1],2));
-            //cluster time offset for 2016 MC = 43ns
-            double offset = 56;
+            //double offset = 56;
+            double offset = ecalClusterTimeOffset;
 
             //track cluster diff in x/y via Kalman Extrap
             double dx = clusPos[0]-ts_ecalPos[0];
             double dy = clusPos[1]-ts_ecalPos[1];
             double dz = clusPos[2]-ts_ecalPos[2];
+
             //via RK Extrap
             double dxRK = clusPos[0]-ts_ecalPos_RK.x();
             double dyRK = clusPos[1]-ts_ecalPos_RK.y();
             double dzRK = clusPos[2]-ts_ecalPos_RK.z();
 
             //Track Cluster Time Residual
-            double dt = clusTime - offset - kTkTime;
-            double ele_tcmax = 4.0;
-            double ele_tcmin = -4.0;
-            double pos_tcmax = 4.0;
-            double pos_tcmin = -4.0;
+            double dt = clusTime - offset - trkTime;
+            double tcmax = 4.0;
+            double tcmin = -4.0;
 
             double xcmax = 10;
             double xcmin = -10;
             double ycmax = 10;
             double ycmin = -10;
+
+
+            //Extremely simplified track cluster matching. Cluster that passes
+            //position cuts and has closest time is matched. This needs to be
+            //updated to a real algorithm.
+            if((dt >= tcmin && dt <= tcmax) && (dx >= xcmin && dx <= xcmax) && (dy >= ycmin && dy <= ycmax) ) {
+                if(dt < smallestdt) {
+                    smallestdt = dt;
+                    matchedCluster = cluster;
+                }
+            }
+
             
             if(enablePlots) {
                 plots1D.get("Cluster_Timing_(woffset)").fill(clusTime-offset);
-                if((dt >= pos_tcmin && dt <= pos_tcmax) && (dx >= xcmin && dx <= xcmax) && (dy >= ycmin && dy <= ycmax) ) {
+                if((dt >= tcmin && dt <= tcmax) && (dx >= xcmin && dx <= xcmax) && (dy >= ycmin && dy <= ycmax) ) {
                     if(charge > 0) {
                         //Time residual plot
                         plots1D.get("PositronTrack-Cluster_dt").fill(dt);
@@ -190,6 +195,10 @@ public class KalTrackClusterEcalMatch {
             }
             
         }
+        if(matchedCluster == null){
+            System.out.println("No matching cluster found for kalman track at ECal");
+        }
+        return matchedCluster;
     }
 
 
