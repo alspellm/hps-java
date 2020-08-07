@@ -838,6 +838,7 @@ public abstract class ReconParticleDriver extends Driver {
 
                 // Add the particle to the list of reconstructed particles.
                 particles.add(particle);
+                if(particle.getClusters().size() > 0)
             }
         }
 

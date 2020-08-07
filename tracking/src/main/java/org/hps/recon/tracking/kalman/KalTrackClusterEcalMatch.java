@@ -88,7 +88,8 @@ public class KalTrackClusterEcalMatch {
 
         //KalmanTrackHPS
         Track track = kalmanTrackHPS;
-        int charge = Charge;
+        //have to multiply by -1 for some unknown reason!
+        int charge = -1* Charge;
         double trkTime = trackTime;
 
         List<Cluster> clusters = Clusters;
@@ -147,9 +148,9 @@ public class KalTrackClusterEcalMatch {
             //Extremely simplified track cluster matching. Cluster that passes
             //position cuts and has closest time is matched. This needs to be
             //updated to a real algorithm.
-            if((dt >= tcmin && dt <= tcmax) && (dx >= xcmin && dx <= xcmax) && (dy >= ycmin && dy <= ycmax) ) {
-                if(dt < smallestdt) {
-                    smallestdt = dt;
+            if((dt > tcmin && dt < tcmax) && (dx > xcmin && dx < xcmax) && (dy > ycmin && dy < ycmax) ) {
+                if(Math.abs(dt) < smallestdt) {
+                    smallestdt = Math.abs(dt);
                     matchedCluster = cluster;
                 }
             }
@@ -157,7 +158,7 @@ public class KalTrackClusterEcalMatch {
             
             if(enablePlots) {
                 plots1D.get("Cluster_Timing_(woffset)").fill(clusTime-offset);
-                if((dt >= tcmin && dt <= tcmax) && (dx >= xcmin && dx <= xcmax) && (dy >= ycmin && dy <= ycmax) ) {
+                if((dt > tcmin && dt < tcmax) && (dx > xcmin && dx < xcmax) && (dy > ycmin && dy < ycmax) ) {
                     if(charge > 0) {
                         //Time residual plot
                         plots1D.get("PositronTrack-Cluster_dt").fill(dt);
