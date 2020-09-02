@@ -152,6 +152,7 @@ public class KalTrackClusterEcalMatch {
                 if(Math.abs(dt) < smallestdt) {
                     smallestdt = Math.abs(dt);
                     matchedCluster = cluster;
+                    System.out.println("smallest deltaT: " + smallestdt);
                 }
             }
 
@@ -198,8 +199,11 @@ public class KalTrackClusterEcalMatch {
         }
         if(matchedCluster == null){
             System.out.println("No matching cluster found for kalman track at ECal");
+            return null;
         }
-        return matchedCluster;
+        else {
+            return matchedCluster;
+        }
     }
 
 

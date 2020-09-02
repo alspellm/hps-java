@@ -588,8 +588,6 @@ public abstract class ReconParticleDriver extends Driver {
                 for (Cluster cluster : clusters) {
                     double clusTime = ClusterUtilities.getSeedHitTime(cluster);
                     double trkT = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
-                    System.out.println("TIME! " + trkT);
-
                     if (Math.abs(clusTime - trkT - cuts.getTrackClusterTimeOffset()) > cuts.getMaxMatchDt()) {
                         if (debug) {
                             System.out.println("Failed cluster-track deltaT!");
@@ -776,13 +774,13 @@ public abstract class ReconParticleDriver extends Driver {
         // tracks and use a probability (to be coded later) to determine what
         // the best match is.
         // TODO: At some point, pull this out to it's own method
-        System.out.println("[ReconParticleDriver] looping over tracks");
+        printDebug("[ReconParticleDriver] looping over Kalman tracks");
         for (List<Track> tracks : trackCollections) {
             for (Track track : tracks) {
 
                 TrackData trackdata = (TrackData) TrktoData.from(track);
                 double trackT = trackdata.getTrackTime();
-                System.out.println("KalmanFullTrack time: " + trackT);
+                printDebug("KalmanFullTrack time: " + trackT);
 
                 // Create a reconstructed particle to represent the track.
                 ReconstructedParticle particle = new BaseReconstructedParticle();
@@ -820,6 +818,11 @@ public abstract class ReconParticleDriver extends Driver {
                     // add cluster to the particle:
                     particle.addCluster(matchedCluster);
                     printDebug("particle with cluster added: " + particle);
+                    List<Track> temptracks = particle.getTracks();
+                    List<Cluster> tempclusters = particle.getClusters();
+                    printDebug("Cluster time - offset: " + (ClusterUtilities.getSeedHitTime(tempclusters.get(0)) - ecalClusterTimeOffset));
+                    printDebug("track time - clus time: " + (trackT - ClusterUtilities.getSeedHitTime(tempclusters.get(0)) - ecalClusterTimeOffset));
+
 
                     // use pid quality to store track-cluster matching quality:
                     //((BaseReconstructedParticle) particle).setGoodnessOfPid(smallestNSigma);
@@ -838,7 +841,7 @@ public abstract class ReconParticleDriver extends Driver {
 
                 // Add the particle to the list of reconstructed particles.
                 particles.add(particle);
-                if(particle.getClusters().size() > 0)
+                //if(particle.getClusters().size() > 0)
             }
         }
 
@@ -1032,6 +1035,7 @@ public abstract class ReconParticleDriver extends Driver {
         // Form V0 candidate particles and vertices from the electron
         // and positron reconstructed particles.
         findVertices(electrons, positrons);
+        printDebug("[ReconParticleDriver] findVertices() finished");
 
         List<ReconstructedParticle> goodFinalStateParticles = particleCuts(finalStateParticles);
         // VERBOSE :: Output the number of reconstructed particles.

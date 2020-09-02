@@ -58,7 +58,7 @@
         <driver name="MergeTrackCollections"/>
         <driver name="GBLRefitterDriver" />
         <driver name="TrackDataDriver" />
-        <driver name="ReconParticleDriver" />    
+        <driver name="ReconParticleDriver" />     
         <driver name="KalmanPatRecDriver"/>
         <driver name="ReconParticleDriver_Kalman" />
         <driver name="LCIOWriter"/>
@@ -187,7 +187,7 @@
             <useCorrectedClusterPositionsForMatching>false</useCorrectedClusterPositionsForMatching>
             <applyClusterCorrections>false</applyClusterCorrections>
             <useTrackPositionForClusterCorrection>false</useTrackPositionForClusterCorrection>
-            <debug>false</debug>
+            <debug>true</debug>
             <makeMollerCols>false</makeMollerCols>
             <disablePID>true</disablePID>
             <trackClusterMatching>KalmanFullTracks</trackClusterMatching>
@@ -201,11 +201,12 @@
 	</driver>
 
         <driver name="KalmanPatRecDriver" type="org.hps.recon.tracking.kalman.KalmanPatRecDriver">
-            <!--<doDebugPlots>true</doDebugPlots>-->
+            <doDebugPlots>true</doDebugPlots>
             <!-- <siHitsLimit>50</siHitsLimit> -->
             <!-- <seedCompThr>0.05</seedCompThr> -->
             <!-- <addResiduals>true</addResiduals> -->
-            <verbose>true</verbose>
+            <numEvtPlots>40</numEvtPlots>
+            <verbose>false</verbose>
           </driver>
 
         <driver name="LCIOWriter" type="org.lcsim.util.loop.LCIODriver">

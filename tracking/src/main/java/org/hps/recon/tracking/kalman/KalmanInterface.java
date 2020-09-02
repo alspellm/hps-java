@@ -595,7 +595,8 @@ public class KalmanInterface {
             }
         }
 
-        int charge = (int) Math.signum(newTrack.getTrackStates().get(0).getOmega());
+        //charge is off for some reason. Added factor of -1 to fix for now
+        int charge = -1*(int) Math.signum(newTrack.getTrackStates().get(0).getOmega());
 
         //Difference between RK and Kalman extrapolation to Ecal
         double xdiff = tPos.x() - ecalPos[0];

@@ -591,6 +591,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
      */
     private void makeV0Candidates(ReconstructedParticle electron, ReconstructedParticle positron) {
         
+        System.out.println("makeV0Candidates");
         //boolean eleIsTop = (electron.getTracks().get(0).getTrackerHits().get(0).getPosition()[2] > 0);
         //boolean posIsTop = (positron.getTracks().get(0).getTrackerHits().get(0).getPosition()[2] > 0);
         
@@ -603,9 +604,12 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         }
 
         if (electron.getClusters() == null || positron.getClusters() == null) {
+            System.out.println("getClusters() == null");
             return;
         }
         if (requireClustersForV0&&(electron.getClusters().isEmpty() || positron.getClusters().isEmpty())) {
+            System.out.println("require clusters: " + requireClustersForV0);
+            System.out.println("require clusters: " + requireClustersForV0);
             return;
         }
         if(requireClustersForV0){
