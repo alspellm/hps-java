@@ -125,7 +125,7 @@ public class KalmanPatRecDriver extends Driver {
     @Override
     public void detectorChanged(Detector det) {
 
-        matcher = new KalTrackClusterEcalMatch();
+        matcher = new KalTrackClusterEcalMatch("KalmanFullTracks");
         matcher.enablePlots(enablePlots);
         logger = Logger.getLogger(KalmanPatRecDriver.class.getName());
         verbose = (logger.getLevel()==Level.FINE);

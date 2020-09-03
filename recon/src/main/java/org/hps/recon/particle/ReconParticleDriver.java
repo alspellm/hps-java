@@ -65,7 +65,7 @@ public abstract class ReconParticleDriver extends Driver {
     protected StandardCuts cuts = new StandardCuts();
     RelationalTable hitToRotated = null;
     RelationalTable hitToStrips = null;
-    KalTrackClusterEcalMatch kalmatcher;
+    KalTrackClusterEcalMatch newmatcher;
     TrackClusterMatcher matcher;
 
     protected boolean enableTrackClusterMatchPlots = false;
@@ -156,10 +156,6 @@ public abstract class ReconParticleDriver extends Driver {
      * LCIO collection name for calorimeter clusters.
      */
     private String ecalClustersCollectionName = "EcalClusters";
-    /**
-     * ECal Cluster time offset value
-     */
-    private double ecalClusterTimeOffset = 0.0;
     /**
      * LCIO collection name for tracks.
      */
@@ -312,9 +308,6 @@ public abstract class ReconParticleDriver extends Driver {
     /**
      * Set Ecal Cluster time offset in steering file (in nanoseconds)
      */
-    public void setEcalClusterTimeOffset(double ecalClusterTimeOffset) {
-        this.ecalClusterTimeOffset = ecalClusterTimeOffset;
-    }
 
     public void setDebug(boolean debug) {
         this.debug = debug;
@@ -456,6 +449,13 @@ public abstract class ReconParticleDriver extends Driver {
             }
         }
 
+        System.out.println(trackCollectionName + "track-cluster matching");
+        newmatcher = new KalTrackClusterEcalMatch(trackCollectionName);
+        System.out.println(trackCollectionName + "matcher created");
+        newmatcher.enablePlots(enableTrackClusterMatchPlots);
+        System.out.println(trackCollectionName + "matcher plots enabled");
+
+        /*
         if(trackClusterMatching != null) {
             System.out.println("KalmanFullTracks cluster matching");
             kalmatcher = new KalTrackClusterEcalMatch();
@@ -469,6 +469,7 @@ public abstract class ReconParticleDriver extends Driver {
                 matcher.setRootFileName("tracks_"+trackCollectionNames[0]+"_cluster_matching_plots.root");
             matcher.setBFieldMap(detector.getFieldMap());
         }
+        */
 
         // Set the magnetic field parameters to the appropriate values.
         Hep3Vector ip = new BasicHep3Vector(0., 0., 500.0);
@@ -585,9 +586,10 @@ public abstract class ReconParticleDriver extends Driver {
 
                 // try to find a matching cluster:
                 Cluster matchedCluster = null;
-                for (Cluster cluster : clusters) {
+                for(Cluster cluster : clusters) {
                     double clusTime = ClusterUtilities.getSeedHitTime(cluster);
                     double trkT = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
+                    
                     if (Math.abs(clusTime - trkT - cuts.getTrackClusterTimeOffset()) > cuts.getMaxMatchDt()) {
                         if (debug) {
                             System.out.println("Failed cluster-track deltaT!");
@@ -640,6 +642,8 @@ public abstract class ReconParticleDriver extends Driver {
                         clusterToTrack.put(matchedCluster, track);
                     }
                 }
+                    
+
             
 
                 // If a cluster was found that matches the track...
@@ -750,12 +754,17 @@ public abstract class ReconParticleDriver extends Driver {
 
         //Relation Table required to retrieve kalman track time through
         //TrackData class
-        List<TrackData> TrackData = event.get(TrackData.class, "KFTrackData");
+        List<TrackData> TrackData;
         RelationalTable TrktoData = new BaseRelationalTable(RelationalTable.Mode.ONE_TO_ONE, RelationalTable.Weighting.UNWEIGHTED);
-        List<LCRelation> trackRelations = event.get(LCRelation.class, "KFTrackDataRelations");
-        for (LCRelation relation : trackRelations) {
-            if (relation != null && relation.getTo() != null){
-                TrktoData.add(relation.getFrom(), relation.getTo());
+        List<LCRelation> trackRelations;
+        TrackData trackdata;
+        if (trackCollectionName.contains("KalmanFullTracks")) {
+            TrackData = event.get(TrackData.class, "KFTrackData");
+            trackRelations = event.get(LCRelation.class, "KFTrackDataRelations");
+            for (LCRelation relation : trackRelations) {
+                if (relation != null && relation.getTo() != null){
+                    TrktoData.add(relation.getFrom(), relation.getTo());
+                }
             }
         }
 
@@ -774,13 +783,20 @@ public abstract class ReconParticleDriver extends Driver {
         // tracks and use a probability (to be coded later) to determine what
         // the best match is.
         // TODO: At some point, pull this out to it's own method
-        printDebug("[ReconParticleDriver] looping over Kalman tracks");
+        printDebug("[ReconParticleDriver] looping over" + trackCollectionName+ " tracks");
         for (List<Track> tracks : trackCollections) {
             for (Track track : tracks) {
+                double trackT;
 
-                TrackData trackdata = (TrackData) TrktoData.from(track);
-                double trackT = trackdata.getTrackTime();
-                printDebug("KalmanFullTrack time: " + trackT);
+                if (trackCollectionName.contains("GBLTracks")){
+                    System.out.println("WORKING PROPERLY FOR GBL");
+                    trackT = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
+                }
+                else {
+                    trackdata = (TrackData) TrktoData.from(track);
+                    trackT = trackdata.getTrackTime();
+                }
+                printDebug(trackCollectionName + "time: " + trackT);
 
                 // Create a reconstructed particle to represent the track.
                 ReconstructedParticle particle = new BaseReconstructedParticle();
@@ -810,7 +826,7 @@ public abstract class ReconParticleDriver extends Driver {
                 }
 
                 //TrackClusterEcalMatching
-                Cluster matchedCluster = kalmatcher.getKalmanMatchedCluster(track, charge, clusters, trackT, ecalClusterTimeOffset);
+                Cluster matchedCluster = newmatcher.trackClusterMatcher(track,trackCollectionName, charge, clusters, trackT, cuts.getTrackClusterTimeOffset());
 
                 // If a cluster was found that matches the track...
                 if (matchedCluster != null) {
@@ -820,8 +836,6 @@ public abstract class ReconParticleDriver extends Driver {
                     printDebug("particle with cluster added: " + particle);
                     List<Track> temptracks = particle.getTracks();
                     List<Cluster> tempclusters = particle.getClusters();
-                    printDebug("Cluster time - offset: " + (ClusterUtilities.getSeedHitTime(tempclusters.get(0)) - ecalClusterTimeOffset));
-                    printDebug("track time - clus time: " + (trackT - ClusterUtilities.getSeedHitTime(tempclusters.get(0)) - ecalClusterTimeOffset));
 
 
                     // use pid quality to store track-cluster matching quality:
@@ -951,7 +965,7 @@ public abstract class ReconParticleDriver extends Driver {
         }
 
         // VERBOSE :: Note that a new event is being read.
-        printDebug("\nProcessing Event..." + event.getEventNumber());
+        printDebug("\n" + trackCollectionName+"Processing Event..." + event.getEventNumber());
 
         // Get the list of Ecal clusters from an event.
         List<Cluster> clusters = event.get(Cluster.class, ecalClustersCollectionName);
@@ -1009,10 +1023,11 @@ public abstract class ReconParticleDriver extends Driver {
         // create final state particles.
         // If running on Kalman Tracks, use Kalman Track Cluster Matching
         // algorithm
-        if(trackClusterMatching != null)
-            finalStateParticles.addAll(makeReconstructedParticles(clusters, trackCollections, event));
+        finalStateParticles.addAll(makeReconstructedParticles(clusters, trackCollections, event));
+        /*
         else
             finalStateParticles.addAll(makeReconstructedParticles(clusters, trackCollections));
+            */
 
         // Separate the reconstructed particles into electrons and
         // positrons so that V0 candidates can be generated from them.
@@ -1086,6 +1101,7 @@ public abstract class ReconParticleDriver extends Driver {
     protected void startOfData() {
         // If any of the LCIO collection names are not properly defined, define them now.
         System.out.println("RECONPARTICLEDRIVER");
+        System.out.println(trackCollectionName);
         if (ecalClustersCollectionName == null) {
             ecalClustersCollectionName = "EcalClusters";
         }
@@ -1117,8 +1133,14 @@ public abstract class ReconParticleDriver extends Driver {
 
     @Override
     protected void endOfData() {
-        System.out.println("[ReconParticleDriver] endOfData()");
+        System.out.println("[ReconParticleDriver]"+trackCollectionName+" endOfData()");
+        System.out.println(trackCollectionName);
         System.out.println("check " + trackClusterMatching);
+        if (enableTrackClusterMatchPlots) {
+            System.out.println("Saving " + trackCollectionName + "histograms");
+            newmatcher.saveHistograms();
+        }
+        /*
         if (enableTrackClusterMatchPlots) {
             if(trackClusterMatching != null){
                 System.out.println("Saving kalmatcher histograms");
@@ -1129,6 +1151,7 @@ public abstract class ReconParticleDriver extends Driver {
                 System.out.println("Saving matcher histograms");
             }
         }
+        */
     }
 
     public void setSnapToEdge(boolean val) {

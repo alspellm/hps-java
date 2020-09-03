@@ -145,6 +145,7 @@
         <driver name="ReconParticleDriver" type="org.hps.recon.particle.HpsReconParticleDriver" > 
             <ecalClusterCollectionName>EcalClustersCorr</ecalClusterCollectionName>
             <trackCollectionNames>GBLTracks</trackCollectionNames>
+            <trackCollectionName>GBLTracks</trackCollectionName>
             <includeUnmatchedTracksInFSP>true</includeUnmatchedTracksInFSP>
             <useInternalVertexXYPositions>true</useInternalVertexXYPositions>
             <beamPositionX> -0.224 </beamPositionX>
@@ -158,11 +159,14 @@
 	    <maxVertexClusterDt> 2.5 </maxVertexClusterDt>
             <maxMatchDt>10</maxMatchDt>
             <trackClusterTimeOffset>56</trackClusterTimeOffset>
+            <debug>true</debug>
+            <trackClusterMatchPlots>true</trackClusterMatchPlots>
         </driver>  
 
       <driver name="ReconParticleDriver_Kalman" type="org.hps.recon.particle.HpsReconParticleDriver" >
             <ecalClusterCollectionName>EcalClustersCorr</ecalClusterCollectionName>
             <trackCollectionNames>KalmanFullTracks</trackCollectionNames>
+            <trackCollectionName>KalmanFullTracks</trackCollectionName>
             <unconstrainedV0CandidatesColName>UnconstrainedV0Candidates_KF</unconstrainedV0CandidatesColName>
             <unconstrainedV0VerticesColName>UnconstrainedV0Vertices_KF</unconstrainedV0VerticesColName>
             <beamConV0CandidatesColName>BeamspotConstrainedV0Candidates_KF</beamConV0CandidatesColName>
@@ -183,7 +187,6 @@
             <maxVertexClusterDt>2.5</maxVertexClusterDt>
             <maxMatchDt>10</maxMatchDt>
             <trackClusterTimeOffset>56</trackClusterTimeOffset>
-            <ecalClusterTimeOffset>56</ecalClusterTimeOffset>
             <useCorrectedClusterPositionsForMatching>false</useCorrectedClusterPositionsForMatching>
             <applyClusterCorrections>false</applyClusterCorrections>
             <useTrackPositionForClusterCorrection>false</useTrackPositionForClusterCorrection>
@@ -201,7 +204,7 @@
 	</driver>
 
         <driver name="KalmanPatRecDriver" type="org.hps.recon.tracking.kalman.KalmanPatRecDriver">
-            <doDebugPlots>true</doDebugPlots>
+            <doDebugPlots>false</doDebugPlots>
             <!-- <siHitsLimit>50</siHitsLimit> -->
             <!-- <seedCompThr>0.05</seedCompThr> -->
             <!-- <addResiduals>true</addResiduals> -->
