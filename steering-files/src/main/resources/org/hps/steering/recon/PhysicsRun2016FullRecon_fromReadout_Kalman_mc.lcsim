@@ -47,7 +47,7 @@
         <driver name="MergeTrackCollections"/>
         <driver name="GBLRefitterDriver" />
         <driver name="TrackDataDriver" />
-        <driver name="ReconParticleDriver" />  
+        <!--  <driver name="ReconParticleDriver" />  -->
         
 
         
