@@ -1,12 +1,20 @@
 //package org.hps.recon.test.ecalScoringPlane;
 package org.hps.recon.tracking.kalman;
 
+import hep.aida.IAnalysisFactory;
+import hep.aida.IHistogram1D;
+import hep.aida.IHistogramFactory;
+import hep.aida.ITree;
+import hep.aida.ref.rootwriter.RootFileStore;
+
+
 import java.util.HashMap;
 import java.util.List; 
 import java.util.ArrayList; 
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.io.IOException;
 
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.LCRelation;
@@ -18,26 +26,23 @@ import org.lcsim.event.RawTrackerHit;
 import org.lcsim.event.base.BaseLCRelation;
 import org.lcsim.event.RelationalTable;
 import org.lcsim.event.base.BaseRelationalTable;
-//import org.lcsim.fit.helicaltrack.HelicalTrackHit;
 import org.lcsim.util.Driver;
-//import org.lcsim.detector.IDetectorElement;
 import org.lcsim.geometry.IDDecoder;
 import org.lcsim.geometry.subdetector.BarrelEndcapFlag;
 import hep.physics.vec.BasicHep3Vector;
+import org.lcsim.event.TrackState;
 //import hep.physics.vec.Hep3Vector;
-//import org.hps.recon.tracking.TrackUtils;
 import hep.physics.matrix.SymmetricMatrix;
-
-
-//import org.lcsim.detector.tracker.silicon.HpsSiSensor;
-
-
 /** 
  * Driver stolen from Omar to relate a Track to an Ecal scoring plane hit
  *
  **/
 
 public class EcalScoringPlaneDriver extends Driver {
+
+    private ITree tree;
+    private IHistogramFactory histogramFactory;
+    private Map<String, IHistogram1D> plots1D;
 
     boolean verbose = true;
 
@@ -48,6 +53,30 @@ public class EcalScoringPlaneDriver extends Driver {
     String trackToMCParticleRelationsName = "TrackToMCParticleRelations";
     private Set<SimTrackerHit> simhitsontrack = new HashSet<SimTrackerHit>();
 
+    public void saveHistograms() {
+        System.out.println("Saving Histogram");
+        String rootFile = String.format("%s_TrackClusterMatching.root",this.tracksCollectionName);
+        RootFileStore store = new RootFileStore(rootFile);
+        try {
+            store.open();
+            store.add(tree);
+            store.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void bookHistograms() {
+
+        System.out.println("BOOKING HISTOGRAMS");
+        String trackType = this.tracksCollectionName;
+        plots1D = new HashMap<String, IHistogram1D>();
+        tree = IAnalysisFactory.create().createTreeFactory().create();
+        histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
+
+        //Timing Plots
+        plots1D.put(String.format("%s_ElectronTrack-Cluster_dt",this.tracksCollectionName), histogramFactory.createHistogram1D(String.format("%s_ElectronTrack-Cluster_dt",this.tracksCollectionName), 100, -200, 200));
+    }
     public void setVerbose(boolean verbose) {
         this.verbose = verbose;
     }
@@ -82,9 +111,17 @@ public class EcalScoringPlaneDriver extends Driver {
 
         MCParticle particle = null;
         for(Track track : tracks){
+            double trkxpos;
+            double trkypos;
+            double trkzpos;
+            double truthxpos;
+            double truthypos;
+            double truthzpos;
+            double dxoffset;
 
             // Get the MC particle associated with this track
             particle = this.getMCParticleAssociatedWithTrack(track,event);
+            SimTrackerHit matchedScoringPlaneHit = null;
             // If the MC particle is null, then the hits associated with the
             // track did not have an MC particle associated with them
             // TODO: Find out why some hits don't have any MC particles associated with them
@@ -107,14 +144,28 @@ public class EcalScoringPlaneDriver extends Driver {
                 // an LCRelation between the track and the scoring plane.
                 matchedScoringPlaneHits.add(scoringPlaneHit);
                 trackToScoringplaneHitRelations.add(new BaseLCRelation(track, scoringPlaneHit));
+                matchedScoringPlaneHit = scoringPlaneHit;
 
                 // Once a match is found, there is no need to loop through the rest of the list
                 break;
             }
+
+            //Make histograms of truth vs extrapolation
+            TrackState ts_ecal = track.getTrackStates().get(track.getTrackStates().size()-1);
+            double[] ts_ecalPos = ts_ecal.getReferencePoint();
+            trkxpos = ts_ecalPos[0];
+            trkypos = ts_ecalPos[1];
+            trkzpos = ts_ecalPos[2];
+            truthxpos = matchedScoringPlaneHit.getPoint()[0];
+
+            dxoffset = 0.0;
+
         }
 
+
+
         event.put(ecalScoringPlaneHitsCollectionName, matchedScoringPlaneHits, SimTrackerHit.class, 0);
-        event.put(trackToScoringPlaneHitRelationsName, trackToScoringPlaneHitRelations, LCRelation.class, 0);
+        event.put(trackToScoringPlaneHitRelationsName, trackToScoringplaneHitRelations, LCRelation.class, 0);
         event.put(trackToMCParticleRelationsName, trackToMCParticleRelations, LCRelation.class, 0);
     }
 /**

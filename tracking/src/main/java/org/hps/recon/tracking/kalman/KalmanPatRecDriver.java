@@ -82,7 +82,7 @@ public class KalmanPatRecDriver extends Driver {
     private boolean addResiduals;      // If true add the hit-on-track residuals to the LCIO event
     public boolean enablePlots = true;
     //Instance of Kalman Track -> Ecal Cluster Matching
-    KalTrackClusterEcalMatch matcher;
+    KFTrackECalClusterMatcher matcher;
 
     
     
@@ -125,7 +125,7 @@ public class KalmanPatRecDriver extends Driver {
     @Override
     public void detectorChanged(Detector det) {
 
-        matcher = new KalTrackClusterEcalMatch("KalmanFullTracks");
+        matcher = new KFTrackECalClusterMatcher("KalmanFullTracks");
         matcher.enablePlots(enablePlots);
         logger = Logger.getLogger(KalmanPatRecDriver.class.getName());
         verbose = (logger.getLevel()==Level.FINE);

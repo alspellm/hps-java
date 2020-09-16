@@ -17,7 +17,7 @@ import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.recon.tracking.CoordinateTransformations;
 import org.hps.recon.tracking.TrackUtils;
 import org.hps.recon.utils.TrackClusterMatcher;
-import org.hps.recon.tracking.kalman.KalTrackClusterEcalMatch;
+import org.hps.recon.tracking.kalman.KFTrackECalClusterMatcher;
 import org.hps.recon.tracking.TrackData;
 import org.hps.record.StandardCuts;
 import org.lcsim.event.Cluster;
@@ -65,7 +65,7 @@ public abstract class ReconParticleDriver extends Driver {
     protected StandardCuts cuts = new StandardCuts();
     RelationalTable hitToRotated = null;
     RelationalTable hitToStrips = null;
-    KalTrackClusterEcalMatch newmatcher;
+    KFTrackECalClusterMatcher newmatcher;
     TrackClusterMatcher matcher;
 
     protected boolean enableTrackClusterMatchPlots = false;
@@ -450,26 +450,10 @@ public abstract class ReconParticleDriver extends Driver {
         }
 
         System.out.println(trackCollectionName + "track-cluster matching");
-        newmatcher = new KalTrackClusterEcalMatch(trackCollectionName);
+        newmatcher = new KFTrackECalClusterMatcher(trackCollectionName);
         System.out.println(trackCollectionName + "matcher created");
         newmatcher.enablePlots(enableTrackClusterMatchPlots);
         System.out.println(trackCollectionName + "matcher plots enabled");
-
-        /*
-        if(trackClusterMatching != null) {
-            System.out.println("KalmanFullTracks cluster matching");
-            kalmatcher = new KalTrackClusterEcalMatch();
-            kalmatcher.enablePlots(enableTrackClusterMatchPlots);
-        }
-        else {
-            matcher = new TrackClusterMatcher(clusterParamFileName);
-            matcher.enablePlots(enableTrackClusterMatchPlots);
-            matcher.setBeamEnergy(beamEnergy);
-            if (trackCollectionNames.length > 0 )
-                matcher.setRootFileName("tracks_"+trackCollectionNames[0]+"_cluster_matching_plots.root");
-            matcher.setBFieldMap(detector.getFieldMap());
-        }
-        */
 
         // Set the magnetic field parameters to the appropriate values.
         Hep3Vector ip = new BasicHep3Vector(0., 0., 500.0);
@@ -546,13 +530,9 @@ public abstract class ReconParticleDriver extends Driver {
         // tracks and use a probability (to be coded later) to determine what
         // the best match is.
         // TODO: At some point, pull this out to it's own method
-        System.out.println("[ReconParticleDriver] looping over tracks");
         for (List<Track> tracks : trackCollections) {
 
-            System.out.println("[ReconParticleDriver] trackCollections:");
-            System.out.println(tracks);
             for (Track track : tracks) {
-                System.out.println(track);
 
                 // Create a reconstructed particle to represent the track.
                 ReconstructedParticle particle = new BaseReconstructedParticle();
@@ -789,7 +769,6 @@ public abstract class ReconParticleDriver extends Driver {
                 double trackT;
 
                 if (trackCollectionName.contains("GBLTracks")){
-                    System.out.println("WORKING PROPERLY FOR GBL");
                     trackT = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
                 }
                 else {
@@ -1100,8 +1079,6 @@ public abstract class ReconParticleDriver extends Driver {
     @Override
     protected void startOfData() {
         // If any of the LCIO collection names are not properly defined, define them now.
-        System.out.println("RECONPARTICLEDRIVER");
-        System.out.println(trackCollectionName);
         if (ecalClustersCollectionName == null) {
             ecalClustersCollectionName = "EcalClusters";
         }
@@ -1134,24 +1111,10 @@ public abstract class ReconParticleDriver extends Driver {
     @Override
     protected void endOfData() {
         System.out.println("[ReconParticleDriver]"+trackCollectionName+" endOfData()");
-        System.out.println(trackCollectionName);
-        System.out.println("check " + trackClusterMatching);
         if (enableTrackClusterMatchPlots) {
             System.out.println("Saving " + trackCollectionName + "histograms");
             newmatcher.saveHistograms();
         }
-        /*
-        if (enableTrackClusterMatchPlots) {
-            if(trackClusterMatching != null){
-                System.out.println("Saving kalmatcher histograms");
-                kalmatcher.saveHistograms();
-            }
-            else {
-                matcher.saveHistograms();
-                System.out.println("Saving matcher histograms");
-            }
-        }
-        */
     }
 
     public void setSnapToEdge(boolean val) {

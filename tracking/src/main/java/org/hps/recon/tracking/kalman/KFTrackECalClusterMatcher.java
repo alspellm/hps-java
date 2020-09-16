@@ -19,7 +19,7 @@ import org.lcsim.event.TrackState;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.RelationalTable;
 
-public class KalTrackClusterEcalMatch {
+public class KFTrackECalClusterMatcher {
 
 
     //Used for plots
@@ -32,7 +32,7 @@ public class KalTrackClusterEcalMatch {
     RelationalTable hitToRotated = null;
     RelationalTable hitToStrips = null;
 
-    public KalTrackClusterEcalMatch(String trackCollectionName) {
+    public KFTrackECalClusterMatcher(String trackCollectionName) {
         trackType = trackCollectionName;
         System.out.println("TRACK TYPE IS " + trackType);
     }
