@@ -74,15 +74,28 @@ public class EcalScoringPlaneDriver extends Driver {
         tree = IAnalysisFactory.create().createTreeFactory().create();
         histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
 
-        //Timing Plots
-        plots1D.put(String.format("%s_ElectronTrack-Cluster_dt",this.tracksCollectionName), histogramFactory.createHistogram1D(String.format("%s_ElectronTrack-Cluster_dt",this.tracksCollectionName), 100, -200, 200));
+        plots1D.put(String.format("%s_ElectronTrackTruth_ECal_dx",this.tracksCollectionName), histogramFactory.createHistogram1D(String.format("%s_ElectronTrackTruth_ECal_dx",this.tracksCollectionName), 100, -200, 200));
+        plots1D.put(String.format("%s_ElectronTrackTruth_ECal_dy",this.tracksCollectionName), histogramFactory.createHistogram1D(String.format("%s_ElectronTrackTruth_ECal_dy",this.tracksCollectionName), 100, -200, 200));
+        plots1D.put(String.format("%s_ElectronTrackTruth_ECal_dz",this.tracksCollectionName), histogramFactory.createHistogram1D(String.format("%s_ElectronTrackTruth_ECal_dz",this.tracksCollectionName), 100, -200, 200));
+        plots1D.put(String.format("%s_ElectronTrackTruth_ECal_dr",this.tracksCollectionName), histogramFactory.createHistogram1D(String.format("%s_ElectronTrackTruth_ECal_dr",this.tracksCollectionName), 100, -200, 200));
+
+        plots1D.put(String.format("%s_PositronTrackTruth_ECal_dx",this.tracksCollectionName), histogramFactory.createHistogram1D(String.format("%s_PositronTrackTruth_ECal_dx",this.tracksCollectionName), 100, -200, 200));
+        plots1D.put(String.format("%s_PositronTrackTruth_ECal_dy",this.tracksCollectionName), histogramFactory.createHistogram1D(String.format("%s_PositronTrackTruth_ECal_dy",this.tracksCollectionName), 100, -200, 200));
+        plots1D.put(String.format("%s_PositronTrackTruth_ECal_dz",this.tracksCollectionName), histogramFactory.createHistogram1D(String.format("%s_PositronTrackTruth_ECal_dz",this.tracksCollectionName), 100, -200, 200));
+        plots1D.put(String.format("%s_PositronTrackTruth_ECal_dr",this.tracksCollectionName), histogramFactory.createHistogram1D(String.format("%s_PositronTrackTruth_ECal_dr",this.tracksCollectionName), 100, -200, 200));
     }
+
     public void setVerbose(boolean verbose) {
         this.verbose = verbose;
     }
 
     public void startOfData() {
         System.out.println("Starting job");
+        bookHistograms();
+    }
+
+    public void endOfData() {
+        saveHistograms();
     }
 
     protected void process(EventHeader event) {
@@ -111,13 +124,6 @@ public class EcalScoringPlaneDriver extends Driver {
 
         MCParticle particle = null;
         for(Track track : tracks){
-            double trkxpos;
-            double trkypos;
-            double trkzpos;
-            double truthxpos;
-            double truthypos;
-            double truthzpos;
-            double dxoffset;
 
             // Get the MC particle associated with this track
             particle = this.getMCParticleAssociatedWithTrack(track,event);
@@ -149,17 +155,10 @@ public class EcalScoringPlaneDriver extends Driver {
                 // Once a match is found, there is no need to loop through the rest of the list
                 break;
             }
-
-            //Make histograms of truth vs extrapolation
-            TrackState ts_ecal = track.getTrackStates().get(track.getTrackStates().size()-1);
-            double[] ts_ecalPos = ts_ecal.getReferencePoint();
-            trkxpos = ts_ecalPos[0];
-            trkypos = ts_ecalPos[1];
-            trkzpos = ts_ecalPos[2];
-            truthxpos = matchedScoringPlaneHit.getPoint()[0];
-
-            dxoffset = 0.0;
-
+            //Fill truth distance difference histogram
+            if(matchedScoringPlaneHit != null) {
+                fillTruthDistanceHisto(track, matchedScoringPlaneHit);
+            }
         }
 
 
@@ -167,6 +166,53 @@ public class EcalScoringPlaneDriver extends Driver {
         event.put(ecalScoringPlaneHitsCollectionName, matchedScoringPlaneHits, SimTrackerHit.class, 0);
         event.put(trackToScoringPlaneHitRelationsName, trackToScoringplaneHitRelations, LCRelation.class, 0);
         event.put(trackToMCParticleRelationsName, trackToMCParticleRelations, LCRelation.class, 0);
+
+
+    }
+
+    public void fillTruthDistanceHisto(Track trk, SimTrackerHit scoringPlaneHit) {
+    
+        double trkxpos;
+        double trkypos;
+        double trkzpos;
+        double truthxpos;
+        double truthypos;
+        double truthzpos;
+        double dxoffset;
+        Track track = trk;
+        SimTrackerHit matchedScoringPlaneHit = scoringPlaneHit;
+
+        //Make histograms of truth vs extrapolation
+        TrackState ts_ecal = track.getTrackStates().get(track.getTrackStates().size()-1);
+        double[] ts_ecalPos = ts_ecal.getReferencePoint();
+        trkxpos = ts_ecalPos[0];
+        trkypos = ts_ecalPos[1];
+        trkzpos = ts_ecalPos[2];
+        truthxpos = matchedScoringPlaneHit.getPoint()[0];
+        truthypos = matchedScoringPlaneHit.getPoint()[1];
+        truthzpos = matchedScoringPlaneHit.getPoint()[2];
+        double dx = truthxpos - trkxpos;
+        double dy = truthypos - trkypos;
+        double dz = truthzpos - trkzpos;
+        double dr = Math.sqrt(Math.pow(dx,2) + Math.pow(dy,2) + Math.pow(dz,2));
+
+        dxoffset = 0.0;
+
+        //Make plots
+        int charge = -1* (int) Math.signum(track.getTrackStates().get(0).getOmega());
+        if(charge < 0) {
+            plots1D.get(String.format("%s_ElectronTrackTruth_ECal_dx",this.tracksCollectionName)).fill(dx);
+            plots1D.get(String.format("%s_ElectronTrackTruth_ECal_dy",this.tracksCollectionName)).fill(dy);
+            plots1D.get(String.format("%s_ElectronTrackTruth_ECal_dz",this.tracksCollectionName)).fill(dz);
+            plots1D.get(String.format("%s_ElectronTrackTruth_ECal_dr",this.tracksCollectionName)).fill(dr);
+        }
+        else {
+            plots1D.get(String.format("%s_PositronTrackTruth_ECal_dx",this.tracksCollectionName)).fill(dx);
+            plots1D.get(String.format("%s_PositronTrackTruth_ECal_dy",this.tracksCollectionName)).fill(dy);
+            plots1D.get(String.format("%s_PositronTrackTruth_ECal_dz",this.tracksCollectionName)).fill(dz);
+            plots1D.get(String.format("%s_PositronTrackTruth_ECal_dr",this.tracksCollectionName)).fill(dr);
+        }
+
     }
 /**
      * Get the MC particle associated with a track.
