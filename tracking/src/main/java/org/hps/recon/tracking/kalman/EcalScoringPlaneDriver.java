@@ -31,6 +31,8 @@ import org.lcsim.geometry.IDDecoder;
 import org.lcsim.geometry.subdetector.BarrelEndcapFlag;
 import hep.physics.vec.BasicHep3Vector;
 import org.lcsim.event.TrackState;
+import org.lcsim.event.SimCalorimeterHit;
+import org.lcsim.event.RawCalorimeterHit;
 //import hep.physics.vec.Hep3Vector;
 import hep.physics.matrix.SymmetricMatrix;
 /** 
@@ -51,6 +53,10 @@ public class EcalScoringPlaneDriver extends Driver {
     String tracksCollectionName = "KalmanFullTracks";
     String trackToScoringPlaneHitRelationsName = "TrackToEcalScoringPlaneHitRelations";
     String trackToMCParticleRelationsName = "TrackToMCParticleRelations";
+
+    String ecalHitsCollectionName = "EcalHits";
+    String rawEcalHitsCollectionName = "EcalReadoutHits";
+
     private Set<SimTrackerHit> simhitsontrack = new HashSet<SimTrackerHit>();
 
     public void saveHistograms() {
@@ -122,6 +128,8 @@ public class EcalScoringPlaneDriver extends Driver {
         // Create a collection of LCRelations between a track and its corresponding MC particle
         List<LCRelation> trackToMCParticleRelations = new ArrayList<LCRelation>();
 
+
+
         MCParticle particle = null;
         for(Track track : tracks){
 
@@ -167,6 +175,15 @@ public class EcalScoringPlaneDriver extends Driver {
         event.put(trackToScoringPlaneHitRelationsName, trackToScoringplaneHitRelations, LCRelation.class, 0);
         event.put(trackToMCParticleRelationsName, trackToMCParticleRelations, LCRelation.class, 0);
 
+
+    }
+
+    public void ecalHitTruthRelations(EventHeader event) {
+        
+        //ECAL HITS TRUTH RELATIONS
+        if(!event.hasCollection(SimCalorimeterHit.class, ecalHitsCollectionName)) return;
+        if(!event.hasCollection(RawCalorimeterHit.class, rawEcalHitsCollectionName)) return;
+        List <SimCalorimeterHit> simCalHits = event.get(SimCalorimeterHit.class,ecalHitsCollectionName);
 
     }
 
