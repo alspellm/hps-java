@@ -151,9 +151,9 @@ public class KFTrackECalClusterMatcher {
             double dx = clusxpos - trkxpos + dxoffset;
             double dy = clusypos - trkypos;
             double dz = cluszpos - trkzpos;
-            System.out.format("%s_dx_%f",trackType,dx);
-            System.out.format("%s_dy_%f",trackType,dy);
-            System.out.format("%s_dt_%f",trackType,dt);
+            //System.out.format("%s_dx_%f; ",trackType,dx);
+            //System.out.format("%s_dy_%f; ",trackType,dy);
+            //System.out.format("%s_dt_%f; ",trackType,dt);
             double dr = Math.sqrt(Math.pow(clusxpos-trkxpos,2) + Math.pow(clusypos-trkypos,2));
 
             /*
