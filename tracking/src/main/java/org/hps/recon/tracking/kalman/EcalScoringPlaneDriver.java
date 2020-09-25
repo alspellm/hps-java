@@ -19,7 +19,7 @@ import java.util.HashSet;
 import java.io.IOException;
 import org.hps.recon.tracking.TrackUtils;
 import org.hps.recon.tracking.TrackData;
-import org.lcsim.event.GenericObject;
+//import org.lcsim.event.GenericObject;
 
 
 import org.lcsim.event.EventHeader;
@@ -282,18 +282,19 @@ public class EcalScoringPlaneDriver extends Driver {
         
         hitToRotated = TrackUtils.getHitToRotatedTable(event);
         hitToStrips = TrackUtils.getHitToStripsTable(event);
-        List<TrackData> tdata;
+        List<TrackData> TrackData;
         RelationalTable TrktoData = new BaseRelationalTable(RelationalTable.Mode.ONE_TO_ONE, RelationalTable.Weighting.UNWEIGHTED);
         List<LCRelation> trackRelations;
-        GenericObject trackdata;
-        tdata = event.get(TrackData.class, "KFTrackData");
-        trackRelations = event.get(LCRelation.class, "KFTrackDataRelations");
-        System.out.println("SIZE: " + trackRelations.size());
-        for (LCRelation relation : trackRelations) {
-            if (relation != null && relation.getTo() != null){
-                TrktoData.add(relation.getFrom(), relation.getTo());
-                System.out.println("LOOK: " + relation.getTo().toString());
-                System.out.println("LOOK FROM: " + relation.getFrom().toString());
+        TrackData trackdata;
+        if (this.tracksCollectionName.contains("KalmanFullTracks")) {
+            TrackData = event.get(TrackData.class, "KFTrackData");
+            trackRelations = event.get(LCRelation.class, "KFTrackDataRelations");
+            for (LCRelation relation : trackRelations) {
+                if (relation != null && relation.getTo() != null){
+                    TrktoData.add(relation.getFrom(), relation.getTo());
+                    System.out.println("LOOK HERE FROM: " + relation.getFrom().toString());
+                    System.out.println("LOOK HERE TO: " + relation.getTo().toString());
+                }
             }
         }
 
