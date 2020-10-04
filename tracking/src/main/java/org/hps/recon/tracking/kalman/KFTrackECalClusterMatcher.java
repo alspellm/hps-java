@@ -66,11 +66,11 @@ public class KFTrackECalClusterMatcher {
         histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
 
         //Timing Plots
-        plots1D.put(String.format("%s_ElectronTrack-Cluster_dt",trackType), histogramFactory.createHistogram1D(String.format("%s_ElectronTrack-Cluster_dt",trackType), 100, -200, 200));
-        plots1D.put(String.format("%s_PositronTrack-Cluster_dt",trackType), histogramFactory.createHistogram1D(String.format("%s_PositronTrack-Cluster_dt",trackType), 100, -200, 200));
-        plots1D.put(String.format("%s_PositronTrackTime",trackType), histogramFactory.createHistogram1D(String.format("%s_PositronTrackTime",trackType), 100, -200, 200));
-        plots1D.put(String.format("%s_ElectronTrackTime",trackType), histogramFactory.createHistogram1D(String.format("%s_ElectronTrackTime",trackType), 100, -200, 200));
-        plots1D.put(String.format("%s_Cluster_Timing_(woffset)",trackType), histogramFactory.createHistogram1D(String.format("%s_Cluster_Timing_(woffset)",trackType), 100, -200, 200));
+        plots1D.put(String.format("%s_ElectronTrack-Cluster_dt",trackType), histogramFactory.createHistogram1D(String.format("%s_ElectronTrack-Cluster_dt",trackType),  200, -200, 200));
+        plots1D.put(String.format("%s_PositronTrack-Cluster_dt",trackType), histogramFactory.createHistogram1D(String.format("%s_PositronTrack-Cluster_dt",trackType),  200, -200, 200));
+        plots1D.put(String.format("%s_PositronTrackTime",trackType), histogramFactory.createHistogram1D(String.format("%s_PositronTrackTime",trackType),  200, -200, 200));
+        plots1D.put(String.format("%s_ElectronTrackTime",trackType), histogramFactory.createHistogram1D(String.format("%s_ElectronTrackTime",trackType),  200, -200, 200));
+        plots1D.put(String.format("%s_Cluster_Timing_(woffset)",trackType), histogramFactory.createHistogram1D(String.format("%s_Cluster_Timing_(woffset)",trackType),  200, -200, 200));
 
         //Track to Ecal Extrapolation
         plots1D.put(String.format("%s_PositronTrack@ECal_ECalCluster_dx",trackType),histogramFactory.createHistogram1D(String.format("%s_PositronTrack@ECal_ECalCluster_dx",trackType),400, -200, 200));
@@ -81,6 +81,10 @@ public class KFTrackECalClusterMatcher {
         plots1D.put(String.format("%s_ElectronTrack@ECal_ECalCluster_dy",trackType),histogramFactory.createHistogram1D(String.format( "%s_ElectronTrack@ECal_ECalCluster_dy",trackType),400, -200, 200));
         plots1D.put(String.format("%s_ElectronTrack@ECal_ECalCluster_dz",trackType),histogramFactory.createHistogram1D(String.format( "%s_ElectronTrack@ECal_ECalCluster_dz",trackType),100, -50,50));
         plots1D.put(String.format("%s_ElectronTrack@ECal_ECalCluster_dr",trackType),histogramFactory.createHistogram1D(String.format( "%s_ElectronTrack@ECal_ECalCluster_dr",trackType),100, -50,150));
+
+        //Cluster Position
+        plots1D.put(String.format("%s_Cluster_X",trackType),histogramFactory.createHistogram1D(String.format( "%s_Cluster_X",trackType),400, -400,400));
+        plots1D.put(String.format("%s_Cluster_Y",trackType),histogramFactory.createHistogram1D(String.format( "%s_Cluster_Y",trackType),400, -400,400));
        /* 
         //RK Extrapolated Residuals
         plots1D.put(String.format("RK_PositronTrack@ECal_ECalCluster_dx",histogramFactory.createHistogram1D(String.format("RK_PositronTrack@ECal_ECalCluster_dx",400, -200, 200));
@@ -95,10 +99,10 @@ public class KFTrackECalClusterMatcher {
 
         //HPSTrack
         Track track = TrackHPS;
+        int charge = Charge;
         String trackType = trackCollectionName;
-        //have to multiply by -1 for some unknown reason!
-        int charge = -1* Charge;
-        double trkTime = trackTime;
+        double tracktOffset = 4; //track time distributions show mean at -4 ns
+        double trackt = trackTime;
         double trkxpos;
         double trkypos;
         double trkzpos;
@@ -110,7 +114,10 @@ public class KFTrackECalClusterMatcher {
             trkxpos = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[1]; 
             trkypos = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[2];
             trkzpos = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[0];
-            dxoffset = -4.1;
+            if(charge < 0)
+                dxoffset = -5.5;
+            else
+                dxoffset = 0.0;
         }
 
         else {
@@ -135,15 +142,17 @@ public class KFTrackECalClusterMatcher {
         Cluster matchedCluster = null;
         double smallestdt = Double.MAX_VALUE;
         double smallestdr = Double.MAX_VALUE;
-        //double offset = 56;
         double offset = trackClusterTimeOffset;
         double tcut = 4.0;
-        double xcut = 10.0;
-        double ycut = 10.0;
+        double xcut = 20.0;
+        double ycut = 15.0;
+        //double tcut = 99999; //Determined by distribution of truth_matched Track and Cluster time residuals
+        //double xcut = 99999;
+        //double ycut = 99999;
 
         for(Cluster cluster : clusters) {
             double clusTime = ClusterUtilities.getSeedHitTime(cluster);
-            double dt = clusTime - trackClusterTimeOffset - trkTime;
+            double dt = clusTime - trackClusterTimeOffset - trackt + tracktOffset;
 
             double clusxpos = cluster.getPosition()[0];
             double clusypos = cluster.getPosition()[1];
@@ -179,6 +188,8 @@ public class KFTrackECalClusterMatcher {
             if(enablePlots) {
                 System.out.println("Filling Histograms for " + trackType);
                 plots1D.get(String.format("%s_Cluster_Timing_(woffset)",trackType)).fill(clusTime-offset);
+                plots1D.get(String.format("%s_Cluster_X",trackType)).fill(clusxpos);
+                plots1D.get(String.format("%s_Cluster_Y",trackType)).fill(clusypos);
                 if((Math.abs(dt) < tcut) && (Math.abs(dx) < xcut) && (Math.abs(dy) < ycut) ) {
                     if(charge > 0) {
                         //Time residual plot
@@ -221,10 +232,10 @@ public class KFTrackECalClusterMatcher {
 
         if(enablePlots){
             if (charge > 0) {
-                plots1D.get(String.format("%s_PositronTrackTime",trackType)).fill(trkTime);
+                plots1D.get(String.format("%s_PositronTrackTime",trackType)).fill(trackt);
             }
             else {
-                plots1D.get(String.format("%s_ElectronTrackTime",trackType)).fill(trkTime);
+                plots1D.get(String.format("%s_ElectronTrackTime",trackType)).fill(trackt);
             }
         }
         if(matchedCluster == null){

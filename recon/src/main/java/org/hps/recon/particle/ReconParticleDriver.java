@@ -791,6 +791,7 @@ public abstract class ReconParticleDriver extends Driver {
                 // Derive the charge of the particle from the track.
                 int charge = (int) Math.signum(track.getTrackStates().get(0).getOmega());
                 ((BaseReconstructedParticle) particle).setCharge(charge * flipSign);
+                charge = -1 * charge;
 
                 // initialize PID quality to a junk value:
                 ((BaseReconstructedParticle) particle).setGoodnessOfPid(9999);
