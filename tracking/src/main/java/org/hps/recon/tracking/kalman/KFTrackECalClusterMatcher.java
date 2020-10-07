@@ -8,11 +8,13 @@ import hep.aida.ref.rootwriter.RootFileStore;
 
 import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.recon.tracking.TrackUtils;
+import org.hps.recon.tracking.TrackData;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.ArrayList;
 
 import org.lcsim.event.Track;
 import org.lcsim.event.TrackState;
@@ -82,9 +84,6 @@ public class KFTrackECalClusterMatcher {
         plots1D.put(String.format("%s_ElectronTrack@ECal_ECalCluster_dz",trackType),histogramFactory.createHistogram1D(String.format( "%s_ElectronTrack@ECal_ECalCluster_dz",trackType),100, -50,50));
         plots1D.put(String.format("%s_ElectronTrack@ECal_ECalCluster_dr",trackType),histogramFactory.createHistogram1D(String.format( "%s_ElectronTrack@ECal_ECalCluster_dr",trackType),100, -50,150));
 
-        //Cluster Position
-        plots1D.put(String.format("%s_Cluster_X",trackType),histogramFactory.createHistogram1D(String.format( "%s_Cluster_X",trackType),400, -400,400));
-        plots1D.put(String.format("%s_Cluster_Y",trackType),histogramFactory.createHistogram1D(String.format( "%s_Cluster_Y",trackType),400, -400,400));
        /* 
         //RK Extrapolated Residuals
         plots1D.put(String.format("RK_PositronTrack@ECal_ECalCluster_dx",histogramFactory.createHistogram1D(String.format("RK_PositronTrack@ECal_ECalCluster_dx",400, -200, 200));
@@ -100,20 +99,20 @@ public class KFTrackECalClusterMatcher {
         //HPSTrack
         Track track = TrackHPS;
         int charge = Charge;
+        double tanlambda = track.getTrackParameter(4);
         String trackType = trackCollectionName;
         double tracktOffset = 4; //track time distributions show mean at -4 ns
         double trackt = trackTime;
-        double trkxpos;
-        double trkypos;
-        double trkzpos;
+        double trackx;
+        double tracky;
+        double trackz;
         double dxoffset;
-
         List<Cluster> clusters = Clusters;
 
         if(trackType.contains("GBLTracks")) {
-            trkxpos = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[1]; 
-            trkypos = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[2];
-            trkzpos = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[0];
+            trackx = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[1]; 
+            tracky = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[2];
+            trackz = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[0];
             if(charge < 0)
                 dxoffset = -5.5;
             else
@@ -121,12 +120,11 @@ public class KFTrackECalClusterMatcher {
         }
 
         else {
-            
             TrackState ts_ecal = track.getTrackStates().get(track.getTrackStates().size()-1);
             double[] ts_ecalPos = ts_ecal.getReferencePoint();
-            trkxpos = ts_ecalPos[0];
-            trkypos = ts_ecalPos[1];
-            trkzpos = ts_ecalPos[2];
+            trackx = ts_ecalPos[0];
+            tracky = ts_ecalPos[1];
+            trackz = ts_ecalPos[2];
             dxoffset = 0.0;
         }
 
@@ -146,9 +144,6 @@ public class KFTrackECalClusterMatcher {
         double tcut = 4.0;
         double xcut = 20.0;
         double ycut = 15.0;
-        //double tcut = 99999; //Determined by distribution of truth_matched Track and Cluster time residuals
-        //double xcut = 99999;
-        //double ycut = 99999;
 
         for(Cluster cluster : clusters) {
             double clusTime = ClusterUtilities.getSeedHitTime(cluster);
@@ -157,13 +152,18 @@ public class KFTrackECalClusterMatcher {
             double clusxpos = cluster.getPosition()[0];
             double clusypos = cluster.getPosition()[1];
             double cluszpos = cluster.getPosition()[2];
-            double dx = clusxpos - trkxpos + dxoffset;
-            double dy = clusypos - trkypos;
-            double dz = cluszpos - trkzpos;
-            //System.out.format("%s_dx_%f; ",trackType,dx);
-            //System.out.format("%s_dy_%f; ",trackType,dy);
-            //System.out.format("%s_dt_%f; ",trackType,dt);
-            double dr = Math.sqrt(Math.pow(clusxpos-trkxpos,2) + Math.pow(clusypos-trkypos,2));
+            double dx = clusxpos - trackx + dxoffset;
+            double dy = clusypos - tracky;
+            double dz = cluszpos - trackz;
+            double dr = Math.sqrt(Math.pow(clusxpos-trackx,2) + Math.pow(clusypos-tracky,2));
+            if(clusxpos < 0 && charge > 0)
+                continue;
+            if(clusxpos > 0 && charge < 0)
+                continue;
+            if(clusypos > 0 && tanlambda < 0)
+                continue;
+            if(clusypos < 0 && tanlambda > 0)
+                continue;
 
             /*
             //via RK Extrap
@@ -188,8 +188,6 @@ public class KFTrackECalClusterMatcher {
             if(enablePlots) {
                 System.out.println("Filling Histograms for " + trackType);
                 plots1D.get(String.format("%s_Cluster_Timing_(woffset)",trackType)).fill(clusTime-offset);
-                plots1D.get(String.format("%s_Cluster_X",trackType)).fill(clusxpos);
-                plots1D.get(String.format("%s_Cluster_Y",trackType)).fill(clusypos);
                 if((Math.abs(dt) < tcut) && (Math.abs(dx) < xcut) && (Math.abs(dy) < ycut) ) {
                     if(charge > 0) {
                         //Time residual plot
@@ -247,7 +245,221 @@ public class KFTrackECalClusterMatcher {
         }
     }
 
+    public Map<Track,Cluster> newtrackClusterMatcher(List<Track> tracks, RelationalTable trackToData, RelationalTable hitToRotated, RelationalTable hitToStrips,  String trackCollectionName, List<Cluster> Clusters, double TrackClusterTimeOffset)  {
 
+        String trackType = trackCollectionName;
+        TrackData trackdata;
+        Map<Track, Map<Cluster, Double>> trackClusterResMap = new HashMap<Track, Map<Cluster, Double>>(); 
+        for(Track track : tracks) {
+            int charge = -1* (int) Math.signum(track.getTrackStates().get(0).getOmega());
+            double trackt;
+            double tracktOffset = 4; //track time distributions show mean at -4 ns
+            if (trackType.contains("GBLTracks")){
+                trackt = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
+            }
+            else {
+                trackdata = (TrackData) trackToData.from(track);
+                trackt = trackdata.getTrackTime();
+            }
+
+            double tanlambda = track.getTrackParameter(4);
+            double trackx;
+            double tracky;
+            double trackz;
+            double dxoffset;
+            List<Cluster> clusters = Clusters;
+
+            if(trackType.contains("GBLTracks")) {
+                trackx = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[1]; 
+                tracky = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[2];
+                trackz = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[0];
+                if(charge < 0)
+                    dxoffset = -5.5;
+                else
+                    dxoffset = 0.0;
+            }
+
+            else {
+                TrackState ts_ecal = track.getTrackStates().get(track.getTrackStates().size()-1);
+                double[] ts_ecalPos = ts_ecal.getReferencePoint();
+                trackx = ts_ecalPos[0];
+                tracky = ts_ecalPos[1];
+                trackz = ts_ecalPos[2];
+                dxoffset = 0.0;
+            }
+
+
+            /*
+            //Track state at ecal via RK extrap
+            TrackState ts_ecalRK = track.getTrackStates().get(track.getTrackStates().size()-2);
+            Hep3Vector ts_ecalPos_RK = new BasicHep3Vector(ts_ecalRK.getReferencePoint());
+            ts_ecalPos_RK = CoordinateTransformations.transformVectorToDetector(ts_ecalPos_RK);
+            */
+
+            Cluster matchedCluster = null;
+            double smallestdt = Double.MAX_VALUE;
+            double smallestdr = Double.MAX_VALUE;
+            double trackClusterTimeOffset = TrackClusterTimeOffset;
+            //double tcut = 4.0;
+            //double xcut = 20.0;
+            //double ycut = 15.0;
+            double tcut = 999;
+            double xcut = 999;
+            double ycut = 999;
+
+            Map<Cluster, Double> clusterResMap = new HashMap<Cluster, Double>();
+            for(Cluster cluster : clusters) {
+                double clusTime = ClusterUtilities.getSeedHitTime(cluster);
+                double dt = clusTime - trackClusterTimeOffset - trackt + tracktOffset;
+
+                double clusterx = cluster.getPosition()[0];
+                double clustery = cluster.getPosition()[1];
+                double clusterz = cluster.getPosition()[2];
+                double dx = clusterx - trackx + dxoffset;
+                double dy = clustery - tracky;
+                double dz = clusterz - trackz;
+                double dr = Math.sqrt(Math.pow(clusterx-trackx,2) + Math.pow(clustery-tracky,2));
+                //if(clusterx < 0 && charge > 0)
+                  //  continue;
+                //if(clusterx > 0 && charge < 0)
+                  //  continue;
+                //if(clustery > 0 && tanlambda < 0)
+                  //  continue;
+                //if(clustery < 0 && tanlambda > 0)
+                  //  continue;
+                if((Math.abs(dt) < tcut) && (Math.abs(dx) < xcut) && (Math.abs(dy) < ycut) ) {
+                    clusterResMap.put(cluster, dr);
+                }
+
+
+
+                /*
+                //via RK Extrap
+                double dxRK = clusPos[0]-ts_ecalPos_RK.x();
+                double dyRK = clusPos[1]-ts_ecalPos_RK.y();
+                double dzRK = clusPos[2]-ts_ecalPos_RK.z();
+                */
+
+
+                //Extremely simplified track cluster matching. Cluster that passes
+                //position cuts and has closest time is matched. This needs to be
+                //updated to a real algorithm.
+                /*
+                if((Math.abs(dt) < tcut) && (Math.abs(dx) < xcut) && (Math.abs(dy) < ycut) ) {
+                    System.out.println("KF cluster passing selection found");
+                    if(Math.abs(dr) < smallestdr) {
+                        smallestdr = Math.abs(dr);
+                        matchedCluster = cluster;
+                    }
+                }
+                */
+            }
+            trackClusterResMap.put(track, clusterResMap);
+            
+        }
+        System.out.println("Track length: " + tracks.size());
+        System.out.println("Clusters length: " + Clusters.size());
+
+        Map<Track,Cluster> trackMinResClusterMap = new HashMap<Track, Cluster>();
+        for(int i=0; i < Clusters.size(); i++){
+            trackMinResClusterMap = getTrackMinResClusterMap(trackClusterResMap);
+            trackClusterResMap = checkDuplicateClusterMatching(trackClusterResMap,trackMinResClusterMap);
+        }
+        trackMinResClusterMap = getTrackMinResClusterMap(trackClusterResMap);
+        return trackMinResClusterMap;
+
+        //Map<Track,Cluster> matchedTrackClusterMap = new HashMap<Track, Cluster>();
+        //for(Track track : trackMinResClusterMap.keySet()){
+          // matchedTrackClusterMap.put(track,trackMinResClusterMap.get(track)); 
+       // }
+
+
+    }
+
+    public void testList(List<Integer> list){
+        list.remove(1);
+        list.remove(3);
+
+    }
+
+    public Map<Track, Map<Cluster,Double>> checkDuplicateClusterMatching(Map<Track, Map<Cluster,Double>> trackClusterResMap, Map<Track, Cluster> trackMinResClusterMap){
+        
+        boolean duplicateCluster = false;
+        List<Track> sharedClusterTracks = new ArrayList<Track>();
+        List<Track> skipTracks = new ArrayList<Track>();
+        
+        for(Track track : trackMinResClusterMap.keySet()){
+            Map<Track, Cluster> trackswDuplicateClusters = new HashMap<Track, Cluster>();
+            if(skipTracks.contains(track))
+                continue;
+            System.out.println("Checking track for shared matching clusters");
+            Cluster smallestdrCluster = trackMinResClusterMap.get(track);
+            if(smallestdrCluster == null)
+                continue;
+            for(Track otherTrack : trackMinResClusterMap.keySet()){
+                if(skipTracks.contains(track))
+                    continue;
+                if(otherTrack == track)
+                    continue;
+                Cluster othersmallestdrCluster = trackMinResClusterMap.get(otherTrack);
+                if(othersmallestdrCluster == smallestdrCluster)
+                {
+                    duplicateCluster = true;
+                    trackswDuplicateClusters.put(track, smallestdrCluster);
+                    trackswDuplicateClusters.put(otherTrack, othersmallestdrCluster);
+                    System.out.println("Track matched to same Cluster dr: "+ trackClusterResMap.get(track).get(smallestdrCluster));
+                    System.out.println("Track matched to same Cluster dr: "+ trackClusterResMap.get(otherTrack).get(othersmallestdrCluster));
+                }
+            }
+
+            double smallestdr = 99999.0;
+            Track smallestdrTrack = null;
+            if(trackswDuplicateClusters == null)
+                return trackClusterResMap;
+            System.out.println("Size of tracksDuplicateCluster: " + trackswDuplicateClusters.size());
+            for(Track duptrack : trackswDuplicateClusters.keySet()){
+                double dr = trackClusterResMap.get(duptrack).get(trackswDuplicateClusters.get(duptrack));
+                System.out.println("checking repeat list for dr value: " + dr);
+                if(dr < smallestdr){
+                    smallestdr = dr;
+                    smallestdrTrack = duptrack;
+                }
+            }
+            System.out.println("Duplicate Track with the smallest dr: " + smallestdr);
+            for(Track duptrack : trackswDuplicateClusters.keySet()){
+                skipTracks.add(duptrack);
+                if(duptrack != smallestdrTrack){
+                    trackClusterResMap.get(duptrack).remove(trackswDuplicateClusters.get(duptrack));
+                }
+            }
+        }
+        System.out.println("Finished checking for shared matching clusters");
+        return trackClusterResMap;
+    }
+
+    public Map<Track,Cluster>  getTrackMinResClusterMap(Map<Track, Map<Cluster, Double>> trackClusterResMap){
+
+        Map<Track,Cluster> trackMinResClusterMap = new HashMap<Track, Cluster>();
+        for(Track track : trackClusterResMap.keySet()){
+            System.out.println("Matching Track to Cluster with minimum dr");
+            double smallestdr = 99999.0;
+            Cluster smallestdrCluster = null;
+            Map<Cluster, Double> clusterResMap = trackClusterResMap.get(track);
+            for(Cluster c : clusterResMap.keySet()){
+                double dr = clusterResMap.get(c);
+                if(dr < smallestdr){
+                    smallestdr = dr;
+                    smallestdrCluster = c;
+                }
+                System.out.println("[KFTEM] track dr: " + dr);
+            }
+            trackMinResClusterMap.put(track, smallestdrCluster);
+            System.out.println("[KFTEM] smallest dr: " + smallestdr);
+            System.out.println("[KFTEM] Cluster smallest dr: " + clusterResMap.get(smallestdrCluster));
+        }
+        return trackMinResClusterMap;
+        
+    }
 
 
 }

@@ -8,6 +8,7 @@ import hep.physics.vec.VecOp;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -754,18 +755,29 @@ public abstract class ReconParticleDriver extends Driver {
         // Create a list of unmatched clusters. A cluster should be
         // removed from the list if a matching track is found.
         Set<Cluster> unmatchedClusters = new HashSet<Cluster>(clusters);
+        List<Cluster> clustersCopy = new ArrayList<Cluster>(clusters);
 
         // Create a mapping of matched clusters to corresponding tracks.
         HashMap<Cluster, Track> clusterToTrack = new HashMap<Cluster, Track>();
+
 
         // Loop through all of the track collections and try to match every
         // track to a cluster. Allow a cluster to be matched to multiple
         // tracks and use a probability (to be coded later) to determine what
         // the best match is.
         // TODO: At some point, pull this out to it's own method
+        //
+        //
+        //EXPERIMENTAL
+        // 
+
+
         printDebug("[ReconParticleDriver] looping over" + trackCollectionName+ " tracks");
         for (List<Track> tracks : trackCollections) {
-            for (Track track : tracks) {
+            Map<Track, Cluster> matchedTrackClusterMap = new HashMap<Track, Cluster>();
+            matchedTrackClusterMap = newmatcher.newtrackClusterMatcher(tracks, TrktoData,  hitToRotated, hitToStrips,trackCollectionName, clustersCopy,cuts.getTrackClusterTimeOffset());
+
+            for (Track track : matchedTrackClusterMap.keySet()) {
                 double trackT;
 
                 if (trackCollectionName.contains("GBLTracks")){
@@ -806,7 +818,9 @@ public abstract class ReconParticleDriver extends Driver {
                 }
 
                 //TrackClusterEcalMatching
-                Cluster matchedCluster = newmatcher.trackClusterMatcher(track,trackCollectionName, charge, clusters, trackT, cuts.getTrackClusterTimeOffset());
+                //Cluster matchedCluster = newmatcher.trackClusterMatcher(track,trackCollectionName, charge, clusters, trackT, cuts.getTrackClusterTimeOffset());
+                Cluster matchedCluster = matchedTrackClusterMap.get(track);
+
 
                 // If a cluster was found that matches the track...
                 if (matchedCluster != null) {
