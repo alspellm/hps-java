@@ -245,8 +245,9 @@ public class KFTrackECalClusterMatcher {
         }
     }
 
-    public Map<Track,Cluster> newtrackClusterMatcher(List<Track> tracks, RelationalTable trackToData, RelationalTable hitToRotated, RelationalTable hitToStrips,  String trackCollectionName, List<Cluster> Clusters, double TrackClusterTimeOffset)  {
+    public Map<Track,Cluster> newtrackClusterMatcher(List<Track> tracks, RelationalTable trackToData, RelationalTable hitToRotated, RelationalTable hitToStrips,  String trackCollectionName, List<Cluster> clusters, double TrackClusterTimeOffset)  {
 
+        System.out.println("[KFTECM] length of input clusters: " + clusters.size());
         String trackType = trackCollectionName;
         TrackData trackdata;
         Map<Track, Map<Cluster, Double>> trackClusterResMap = new HashMap<Track, Map<Cluster, Double>>(); 
@@ -261,13 +262,21 @@ public class KFTrackECalClusterMatcher {
                 trackdata = (TrackData) trackToData.from(track);
                 trackt = trackdata.getTrackTime();
             }
+            System.out.println(trackCollectionName + "Track Time: " + trackt);
+            if(enablePlots){
+                if (charge > 0) {
+                    plots1D.get(String.format("%s_PositronTrackTime",trackType)).fill(trackt);
+                }
+                else {
+                    plots1D.get(String.format("%s_ElectronTrackTime",trackType)).fill(trackt);
+                }
+            }
 
             double tanlambda = track.getTrackParameter(4);
             double trackx;
             double tracky;
             double trackz;
             double dxoffset;
-            List<Cluster> clusters = Clusters;
 
             if(trackType.contains("GBLTracks")) {
                 trackx = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[1]; 
@@ -300,6 +309,7 @@ public class KFTrackECalClusterMatcher {
             double smallestdt = Double.MAX_VALUE;
             double smallestdr = Double.MAX_VALUE;
             double trackClusterTimeOffset = TrackClusterTimeOffset;
+
             //double tcut = 4.0;
             //double xcut = 20.0;
             //double ycut = 15.0;
@@ -310,6 +320,9 @@ public class KFTrackECalClusterMatcher {
             Map<Cluster, Double> clusterResMap = new HashMap<Cluster, Double>();
             for(Cluster cluster : clusters) {
                 double clusTime = ClusterUtilities.getSeedHitTime(cluster);
+                System.out.println(trackCollectionName + " Cluster time: " + clusTime);
+                System.out.println(trackCollectionName + " time offset" + trackClusterTimeOffset);
+                System.out.println(trackCollectionName + " Cluster time with Offset: " + (clusTime - trackClusterTimeOffset));
                 double dt = clusTime - trackClusterTimeOffset - trackt + tracktOffset;
 
                 double clusterx = cluster.getPosition()[0];
@@ -329,6 +342,46 @@ public class KFTrackECalClusterMatcher {
                   //  continue;
                 if((Math.abs(dt) < tcut) && (Math.abs(dx) < xcut) && (Math.abs(dy) < ycut) ) {
                     clusterResMap.put(cluster, dr);
+                }
+                if(enablePlots) {
+                    System.out.println("Filling Histograms for " + trackType);
+                    plots1D.get(String.format("%s_Cluster_Timing_(woffset)",trackType)).fill(clusTime);
+                    if((Math.abs(dt) < tcut) && (Math.abs(dx) < xcut) && (Math.abs(dy) < ycut) ) {
+                        if(charge > 0) {
+                            //Time residual plot
+                            plots1D.get(String.format("%s_PositronTrack-Cluster_dt",trackType)).fill(dt);
+
+                            //Kalman Extrapolated Residuals
+                            plots1D.get(String.format("%s_PositronTrack@ECal_ECalCluster_dx",trackType)).fill(dx);
+                            plots1D.get(String.format("%s_PositronTrack@ECal_ECalCluster_dy",trackType)).fill(dy);
+                            plots1D.get(String.format("%s_PositronTrack@ECal_ECalCluster_dz",trackType)).fill(dz);
+                            plots1D.get(String.format("%s_PositronTrack@ECal_ECalCluster_dr",trackType)).fill(dr);
+
+                            /*
+                            //RK Extrapolated Residuals
+                            plots1D.get(String.format("RK_PositronTrack@ECal_ECalCluster_dx").fill(dxRK);
+                            plots1D.get(String.format("RK_PositronTrack@ECal_ECalCluster_dy").fill(dyRK);
+                            plots1D.get(String.format("RK_PositronTrack@ECal_ECalCluster_dz").fill(dzRK);
+                            */
+                        }
+                        else {
+
+                            //Time residual plot
+                            plots1D.get(String.format("%s_ElectronTrack-Cluster_dt",trackType)).fill(dt);
+
+                            //Kalman Extrapolated Residuals
+                            plots1D.get(String.format("%s_ElectronTrack@ECal_ECalCluster_dx",trackType)).fill(dx);
+                            plots1D.get(String.format("%s_ElectronTrack@ECal_ECalCluster_dy",trackType)).fill(dy);
+                            plots1D.get(String.format("%s_ElectronTrack@ECal_ECalCluster_dz",trackType)).fill(dz);
+                            plots1D.get(String.format("%s_ElectronTrack@ECal_ECalCluster_dr",trackType)).fill(dr);
+                            /*
+                            //RK Extrapolated Residuals
+                            plots1D.get(String.format("RK_ElectronTrack@ECal_ECalCluster_dx").fill(dxRK);
+                            plots1D.get(String.format("RK_ElectronTrack@ECal_ECalCluster_dy").fill(dyRK);
+                            plots1D.get(String.format("RK_ElectronTrack@ECal_ECalCluster_dz").fill(dzRK);
+                            */
+                        }
+                    }
                 }
 
 
@@ -358,10 +411,10 @@ public class KFTrackECalClusterMatcher {
             
         }
         System.out.println("Track length: " + tracks.size());
-        System.out.println("Clusters length: " + Clusters.size());
+        System.out.println("[KFTECM] End Clusters length: " + clusters.size());
 
         Map<Track,Cluster> trackMinResClusterMap = new HashMap<Track, Cluster>();
-        for(int i=0; i < Clusters.size(); i++){
+        for(int i=0; i < clusters.size(); i++){
             trackMinResClusterMap = getTrackMinResClusterMap(trackClusterResMap);
             trackClusterResMap = checkDuplicateClusterMatching(trackClusterResMap,trackMinResClusterMap);
         }

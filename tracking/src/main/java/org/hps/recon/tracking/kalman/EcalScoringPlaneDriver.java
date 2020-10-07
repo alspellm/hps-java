@@ -298,6 +298,13 @@ public class EcalScoringPlaneDriver extends Driver {
             else if (particle.getCharge() > 0)
                 NgeneratedPos = NgeneratedPos + 1;
         }
+
+        //Use matching algorithm to match tracks to clusters (without truth
+        //info)
+
+        Map<Track, Cluster> matchedTrackClusterMap = new HashMap<Track,Cluster>();
+        matchedTrackClusterMap = matcher.newtrackClusterMatcher(tracks,TrktoData, hitToRotated, hitToStrips, this.trackCollectionName, clusters, this.trackClusterTimeOffset);
+
         for(Track track : tracks){
             
             int charge = -1* (int)Math.signum(track.getTrackStates().get(0).getOmega());
@@ -377,7 +384,7 @@ public class EcalScoringPlaneDriver extends Driver {
                 else
                     NrecoPoswMCP = NrecoPoswMCP + 1;
 
-                trackClusterMatching(event, track, trackMCP, clusterTruthMatchedToTrack, clusterMCParticleMap.get(clusterTruthMatchedToTrack),clusters);
+                trackClusterMatching(event, track, trackMCP, matchedTrackClusterMap.get(track), clusterTruthMatchedToTrack, clusterMCParticleMap.get(clusterTruthMatchedToTrack),clusters);
                 trackClusterAnalysis(track,clusterTruthMatchedToTrack,trackT,"truth_matched");
             }
             else
@@ -393,7 +400,7 @@ public class EcalScoringPlaneDriver extends Driver {
 
     }
 
-    public void trackClusterMatching(EventHeader event, Track track, MCParticle trackMCP, Cluster truthmatchedCluster, MCParticle matchedclusterMCP, List<Cluster> clusters){
+    public void trackClusterMatching(EventHeader event, Track track, MCParticle trackMCP,Cluster matchedCluster, Cluster truthmatchedCluster, MCParticle matchedclusterMCP, List<Cluster> clusters){
         
         //Get KFTrackData to access track time if KalmanFullTracks
         hitToRotated = TrackUtils.getHitToRotatedTable(event);
@@ -425,7 +432,7 @@ public class EcalScoringPlaneDriver extends Driver {
 
         //Map<Track,Cluster> trueMatches = new HashMap<Track,Cluster>();
         //Map<Track,Cluster> falseMatches = new HashMap<Track,Cluster>();
-        Cluster matchedCluster = matcher.trackClusterMatcher(track, this.trackCollectionName,charge,clusters, trackT, this.trackClusterTimeOffset);
+        //Cluster matchedCluster = matcher.trackClusterMatcher(track, this.trackCollectionName,charge,clusters, trackT, this.trackClusterTimeOffset);
         if(matchedCluster == null){
             System.out.println("[ScoringPlaneDriver] Failed to match recon track to EcalCluster");
             trackClusterAnalysis(track,matchedCluster,trackT,"no_match");

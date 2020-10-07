@@ -8,7 +8,7 @@ import hep.physics.vec.VecOp;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
+//import java.util.Map;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -755,7 +755,7 @@ public abstract class ReconParticleDriver extends Driver {
         // Create a list of unmatched clusters. A cluster should be
         // removed from the list if a matching track is found.
         Set<Cluster> unmatchedClusters = new HashSet<Cluster>(clusters);
-        List<Cluster> clustersCopy = new ArrayList<Cluster>(clusters);
+        //List<Cluster> clustersCopy = new ArrayList<Cluster>(clusters);
 
         // Create a mapping of matched clusters to corresponding tracks.
         HashMap<Cluster, Track> clusterToTrack = new HashMap<Cluster, Track>();
@@ -773,11 +773,14 @@ public abstract class ReconParticleDriver extends Driver {
 
 
         printDebug("[ReconParticleDriver] looping over" + trackCollectionName+ " tracks");
+        System.out.println("[ReconParticleDriver] Cluster list size: " + clusters.size());
+        //System.out.println("[ReconParticleDriver] Cluster copy list size: " + clustersCopy.size());
         for (List<Track> tracks : trackCollections) {
-            Map<Track, Cluster> matchedTrackClusterMap = new HashMap<Track, Cluster>();
-            matchedTrackClusterMap = newmatcher.newtrackClusterMatcher(tracks, TrktoData,  hitToRotated, hitToStrips,trackCollectionName, clustersCopy,cuts.getTrackClusterTimeOffset());
+           // Map<Track, Cluster> matchedTrackClusterMap = new HashMap<Track, Cluster>();
+            //matchedTrackClusterMap = newmatcher.newtrackClusterMatcher(tracks, TrktoData,  hitToRotated, hitToStrips,trackCollectionName, clustersCopy,cuts.getTrackClusterTimeOffset());
 
-            for (Track track : matchedTrackClusterMap.keySet()) {
+            //System.out.println("matchedTrackClusterMap size: " + matchedTrackClusterMap.size());
+            for (Track track : tracks) {
                 double trackT;
 
                 if (trackCollectionName.contains("GBLTracks")){
@@ -818,8 +821,10 @@ public abstract class ReconParticleDriver extends Driver {
                 }
 
                 //TrackClusterEcalMatching
-                //Cluster matchedCluster = newmatcher.trackClusterMatcher(track,trackCollectionName, charge, clusters, trackT, cuts.getTrackClusterTimeOffset());
-                Cluster matchedCluster = matchedTrackClusterMap.get(track);
+                Cluster matchedCluster = newmatcher.trackClusterMatcher(track,trackCollectionName, charge, clusters, trackT, cuts.getTrackClusterTimeOffset());
+                //Cluster matchedCluster = matchedTrackClusterMap.get(track);
+                if(matchedCluster == null)
+                    System.out.println("[ReconParticleDriver] Warning: Empty Cluster!");
 
 
                 // If a cluster was found that matches the track...
