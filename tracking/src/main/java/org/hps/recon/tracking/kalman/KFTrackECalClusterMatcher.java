@@ -310,12 +310,12 @@ public class KFTrackECalClusterMatcher {
             double smallestdr = Double.MAX_VALUE;
             double trackClusterTimeOffset = TrackClusterTimeOffset;
 
-            //double tcut = 4.0;
-            //double xcut = 20.0;
-            //double ycut = 15.0;
-            double tcut = 999;
-            double xcut = 999;
-            double ycut = 999;
+            double tcut = 4.0;
+            double xcut = 20.0;
+            double ycut = 20.0;
+            //double tcut = 999;
+            //double xcut = 999;
+            //double ycut = 999;
 
             Map<Cluster, Double> clusterResMap = new HashMap<Cluster, Double>();
             for(Cluster cluster : clusters) {
@@ -332,20 +332,20 @@ public class KFTrackECalClusterMatcher {
                 double dy = clustery - tracky;
                 double dz = clusterz - trackz;
                 double dr = Math.sqrt(Math.pow(clusterx-trackx,2) + Math.pow(clustery-tracky,2));
-                //if(clusterx < 0 && charge > 0)
-                  //  continue;
-                //if(clusterx > 0 && charge < 0)
-                  //  continue;
-                //if(clustery > 0 && tanlambda < 0)
-                  //  continue;
-                //if(clustery < 0 && tanlambda > 0)
-                  //  continue;
+                if(clusterx < 0 && charge > 0)
+                    continue;
+                if(clusterx > 0 && charge < 0)
+                    continue;
+                if(clustery > 0 && tanlambda < 0)
+                    continue;
+                if(clustery < 0 && tanlambda > 0)
+                    continue;
                 if((Math.abs(dt) < tcut) && (Math.abs(dx) < xcut) && (Math.abs(dy) < ycut) ) {
                     clusterResMap.put(cluster, dr);
                 }
                 if(enablePlots) {
                     System.out.println("Filling Histograms for " + trackType);
-                    plots1D.get(String.format("%s_Cluster_Timing_(woffset)",trackType)).fill(clusTime);
+                    plots1D.get(String.format("%s_Cluster_Timing_(woffset)",trackType)).fill(clusTime - trackClusterTimeOffset);
                     if((Math.abs(dt) < tcut) && (Math.abs(dx) < xcut) && (Math.abs(dy) < ycut) ) {
                         if(charge > 0) {
                             //Time residual plot

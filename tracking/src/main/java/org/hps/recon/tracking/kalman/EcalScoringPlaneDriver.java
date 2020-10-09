@@ -68,14 +68,14 @@ public class EcalScoringPlaneDriver extends Driver {
     double posRecoRate;
     double eleFakeRate=0;
     double posFakeRate=0;
-    double eleInefficiency=0;
-    double posInefficiency=0;
+    double eleEfficiency=0;
+    double posEfficiency=0;
     double NgeneratedEle = 0;
     double NgeneratedPos = 0;
     double NrecoEle = 0;
     double NrecoPos = 0;
-    double NrecoElewMCP = 0;
-    double NrecoPoswMCP = 0;
+    double NtruthEleClustPairs = 0;
+    double NtruthPosClustPairs = 0;
     double eleNegMatch=0;
     double eleTrueMatch=0;
     double posNegMatch=0;
@@ -185,8 +185,8 @@ public class EcalScoringPlaneDriver extends Driver {
         ///
         plots1D.put(String.format("%s_ele_fakeRate",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_fakeRate",this.trackCollectionName), 10, -1, 10));
         plots1D.put(String.format("%s_pos_fakeRate",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_fakeRate",this.trackCollectionName), 10, -1, 10));
-        plots1D.put(String.format("%s_ele_Inefficiency",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_Inefficiency",this.trackCollectionName), 10, -1, 10));
-        plots1D.put(String.format("%s_pos_Inefficiency",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_Inefficiency",this.trackCollectionName), 10, -1, 10));
+        plots1D.put(String.format("%s_ele_Efficiency",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_Efficiency",this.trackCollectionName), 10, -1, 10));
+        plots1D.put(String.format("%s_pos_Efficiency",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_Efficiency",this.trackCollectionName), 10, -1, 10));
         plots1D.put(String.format("%s_ele_Reco_Rate",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_Reco_Rate",this.trackCollectionName), 10, -1, 10));
         plots1D.put(String.format("%s_pos_Reco_Rate",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_Reco_Rate",this.trackCollectionName), 10, -1, 10));
 
@@ -216,10 +216,10 @@ public class EcalScoringPlaneDriver extends Driver {
     }
 
     public void endOfData() {
-        eleFakeRate = eleNegMatch/NrecoElewMCP;
-        posFakeRate = posNegMatch/NrecoPoswMCP;
-        eleInefficiency = eleNoMatch/NrecoElewMCP;
-        posInefficiency = posNoMatch/NrecoPoswMCP;
+        eleFakeRate = eleNegMatch/(eleNegMatch+eleTrueMatch);
+        posFakeRate = posNegMatch/(posNegMatch + posTrueMatch);
+        eleEfficiency = (eleNegMatch+eleTrueMatch)/NtruthEleClustPairs;
+        posEfficiency = (posNegMatch+posTrueMatch)/NtruthPosClustPairs;
         eleRecoRate = NrecoEle/NgeneratedEle;
         posRecoRate = NrecoPos/NgeneratedPos;
 
@@ -227,10 +227,10 @@ public class EcalScoringPlaneDriver extends Driver {
             plots1D.get(String.format("%s_ele_fakeRate",this.trackCollectionName)).fill(1.0);
         for(int i=0; i < Math.round(posFakeRate*100); i++)
             plots1D.get(String.format("%s_pos_fakeRate",this.trackCollectionName)).fill(1.0);
-        for(int i=0; i < Math.round(posInefficiency*100); i++)
-            plots1D.get(String.format("%s_pos_Inefficiency",this.trackCollectionName)).fill(1.0);
-        for(int i=0; i < Math.round(eleInefficiency*100); i++)
-            plots1D.get(String.format("%s_ele_Inefficiency",this.trackCollectionName)).fill(1.0);
+        for(int i=0; i < Math.round(posEfficiency*100); i++)
+            plots1D.get(String.format("%s_pos_Efficiency",this.trackCollectionName)).fill(1.0);
+        for(int i=0; i < Math.round(eleEfficiency*100); i++)
+            plots1D.get(String.format("%s_ele_Efficiency",this.trackCollectionName)).fill(1.0);
         for(int i=0; i < Math.round(eleRecoRate*100); i++)
             plots1D.get(String.format("%s_ele_Reco_Rate",this.trackCollectionName)).fill(1.0);
         for(int i=0; i < Math.round(posRecoRate*100); i++)
@@ -380,9 +380,9 @@ public class EcalScoringPlaneDriver extends Driver {
              * */
             if(clusterTruthMatchedToTrack != null){
                 if(charge < 0)
-                    NrecoElewMCP = NrecoElewMCP + 1;
+                    NtruthEleClustPairs = NtruthEleClustPairs + 1;
                 else
-                    NrecoPoswMCP = NrecoPoswMCP + 1;
+                    NtruthPosClustPairs = NtruthPosClustPairs + 1;
 
                 trackClusterMatching(event, track, trackMCP, matchedTrackClusterMap.get(track), clusterTruthMatchedToTrack, clusterMCParticleMap.get(clusterTruthMatchedToTrack),clusters);
                 trackClusterAnalysis(track,clusterTruthMatchedToTrack,trackT,"truth_matched");
@@ -575,6 +575,7 @@ public class EcalScoringPlaneDriver extends Driver {
         //truth-matched cluster
         String id = identifier; //positive_match, negative_match, truth_match
         double trackT = trackTime;
+        //double tracktOffset = 4.0;
         double trackx;
         double tracky;
         double trackz;
@@ -598,7 +599,7 @@ public class EcalScoringPlaneDriver extends Driver {
             trackx = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[1];
             tracky = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[2];
             trackz = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[0];
-            //dxoffset = -4.1;
+          //  dxoffset = -5.5;
             dxoffset = 0.0;
         }
 
@@ -633,7 +634,6 @@ public class EcalScoringPlaneDriver extends Driver {
         dr = Math.sqrt(Math.pow(dx,2) + Math.pow(dy,2) + Math.pow(dz,2));
         //double trackPsum = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
 
-        dxoffset = 0.0;
 
         //if(cluster != null)
             //plots1D.get(String.format("%s_cluster_energy_%s",this.trackCollectionName,id)).fill(clusterEnergy);
@@ -838,6 +838,52 @@ public class EcalScoringPlaneDriver extends Driver {
         }
         else
             return null;
+    }
+
+    public void getTrackRecoEfficiency(EventHeader event){
+        /*
+        Map <MCParticle, int[]>mcParticleMultiplicity = new HashMap<MCParticle, int[]>();
+        List<SimTrackerHit> simhits = event.get(SimTrackerHit.class,MCHitInputCollectionName);
+        List<MCParticle> mcParticles = new ArrayList<MCParticle>();
+        List<MCParticle> generatedEles = new ArrayList<MCParticle>();
+        List<MCParticle> generatedPoss = new ArrayList<MCParticle>();
+        for(SimTrackerHit simhit : simhits){
+            if(simhit.getMCParticle == null)
+                continue;
+           // mcParticles.add(simhit.getMCParticle());
+            MCParticle particle = simhit.getMCParticle();
+            if(!mcParticleMultiplicity.containsKey(particle)){
+                mcParticleMultiplicity.put(particle, new int[1]);
+                mcParticleMultiplicity.get(particle)[0] = 0;
+            }
+            mcParticleMultiplicity.get(particle)[0]++;
+
+
+        }
+
+        for(Map.Entry<MCParticle, int[]> entry : mcParticleMultiplicity.entrySet()){
+            particle = entry.getKey();
+            double hitcount = entry.getValue()[0];
+            int charge =  particle.getCharge();
+            if(this.trackCollectionName.contains("GBLTracks")){
+                if(hitcount > 4){
+                    if(charge < 0) 
+                        generatedEles.add(particle);
+                    else
+                        generatedPoss.add(particle);
+                }
+            }
+            else if(this.trackCollectionName.contains("KalmanFullTracks")){
+                if(hitcount > 9){
+                    if(charge < 0)
+                        generatedEles.add(particle);
+                    else
+                        generatedPoss.add(particle);
+                }
+            }
+
+        }
+        */
     }
 }
 
