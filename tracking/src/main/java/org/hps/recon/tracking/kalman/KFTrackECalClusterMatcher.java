@@ -84,6 +84,10 @@ public class KFTrackECalClusterMatcher {
         plots1D.put(String.format("%s_ElectronTrack@ECal_ECalCluster_dz",trackType),histogramFactory.createHistogram1D(String.format( "%s_ElectronTrack@ECal_ECalCluster_dz",trackType),100, -50,50));
         plots1D.put(String.format("%s_ElectronTrack@ECal_ECalCluster_dr",trackType),histogramFactory.createHistogram1D(String.format( "%s_ElectronTrack@ECal_ECalCluster_dr",trackType),100, -50,150));
 
+        // Energy/Momentum plots
+        plots1D.put(String.format("%s_ele_Track_Cluster_EdivP",trackType), histogramFactory.createHistogram1D(String.format("%s_ele_Track_Cluster_EdivP",trackType),  200, -10, 10));
+        plots1D.put(String.format("%s_pos_Track_Cluster_EdivP",trackType), histogramFactory.createHistogram1D(String.format("%s_pos_Track_Cluster_EdivP",trackType),  200, -10, 10));
+
        /* 
         //RK Extrapolated Residuals
         plots1D.put(String.format("RK_PositronTrack@ECal_ECalCluster_dx",histogramFactory.createHistogram1D(String.format("RK_PositronTrack@ECal_ECalCluster_dx",400, -200, 200));
@@ -273,15 +277,20 @@ public class KFTrackECalClusterMatcher {
             }
 
             double tanlambda = track.getTrackParameter(4);
+            double[] trackP;
+            double trackPsum;
             double trackx;
             double tracky;
             double trackz;
             double dxoffset;
+            
 
             if(trackType.contains("GBLTracks")) {
                 trackx = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[1]; 
                 tracky = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[2];
                 trackz = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[0];
+                trackP = track.getTrackStates().get(0).getMomentum(); 
+
                 if(charge < 0)
                     dxoffset = -5.5;
                 else
@@ -290,6 +299,7 @@ public class KFTrackECalClusterMatcher {
 
             else {
                 TrackState ts_ecal = track.getTrackStates().get(track.getTrackStates().size()-1);
+                trackP = track.getTrackStates().get(0).getMomentum(); 
                 double[] ts_ecalPos = ts_ecal.getReferencePoint();
                 trackx = ts_ecalPos[0];
                 tracky = ts_ecalPos[1];
@@ -297,6 +307,7 @@ public class KFTrackECalClusterMatcher {
                 dxoffset = 0.0;
             }
 
+            trackPsum = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
 
             /*
             //Track state at ecal via RK extrap
@@ -310,19 +321,17 @@ public class KFTrackECalClusterMatcher {
             double smallestdr = Double.MAX_VALUE;
             double trackClusterTimeOffset = TrackClusterTimeOffset;
 
-            double tcut = 4.0;
-            double xcut = 20.0;
-            double ycut = 20.0;
-            //double tcut = 999;
-            //double xcut = 999;
-            //double ycut = 999;
+            //double tcut = 4.0;
+            //double xcut = 10.0;
+            //double ycut = 10.0;
+            double tcut = 999;
+            double xcut = 999;
+            double ycut = 999;
 
             Map<Cluster, Double> clusterResMap = new HashMap<Cluster, Double>();
             for(Cluster cluster : clusters) {
+                double clusterEnergy = cluster.getEnergy();
                 double clusTime = ClusterUtilities.getSeedHitTime(cluster);
-                System.out.println(trackCollectionName + " Cluster time: " + clusTime);
-                System.out.println(trackCollectionName + " time offset" + trackClusterTimeOffset);
-                System.out.println(trackCollectionName + " Cluster time with Offset: " + (clusTime - trackClusterTimeOffset));
                 double dt = clusTime - trackClusterTimeOffset - trackt + tracktOffset;
 
                 double clusterx = cluster.getPosition()[0];
@@ -340,6 +349,17 @@ public class KFTrackECalClusterMatcher {
                     continue;
                 if(clustery < 0 && tanlambda > 0)
                     continue;
+                if(enablePlots){
+                    if(charge < 0)
+                        plots1D.get(String.format("%s_ele_Track_Cluster_EdivP",trackType)).fill(clusterEnergy/trackPsum);
+                    else
+                        plots1D.get(String.format("%s_pos_Track_Cluster_EdivP",trackType)).fill(clusterEnergy/trackPsum);
+                }
+                //Energy momentum cut...kills efficiency and barely reduces
+                //fake rate
+                //
+                //if(clusterEnergy/trackPsum > 1.0 || clusterEnergy/trackPsum < 0.7)
+                  //  continue;
                 if((Math.abs(dt) < tcut) && (Math.abs(dx) < xcut) && (Math.abs(dy) < ycut) ) {
                     clusterResMap.put(cluster, dr);
                 }
@@ -350,6 +370,7 @@ public class KFTrackECalClusterMatcher {
                         if(charge > 0) {
                             //Time residual plot
                             plots1D.get(String.format("%s_PositronTrack-Cluster_dt",trackType)).fill(dt);
+                            //Energy/Momentum plot
 
                             //Kalman Extrapolated Residuals
                             plots1D.get(String.format("%s_PositronTrack@ECal_ECalCluster_dx",trackType)).fill(dx);
@@ -368,6 +389,7 @@ public class KFTrackECalClusterMatcher {
 
                             //Time residual plot
                             plots1D.get(String.format("%s_ElectronTrack-Cluster_dt",trackType)).fill(dt);
+                            //Energy/Momentum plot
 
                             //Kalman Extrapolated Residuals
                             plots1D.get(String.format("%s_ElectronTrack@ECal_ECalCluster_dx",trackType)).fill(dx);
