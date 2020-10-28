@@ -133,6 +133,13 @@ public class EcalScoringPlaneDriver extends Driver {
         tree = IAnalysisFactory.create().createTreeFactory().create();
         histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
 
+        //truth track position at scoring plane
+        plots1D.put(String.format("%s_ele_truth_extrapToScoringPlane_z",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_truth_extrapToScoringPlane_z",this.trackCollectionName), 1500, 0, 1500));
+        plots1D.put(String.format("%s_pos_truth_extrapToScoringPlane_z",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_truth_extrapToScoringPlane_z",this.trackCollectionName), 1500, 0, 1500));
+        //Checking the Z position of TrackerHitsEcal collection. Should all be
+        //at same Z position
+        plots1D.put(String.format("%s_TrackerHitsEcal_z",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_TrackerHitsEcal_z",this.trackCollectionName), 1500, 0, 1500));
+
         plots1D.put(String.format("%s_ele_Track_atEcal_ScoringPlane_dx",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_Track_atEcal_ScoringPlane_dx",this.trackCollectionName), 200, -200, 200));
         plots1D.put(String.format("%s_ele_Track_atEcal_ScoringPlane_dy",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_Track_atEcal_ScoringPlane_dy",this.trackCollectionName), 200, -200, 200));
         plots1D.put(String.format("%s_ele_Track_atEcal_ScoringPlane_dz",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_Track_atEcal_ScoringPlane_dz",this.trackCollectionName), 200, -200, 200));
@@ -148,8 +155,11 @@ public class EcalScoringPlaneDriver extends Driver {
         //residuals
         plots2D.put(String.format("%s_ele_track_truth-extrapolation_dx_v_P",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_track_truth-extrapolation_dx_v_P",this.trackCollectionName), 600, -300, 300,300,0,3));
         plots2D.put(String.format("%s_ele_track_truth-extrapolation_dy_v_P",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_track_truth-extrapolation_dy_v_P",this.trackCollectionName), 600, -300, 300,300,0,3));
+        plots2D.put(String.format("%s_ele_truthMCP_RK4ScoringPlaneToEcal_ZvP",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_truthMCP_RK4ScoringPlaneToEcal_ZvP",this.trackCollectionName), 1500, 0, 1500,300,0,3));
+
         plots2D.put(String.format("%s_pos_track_truth-extrapolation_dx_v_P",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_track_truth-extrapolation_dx_v_P",this.trackCollectionName), 600, -300, 300,300,0,3));
         plots2D.put(String.format("%s_pos_track_truth-extrapolation_dy_v_P",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_track_truth-extrapolation_dy_v_P",this.trackCollectionName), 600, -300, 300,300,0,3));
+        plots2D.put(String.format("%s_pos_truthMCP_RK4ScoringPlaneToEcal_ZvP",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_truthMCP_RK4ScoringPlaneToEcal_ZvP",this.trackCollectionName), 1500, 0, 1500,300,0,3));
 
 
         for(String id: identifiers){
@@ -272,6 +282,8 @@ public class EcalScoringPlaneDriver extends Driver {
         List<Track> tracks = event.get(Track.class, trackCollectionName);
         //Get collection of Ecal scoring plane hits from event
         List<SimTrackerHit> scoringPlaneHits = event.get(SimTrackerHit.class, ecalScoringPlaneHitsCollectionName);
+        for(SimTrackerHit hit : scoringPlaneHits)
+            plots1D.get(String.format("%s_TrackerHitsEcal_z",this.trackCollectionName)).fill(hit.getPoint()[2]);
 
         //Create collection to hold scoring plane hits found to match a track
         List<SimTrackerHit> matchedScoringPlaneHits = new ArrayList<SimTrackerHit>();
@@ -540,7 +552,7 @@ public class EcalScoringPlaneDriver extends Driver {
             int charge = -1* (int) Math.signum(track.getTrackStates().get(0).getOmega());
 
             double[] trackP = track.getMomentum();
-            double trackPsum = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
+            double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
 
             truthxpos = matchedScoringPlaneHit.getPoint()[0];
             truthypos = matchedScoringPlaneHit.getPoint()[1];
@@ -561,7 +573,7 @@ public class EcalScoringPlaneDriver extends Driver {
             Detector detector = event.getDetector();
             fM = detector.getFieldMap();
             RK4integrator RKint = new RK4integrator(charge,1, fM);
-            extrapVecsTracking = RKint.integrate(truthPosVecTracking,truthPVecTracking,1393-truthzpos);
+            extrapVecsTracking = RKint.integrate(truthPosVecTracking,truthPVecTracking,1393-matchedScoringPlaneHit.getPoint()[2]);
             Hep3Vector RKextrapPos = extrapVecsTracking.getFirstElement();
             truthxpos = RKextrapPos.y();
             truthypos = RKextrapPos.z();
@@ -586,9 +598,11 @@ public class EcalScoringPlaneDriver extends Driver {
 
                 //Track X,Y position plots at Ecal
                 plots2D.get(String.format("%s_ele_Track_Pos_at_Ecal; x mm; y mm",this.trackCollectionName)).fill(trackx,tracky);
+                plots1D.get(String.format("%s_ele_truth_extrapToScoringPlane_z",this.trackCollectionName)).fill(truthzpos);
                 //Extrapolated Track momentum vs truth position residuals
-                plots2D.get(String.format("%s_ele_track_truth-extrapolation_dx_v_P",this.trackCollectionName)).fill(dx, trackPsum);
-                plots2D.get(String.format("%s_ele_track_truth-extrapolation_dy_v_P",this.trackCollectionName)).fill(dy, trackPsum);
+                plots2D.get(String.format("%s_ele_track_truth-extrapolation_dx_v_P",this.trackCollectionName)).fill(dx, trackPmag);
+                plots2D.get(String.format("%s_ele_track_truth-extrapolation_dy_v_P",this.trackCollectionName)).fill(dy, trackPmag);
+                plots2D.get(String.format("%s_ele_truthMCP_RK4ScoringPlaneToEcal_ZvP",this.trackCollectionName)).fill(truthzpos, trackPmag);
 
                 //Track at Ecal vs Cluster residuals
                 plots1D.get(String.format("%s_ele_Track_atEcal_ScoringPlane_dx",this.trackCollectionName)).fill(dx);
@@ -598,11 +612,13 @@ public class EcalScoringPlaneDriver extends Driver {
                 plots1D.get(String.format("%s_ele_Track_atEcal_ScoringPlane_dt",this.trackCollectionName)).fill(dt);
             }
             else {
+                plots1D.get(String.format("%s_pos_truth_extrapToScoringPlane_z",this.trackCollectionName)).fill(truthzpos);
                 //Track X,Y position at Ecal
                 plots2D.get(String.format("%s_pos_Track_Pos_at_Ecal; x mm; y mm",this.trackCollectionName)).fill(trackx,tracky);
                 //Extrapolated Track P vs truth position residuals
-                plots2D.get(String.format("%s_pos_track_truth-extrapolation_dx_v_P",this.trackCollectionName)).fill(dx, trackPsum);
-                plots2D.get(String.format("%s_pos_track_truth-extrapolation_dy_v_P",this.trackCollectionName)).fill(dy, trackPsum);
+                plots2D.get(String.format("%s_pos_track_truth-extrapolation_dx_v_P",this.trackCollectionName)).fill(dx, trackPmag);
+                plots2D.get(String.format("%s_pos_track_truth-extrapolation_dy_v_P",this.trackCollectionName)).fill(dy, trackPmag);
+                plots2D.get(String.format("%s_pos_truthMCP_RK4ScoringPlaneToEcal_ZvP",this.trackCollectionName)).fill(truthzpos, trackPmag);
 
                 //Track vs Cluster residuals at Ecal
                 plots1D.get(String.format("%s_pos_Track_atEcal_ScoringPlane_dx",this.trackCollectionName)).fill(dx);
@@ -679,13 +695,13 @@ public class EcalScoringPlaneDriver extends Driver {
         dz = trackz - clustz;
         dr = Math.sqrt(Math.pow(dx,2) + Math.pow(dy,2) + Math.pow(dz,2));
         //double[] trackP = track.getMomentum();
-        //double trackPsum = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
+        //double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
 
 
         //if(cluster != null)
             //plots1D.get(String.format("%s_cluster_energy_%s",this.trackCollectionName,id)).fill(clusterEnergy);
-        //plots1D.get(String.format("%s_track_momentum_%s",this.trackCollectionName,id)).fill(trackPsum);
-        //plots1D.get(String.format("%s_momentum_energy_residual_%s",this.trackCollectionName,id)).fill(clusterEnergy - trackPsum);
+        //plots1D.get(String.format("%s_track_momentum_%s",this.trackCollectionName,id)).fill(trackPmag);
+        //plots1D.get(String.format("%s_momentum_energy_residual_%s",this.trackCollectionName,id)).fill(clusterEnergy - trackPmag);
 
         //Make plots
         int charge = -1* (int) Math.signum(track.getTrackStates().get(0).getOmega());
