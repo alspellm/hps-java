@@ -238,18 +238,22 @@ public class KalmanInterface {
         tree = IAnalysisFactory.create().createTreeFactory().create();
         histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
 
-        plots1D.put("Positron_Track @ Ecal xpos (RK - Kalman Method)",histogramFactory.createHistogram1D("Positron_Track @ Ecal xpos (RK - Kalman Method)",100, -50, 50));
-        plots1D.put("Positron_Track @ Ecal ypos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Positron_Track @ Ecal ypos (RK - Kalman Method)",100, -50, 50));
-        plots1D.put("Positron_Track @ Ecal zpos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Positron_Track @ Ecal zpos (RK - Kalman Method)",100, -50,50));
+        //These plots are for comparing the old track extrapolation to Ecal and
+        //the new track extrapolation to Ecal, where the covariance matrix is
+        //also propagated....These would be removed if one method is officially
+        //chosen
+        plots1D.put("pos_track_extrapToEcalMethod_dx",histogramFactory.createHistogram1D("pos_track_extrapToEcalMethod_dx",100, -50, 50));
+        plots1D.put("pos_track_extrapToEcalMethod_dy",histogramFactory.createHistogram1D( "pos_track_extrapToEcalMethod_dy",100, -50, 50));
+        plots1D.put("pos_track_extrapToEcalMethod_dz",histogramFactory.createHistogram1D( "pos_track_extrapToEcalMethod_dz",100, -50,50));
 
-        plots1D.put("Electron_Track @ Ecal xpos (RK - Kalman Method)",histogramFactory.createHistogram1D("Electron_Track @ Ecal xpos (RK - Kalman Method)",100, -50, 50));
-        plots1D.put("Electron_Track @ Ecal ypos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Electron_Track @ Ecal ypos (RK - Kalman Method)",100, -50, 50));
-        plots1D.put("Electron_Track @ Ecal zpos (RK - Kalman Method)",histogramFactory.createHistogram1D( "Electron_Track @ Ecal zpos (RK - Kalman Method)",100, -50,50));
+        plots1D.put("ele_track_extrapToEcalMethod_dx",histogramFactory.createHistogram1D("ele_track_extrapToEcalMethod_dx",100, -50, 50));
+        plots1D.put("ele_track_extrapToEcalMethod_dy",histogramFactory.createHistogram1D( "ele_track_extrapToEcalMethod_dy",100, -50, 50));
+        plots1D.put("ele_track_extrapToEcalMethod_dz",histogramFactory.createHistogram1D( "ele_track_extrapToEcalMethod_dz",100, -50,50));
 
-        plots1D.put("Positron_Track @ Ecal xpos (Kalman Method)",histogramFactory.createHistogram1D("Positron_Track @ Ecal xpos Kalman Method)",100, -1000, 1000));
-        plots1D.put("Positron_Track @ Ecal xpos (RK Method)",histogramFactory.createHistogram1D("Positron_Track @ Ecal xpos (RK Method)",100, -1000, 1000));
-        plots1D.put("Electron_Track @ Ecal xpos (Kalman Method)",histogramFactory.createHistogram1D("Electron_Track @ Ecal xpos (Kalman Method)",100, -1000, 1000));
-        plots1D.put("Electron_Track @ Ecal xpos (RK Method)",histogramFactory.createHistogram1D("Electron_Track @ Ecal xpos (RK Method)",100, -1000, 1000));
+        plots1D.put("pos_track_extrapToEcal_newMethod",histogramFactory.createHistogram1D("Positron_Track @ Ecal xpos Kalman Method)",100, -1000, 1000));
+        plots1D.put("pos_track_extrapToEcal_oldMethod",histogramFactory.createHistogram1D("pos_track_extrapToEcal_oldMethod",100, -1000, 1000));
+        plots1D.put("ele_track_extrapToEcal_newMethod",histogramFactory.createHistogram1D("ele_track_extrapToEcal_newMethod",100, -1000, 1000));
+        plots1D.put("ele_track_extrapToEcal_oldMethod",histogramFactory.createHistogram1D("ele_track_extrapToEcal_oldMethod",100, -1000, 1000));
     }
 
 
@@ -504,6 +508,7 @@ public class KalmanInterface {
     
     // Create an HPS track from a Kalman track
     public BaseTrack createTrack(KalTrack kT, boolean storeTrackStates) {
+        boolean debug = false;
         if (kT.SiteList == null) {
             logger.log(Level.WARNING, "KalmanInterface.createTrack: Kalman track is incomplete.");
             return null;
@@ -577,52 +582,71 @@ public class KalmanInterface {
         }
         
         // Extrapolate to the ECAL and make a new trackState there.
-        //BaseTrackState ts_ecal = TrackUtils.getTrackExtrapAtEcalRK(newTrack, fM);
+        // The original method for extrapolating the track to the eCal, shown
+        // below using getTrackExtrapAtEcalRK does not propagate covariance
+        // matrix to the Ecal. 
+        // A new method of extrapolation, here labeled as "ts_ecal" is used to
+        // propagate the track state and the covariance matrix.
+        // Need to officially choose which method to keep...
 
+        //BaseTrackState ts_ecal = TrackUtils.getTrackExtrapAtEcalRK(newTrack, fM);
+        //Original method of extrapolation
         BaseTrackState ts_ecal_old = TrackUtils.getTrackExtrapAtEcalRK(newTrack, fM);
-        Hep3Vector tPos = new BasicHep3Vector(ts_ecal_old.getReferencePoint());
-        tPos = CoordinateTransformations.transformVectorToDetector(tPos);
+        Hep3Vector tPos_old = new BasicHep3Vector(ts_ecal_old.getReferencePoint());
+        tPos_old = CoordinateTransformations.transformVectorToDetector(tPos_old);
+
+        //New method of extrapolation uses ecal location and direction to
+        //propagate track
         double[] ecaldir = {0.0,0.0,1.0};
-        double[] ecalloc = { 0.0, 0.0, 1394.0};
+        double[] ecalloc = { 0.0, 0.0, 1393.0}; //should this not be hard coded?
         TrackState stateAtLast = TrackUtils.getTrackStateAtLocation(newTrack,TrackState.AtLastHit);
         PropagatedTrackState ts_ecal = propagateTrackState(stateAtLast, ecalloc, ecaldir);
-        double[] ecalPos = ts_ecal.getIntersection();
-        double [][] ecalPosCov = ts_ecal.getIntersectionCov();
+        double[] tPos_ecal = ts_ecal.getIntersection();
+        //This covariance matrix is not yet accessible beyond the scope of this
+        //driver...needs to be implemented
+        double [][] tPosCov_ecal = ts_ecal.getIntersectionCov();
 
-        for (double[] row : ecalPosCov) {
-            for( double v : row) {
-                System.out.print( v + " ");
+        if(debug){
+            for (double[] row : tPosCov_ecal) {
+                for( double v : row) {
+                    System.out.print( v + " ");
+                }
             }
         }
 
         //charge is off for some reason. Added factor of -1 to fix for now
         int charge = -1*(int) Math.signum(newTrack.getTrackStates().get(0).getOmega());
 
-        //Difference between RK and Kalman extrapolation to Ecal
-        double xdiff = tPos.x() - ecalPos[0];
-        double ydiff = tPos.y() - ecalPos[1];
-        double zdiff = tPos.z() - ecalPos[2];
+        //Check performance difference between old and new extrapolation
+        //methods. Should be removed when one method is selected
+        double trackdx = tPos_old.x() - tPos_ecal[0];
+        double trackdy = tPos_old.y() - tPos_ecal[1];
+        double trackdz = tPos_old.z() - tPos_ecal[2];
         if(enablePlots) {
             if(charge > 0){
-                plots1D.get("Positron_Track @ Ecal xpos (RK - Kalman Method)").fill(xdiff);
-                plots1D.get("Positron_Track @ Ecal ypos (RK - Kalman Method)").fill(ydiff);
-                plots1D.get("Positron_Track @ Ecal zpos (RK - Kalman Method)").fill(zdiff);
+                plots1D.get("pos_track_extrapToEcalMethod_dx").fill(trackdx);
+                plots1D.get("pos_track_extrapToEcalMethod_dy").fill(trackdy);
+                plots1D.get("pos_track_extrapToEcalMethod_dz").fill(trackdz);
 
-                plots1D.get("Positron_Track @ Ecal xpos (Kalman Method)").fill(ecalPos[0]);
-                plots1D.get("Positron_Track @ Ecal xpos (RK Method)").fill(tPos.x());
+                plots1D.get("pos_track_extrapToEcal_newMethod").fill(tPos_ecal[0]);
+                plots1D.get("pos_track_extrapToEcal_oldMethod").fill(tPos_old.x());
             }
             else {
-                plots1D.get("Electron_Track @ Ecal xpos (RK - Kalman Method)").fill(xdiff);
-                plots1D.get("Electron_Track @ Ecal ypos (RK - Kalman Method)").fill(ydiff);
-                plots1D.get("Electron_Track @ Ecal zpos (RK - Kalman Method)").fill(zdiff);
+                plots1D.get("ele_track_extrapToEcalMethod_dx").fill(trackdx);
+                plots1D.get("ele_track_extrapToEcalMethod_dy").fill(trackdy);
+                plots1D.get("ele_track_extrapToEcalMethod_dz").fill(trackdz);
 
-                plots1D.get("Electron_Track @ Ecal xpos (Kalman Method)").fill(ecalPos[0]);
-                plots1D.get("Electron_Track @ Ecal xpos (RK Method)").fill(tPos.x());
+                plots1D.get("ele_track_extrapToEcal_newMethod").fill(tPos_ecal[0]);
+                plots1D.get("ele_track_extrapToEcal_oldMethod").fill(tPos_old.x());
             }
             saveHistograms();
         }
 
+        //Add the old method to the list of track states...maybe causes
+        //problems in other drivers?
         newTrack.getTrackStates().add(ts_ecal_old);
+        //Add the new method to the end of the trackstates list, so that it can
+        //be accessed in the same way that the old extrapolated track state is
         newTrack.getTrackStates().add(ts_ecal.getTrackState());
         
         // other track properties

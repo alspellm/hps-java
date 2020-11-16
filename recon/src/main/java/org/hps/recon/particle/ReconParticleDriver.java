@@ -19,16 +19,13 @@ import org.hps.recon.tracking.CoordinateTransformations;
 import org.hps.recon.tracking.TrackUtils;
 import org.hps.recon.utils.TrackClusterMatcher;
 import org.hps.recon.tracking.kalman.KFTrackECalClusterMatcher;
-import org.hps.recon.tracking.TrackData;
 import org.hps.record.StandardCuts;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.ReconstructedParticle;
 import org.lcsim.event.RelationalTable;
-import org.lcsim.event.base.BaseRelationalTable;
 import org.lcsim.event.Track;
 import org.lcsim.event.Vertex;
-import org.lcsim.event.LCRelation;
 import org.lcsim.event.base.BaseCluster;
 import org.lcsim.event.base.BaseReconstructedParticle;
 import org.lcsim.geometry.Detector;
@@ -66,6 +63,9 @@ public abstract class ReconParticleDriver extends Driver {
     protected StandardCuts cuts = new StandardCuts();
     RelationalTable hitToRotated = null;
     RelationalTable hitToStrips = null;
+    //newmatcher uses the new track-cluster matching that includes KF tracks
+    //matcher is the original NSigma matcher
+    //Ideally, one will be chosen, the other removed
     KFTrackECalClusterMatcher newmatcher;
     TrackClusterMatcher matcher;
 
@@ -450,11 +450,9 @@ public abstract class ReconParticleDriver extends Driver {
             }
         }
 
-        System.out.println(trackCollectionName + "track-cluster matching");
+        //create instance of new track-cluster matching driver
         newmatcher = new KFTrackECalClusterMatcher(trackCollectionName);
-        System.out.println(trackCollectionName + "matcher created");
         newmatcher.enablePlots(enableTrackClusterMatchPlots);
-        System.out.println(trackCollectionName + "matcher plots enabled");
 
         // Set the magnetic field parameters to the appropriate values.
         Hep3Vector ip = new BasicHep3Vector(0., 0., 500.0);
@@ -733,22 +731,6 @@ public abstract class ReconParticleDriver extends Driver {
     protected List<ReconstructedParticle> makeReconstructedParticles(List<Cluster> clusters,
             List<List<Track>> trackCollections, EventHeader event) {
 
-        //Relation Table required to retrieve kalman track time through
-        //TrackData class
-        List<TrackData> TrackData;
-        RelationalTable TrktoData = new BaseRelationalTable(RelationalTable.Mode.ONE_TO_ONE, RelationalTable.Weighting.UNWEIGHTED);
-        List<LCRelation> trackRelations;
-        TrackData trackdata;
-        if (trackCollectionName.contains("KalmanFullTracks")) {
-            TrackData = event.get(TrackData.class, "KFTrackData");
-            trackRelations = event.get(LCRelation.class, "KFTrackDataRelations");
-            for (LCRelation relation : trackRelations) {
-                if (relation != null && relation.getTo() != null){
-                    TrktoData.add(relation.getFrom(), relation.getTo());
-                }
-            }
-        }
-
         // Create a list in which to store reconstructed particles.
         List<ReconstructedParticle> particles = new ArrayList<ReconstructedParticle>();
 
@@ -762,35 +744,18 @@ public abstract class ReconParticleDriver extends Driver {
 
 
         // Loop through all of the track collections and try to match every
-        // track to a cluster. Allow a cluster to be matched to multiple
-        // tracks and use a probability (to be coded later) to determine what
-        // the best match is.
-        // TODO: At some point, pull this out to it's own method
-        //
-        //
-        //EXPERIMENTAL
-        // 
+        // track to a cluster. Cluster matching algorithm here does not allow
+        // for clusters being matched to multiple tracks. Should add more
+        // constraints to track-cluster matching driver 
 
-
-        printDebug("[ReconParticleDriver] looping over" + trackCollectionName+ " tracks");
-        System.out.println("[ReconParticleDriver] Cluster list size: " + clusters.size());
-        //System.out.println("[ReconParticleDriver] Cluster copy list size: " + clustersCopy.size());
         for (List<Track> tracks : trackCollections) {
             Map<Track, Cluster> matchedTrackClusterMap = new HashMap<Track, Cluster>();
-            matchedTrackClusterMap = newmatcher.newtrackClusterMatcher(tracks, TrktoData,  hitToRotated, hitToStrips,trackCollectionName, clustersCopy,cuts.getTrackClusterTimeOffset());
+            //uses the KFTrackECalClusterMatcher driver to create a map of
+            //track collection with corresponding matched clusters. If track
+            //has no matched cluster, pair is null
+            matchedTrackClusterMap = newmatcher.trackClusterMatcher(tracks, event,trackCollectionName, clustersCopy, cuts.getTrackClusterTimeOffset());
 
-            //System.out.println("matchedTrackClusterMap size: " + matchedTrackClusterMap.size());
             for (Track track : tracks) {
-                double trackT;
-
-                if (trackCollectionName.contains("GBLTracks")){
-                    trackT = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
-                }
-                else {
-                    trackdata = (TrackData) TrktoData.from(track);
-                    trackT = trackdata.getTrackTime();
-                }
-                printDebug(trackCollectionName + "time: " + trackT);
 
                 // Create a reconstructed particle to represent the track.
                 ReconstructedParticle particle = new BaseReconstructedParticle();
@@ -806,7 +771,8 @@ public abstract class ReconParticleDriver extends Driver {
                 // Derive the charge of the particle from the track.
                 int charge = (int) Math.signum(track.getTrackStates().get(0).getOmega());
                 ((BaseReconstructedParticle) particle).setCharge(charge * flipSign);
-                charge = -1 * charge;
+                //Check if charge is correct.....Why the line below?
+                //charge = -1 * charge;
 
                 // initialize PID quality to a junk value:
                 ((BaseReconstructedParticle) particle).setGoodnessOfPid(9999);
@@ -820,8 +786,6 @@ public abstract class ReconParticleDriver extends Driver {
                     ((BaseReconstructedParticle) particle).setParticleIdUsed(new SimpleParticleID(11, 0, 0, 0));
                 }
 
-                //TrackClusterEcalMatching
-                //Cluster matchedCluster = newmatcher.trackClusterMatcher(track,trackCollectionName, charge, clusters, trackT, cuts.getTrackClusterTimeOffset());
                 Cluster matchedCluster = matchedTrackClusterMap.get(track);
                 if(matchedCluster == null)
                     System.out.println("[ReconParticleDriver] Warning: Empty Cluster!");
@@ -833,11 +797,9 @@ public abstract class ReconParticleDriver extends Driver {
                     // add cluster to the particle:
                     particle.addCluster(matchedCluster);
                     printDebug("particle with cluster added: " + particle);
-                    List<Track> temptracks = particle.getTracks();
-                    List<Cluster> tempclusters = particle.getClusters();
-
 
                     // use pid quality to store track-cluster matching quality:
+                    // Need a way to implement this for new matching driver
                     //((BaseReconstructedParticle) particle).setGoodnessOfPid(smallestNSigma);
 
                     // propogate pid to the cluster:
@@ -1020,13 +982,10 @@ public abstract class ReconParticleDriver extends Driver {
 
         // Loop through all of the track collections present in the event and
         // create final state particles.
-        // If running on Kalman Tracks, use Kalman Track Cluster Matching
-        // algorithm
+        // New track cluster matching added by Alic is used
+        // Old method is commented out below
         finalStateParticles.addAll(makeReconstructedParticles(clusters, trackCollections, event));
-        /*
-        else
-            finalStateParticles.addAll(makeReconstructedParticles(clusters, trackCollections));
-            */
+        //finalStateParticles.addAll(makeReconstructedParticles(clusters, trackCollections));
 
         // Separate the reconstructed particles into electrons and
         // positrons so that V0 candidates can be generated from them.

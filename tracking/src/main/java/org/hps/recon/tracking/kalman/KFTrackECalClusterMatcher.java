@@ -20,6 +20,9 @@ import org.lcsim.event.Track;
 import org.lcsim.event.TrackState;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.RelationalTable;
+import org.lcsim.event.EventHeader;
+import org.lcsim.event.base.BaseRelationalTable;
+import org.lcsim.event.LCRelation;
 
 public class KFTrackECalClusterMatcher {
 
@@ -98,7 +101,7 @@ public class KFTrackECalClusterMatcher {
         plots1D.put(String.format("RK_ElectronTrack@ECal_ECalCluster_dz",histogramFactory.createHistogram1D(String.format( "RK_ElectronTrack@ECal_ECalCluster_dz",100, -50,50));
     */
     }
-    public Cluster trackClusterMatcher(Track TrackHPS, String trackCollectionName, int Charge, List<Cluster> Clusters, double trackTime, double trackClusterTimeOffset)  {
+    public Cluster oldtrackClusterMatcher(Track TrackHPS, String trackCollectionName, int Charge, List<Cluster> Clusters, double trackTime, double trackClusterTimeOffset)  {
 
         //HPSTrack
         Track track = TrackHPS;
@@ -249,55 +252,82 @@ public class KFTrackECalClusterMatcher {
         }
     }
 
-    public Map<Track,Cluster> newtrackClusterMatcher(List<Track> tracks, RelationalTable trackToData, RelationalTable hitToRotated, RelationalTable hitToStrips,  String trackCollectionName, List<Cluster> clusters, double TrackClusterTimeOffset)  {
+    public Map<Track,Cluster> trackClusterMatcher(List<Track> tracks, EventHeader event,  String trackCollectionName, List<Cluster> clusters, double trackClusterTimeOffset)  {
 
-        System.out.println("[KFTECM] length of input clusters: " + clusters.size());
-        String trackType = trackCollectionName;
-        TrackData trackdata;
+        //Input collection of Tracks, with trackCollectionName, and collection
+        //of Ecal Clusters
+        //Method matches unique Ecal clusters to Tracks based on closest
+        //distance, within a specific time window
+        //Output is a map between Tracks and matched Cluster
+        //If no cluster is matched to a Track, Map contains Track + Null
+        //cluster
+        
+        //Map of position residuals between all track+cluster combinations
+        if(tracks == null || tracks.isEmpty()){
+            System.out.println("Track list given to KFTrackEcalClusterMatcher is Empty!");
+            return null;
+        }
+
         Map<Track, Map<Cluster, Double>> trackClusterResMap = new HashMap<Track, Map<Cluster, Double>>(); 
+
+        //First, gather all necessary Track information
+        String trackType = trackCollectionName;
+
+        //Relation Table required to retrieve kalman track time through
+        //TrackData class
+        hitToRotated = TrackUtils.getHitToRotatedTable(event);
+        hitToStrips = TrackUtils.getHitToStripsTable(event);
+        List<TrackData> TrackData;
+        RelationalTable trackToData = new BaseRelationalTable(RelationalTable.Mode.ONE_TO_ONE, RelationalTable.Weighting.UNWEIGHTED);
+        List<LCRelation> trackRelations;
+        TrackData trackdata;
+        if (trackCollectionName.contains("KalmanFullTracks")) {
+            TrackData = event.get(TrackData.class, "KFTrackData");
+            trackRelations = event.get(LCRelation.class, "KFTrackDataRelations");
+            for (LCRelation relation : trackRelations) {
+                if (relation != null && relation.getTo() != null){
+                    trackToData.add(relation.getFrom(), relation.getTo());
+                }
+            }
+        }
+
         for(Track track : tracks) {
+
+            //charge sign must be flipped by factor of -1 (WHY!?)
             int charge = -1* (int) Math.signum(track.getTrackStates().get(0).getOmega());
             double trackt;
-            double tracktOffset = 4; //track time distributions show mean at -4 ns
-            if (trackType.contains("GBLTracks")){
-                trackt = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
-            }
-            else {
-                trackdata = (TrackData) trackToData.from(track);
-                trackt = trackdata.getTrackTime();
-            }
-            System.out.println(trackCollectionName + "Track Time: " + trackt);
-            if(enablePlots){
-                if (charge > 0) {
-                    plots1D.get(String.format("%s_PositronTrackTime",trackType)).fill(trackt);
-                }
-                else {
-                    plots1D.get(String.format("%s_ElectronTrackTime",trackType)).fill(trackt);
-                }
-            }
-
+            //The mean of track time distribution, for GBL and KF, is at -4ns.
+            //Offset is hardcoded below
+            double tracktOffset = 4; 
             double tanlambda = track.getTrackParameter(4);
             double[] trackP;
-            double trackPsum;
+            double trackPmag;
             double trackx;
             double tracky;
             double trackz;
             double dxoffset;
-            
 
-            if(trackType.contains("GBLTracks")) {
+            if (trackType.contains("GBLTracks")){
+                trackt = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
                 trackx = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[1]; 
                 tracky = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[2];
                 trackz = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[0];
                 trackP = track.getTrackStates().get(0).getMomentum(); 
 
+                //electron GBLTracks show x position bias at +5.5 mm. Offset
+                //accounted for below (IS THIS OKAY TO HARDCODE?)
                 if(charge < 0)
                     dxoffset = -5.5;
                 else
                     dxoffset = 0.0;
             }
 
+            //KFTracks
             else {
+                trackdata = (TrackData) trackToData.from(track);
+                trackt = trackdata.getTrackTime();
+                //KF TrackState at ecal stored as the last TrackState in
+                //KalmanInterface.java
                 TrackState ts_ecal = track.getTrackStates().get(track.getTrackStates().size()-1);
                 trackP = track.getTrackStates().get(0).getMomentum(); 
                 double[] ts_ecalPos = ts_ecal.getReferencePoint();
@@ -307,7 +337,17 @@ public class KFTrackECalClusterMatcher {
                 dxoffset = 0.0;
             }
 
-            trackPsum = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
+            //Plot ele and pos track times
+            if(enablePlots){
+                if (charge > 0) {
+                    plots1D.get(String.format("%s_PositronTrackTime",trackType)).fill(trackt);
+                }
+                else {
+                    plots1D.get(String.format("%s_ElectronTrackTime",trackType)).fill(trackt);
+                }
+            }
+
+            trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
 
             /*
             //Track state at ecal via RK extrap
@@ -316,19 +356,17 @@ public class KFTrackECalClusterMatcher {
             ts_ecalPos_RK = CoordinateTransformations.transformVectorToDetector(ts_ecalPos_RK);
             */
 
+            //Begin Cluster Matching Algorithm
+            Map<Cluster, Double> clusterResMap = new HashMap<Cluster, Double>();
             Cluster matchedCluster = null;
+
             double smallestdt = Double.MAX_VALUE;
             double smallestdr = Double.MAX_VALUE;
-            double trackClusterTimeOffset = TrackClusterTimeOffset;
+            //define time and position cuts for Track-Cluster matching
+            double tcut = 4.0;
+            double xcut = 10.0;
+            double ycut = 10.0;
 
-            //double tcut = 4.0;
-            //double xcut = 10.0;
-            //double ycut = 10.0;
-            double tcut = 999;
-            double xcut = 999;
-            double ycut = 999;
-
-            Map<Cluster, Double> clusterResMap = new HashMap<Cluster, Double>();
             for(Cluster cluster : clusters) {
                 double clusterEnergy = cluster.getEnergy();
                 double clusTime = ClusterUtilities.getSeedHitTime(cluster);
@@ -341,6 +379,8 @@ public class KFTrackECalClusterMatcher {
                 double dy = clustery - tracky;
                 double dz = clusterz - trackz;
                 double dr = Math.sqrt(Math.pow(clusterx-trackx,2) + Math.pow(clustery-tracky,2));
+
+                //Ecal fiducial cuts
                 if(clusterx < 0 && charge > 0)
                     continue;
                 if(clusterx > 0 && charge < 0)
@@ -349,22 +389,22 @@ public class KFTrackECalClusterMatcher {
                     continue;
                 if(clustery < 0 && tanlambda > 0)
                     continue;
+
+                //Plot of cluster energy / track momentum
                 if(enablePlots){
                     if(charge < 0)
-                        plots1D.get(String.format("%s_ele_Track_Cluster_EdivP",trackType)).fill(clusterEnergy/trackPsum);
+                        plots1D.get(String.format("%s_ele_Track_Cluster_EdivP",trackType)).fill(clusterEnergy/trackPmag);
                     else
-                        plots1D.get(String.format("%s_pos_Track_Cluster_EdivP",trackType)).fill(clusterEnergy/trackPsum);
+                        plots1D.get(String.format("%s_pos_Track_Cluster_EdivP",trackType)).fill(clusterEnergy/trackPmag);
                 }
-                //Energy momentum cut...kills efficiency and barely reduces
-                //fake rate
-                //
-                //if(clusterEnergy/trackPsum > 1.0 || clusterEnergy/trackPsum < 0.7)
-                  //  continue;
+
+                //If position and time residual cuts are passed, build map of
+                //all cluster position residuals with this track
                 if((Math.abs(dt) < tcut) && (Math.abs(dx) < xcut) && (Math.abs(dy) < ycut) ) {
                     clusterResMap.put(cluster, dr);
                 }
+
                 if(enablePlots) {
-                    System.out.println("Filling Histograms for " + trackType);
                     plots1D.get(String.format("%s_Cluster_Timing_(woffset)",trackType)).fill(clusTime - trackClusterTimeOffset);
                     if((Math.abs(dt) < tcut) && (Math.abs(dx) < xcut) && (Math.abs(dy) < ycut) ) {
                         if(charge > 0) {
@@ -406,56 +446,41 @@ public class KFTrackECalClusterMatcher {
                     }
                 }
 
-
-
                 /*
                 //via RK Extrap
                 double dxRK = clusPos[0]-ts_ecalPos_RK.x();
                 double dyRK = clusPos[1]-ts_ecalPos_RK.y();
                 double dzRK = clusPos[2]-ts_ecalPos_RK.z();
                 */
-
-
-                //Extremely simplified track cluster matching. Cluster that passes
-                //position cuts and has closest time is matched. This needs to be
-                //updated to a real algorithm.
-                /*
-                if((Math.abs(dt) < tcut) && (Math.abs(dx) < xcut) && (Math.abs(dy) < ycut) ) {
-                    System.out.println("KF cluster passing selection found");
-                    if(Math.abs(dr) < smallestdr) {
-                        smallestdr = Math.abs(dr);
-                        matchedCluster = cluster;
-                    }
-                }
-                */
             }
-            trackClusterResMap.put(track, clusterResMap);
-            
-        }
-        System.out.println("Track length: " + tracks.size());
-        System.out.println("[KFTECM] End Clusters length: " + clusters.size());
 
+            //Every Track is mapped to the map of cluster position residuals
+            //for that track. i.e (Track; clusterA_dr, clusterB_dr,
+            //clusterG_dr, clusterZ_dr)
+            trackClusterResMap.put(track, clusterResMap);
+        }
+
+        //Given the mapping between all Tracks, and all potential cluster
+        //matches, match Tracks to the Clusters that are closest in position
+        //Algorithm checks for clusters matched to multiple Tracks, and sorts
+        //them until only unique matches exist
+
+        //trackMinResClusterMap maps tracks with minimum position residual
+        //cluster
         Map<Track,Cluster> trackMinResClusterMap = new HashMap<Track, Cluster>();
+
+        //build a map of track -> closest cluster
+        //check this map for repeat cluster matches
+        //if repeat matches are found for any tracks, keep best (closest)
+        //match, and loop over matching again, for size of clusters
         for(int i=0; i < clusters.size(); i++){
             trackMinResClusterMap = getTrackMinResClusterMap(trackClusterResMap);
             trackClusterResMap = checkDuplicateClusterMatching(trackClusterResMap,trackMinResClusterMap);
         }
         trackMinResClusterMap = getTrackMinResClusterMap(trackClusterResMap);
         return trackMinResClusterMap;
-
-        //Map<Track,Cluster> matchedTrackClusterMap = new HashMap<Track, Cluster>();
-        //for(Track track : trackMinResClusterMap.keySet()){
-          // matchedTrackClusterMap.put(track,trackMinResClusterMap.get(track)); 
-       // }
-
-
     }
 
-    public void testList(List<Integer> list){
-        list.remove(1);
-        list.remove(3);
-
-    }
 
     public Map<Track, Map<Cluster,Double>> checkDuplicateClusterMatching(Map<Track, Map<Cluster,Double>> trackClusterResMap, Map<Track, Cluster> trackMinResClusterMap){
         
@@ -467,7 +492,6 @@ public class KFTrackECalClusterMatcher {
             Map<Track, Cluster> trackswDuplicateClusters = new HashMap<Track, Cluster>();
             if(skipTracks.contains(track))
                 continue;
-            System.out.println("Checking track for shared matching clusters");
             Cluster smallestdrCluster = trackMinResClusterMap.get(track);
             if(smallestdrCluster == null)
                 continue;
@@ -482,8 +506,6 @@ public class KFTrackECalClusterMatcher {
                     duplicateCluster = true;
                     trackswDuplicateClusters.put(track, smallestdrCluster);
                     trackswDuplicateClusters.put(otherTrack, othersmallestdrCluster);
-                    System.out.println("Track matched to same Cluster dr: "+ trackClusterResMap.get(track).get(smallestdrCluster));
-                    System.out.println("Track matched to same Cluster dr: "+ trackClusterResMap.get(otherTrack).get(othersmallestdrCluster));
                 }
             }
 
@@ -491,16 +513,13 @@ public class KFTrackECalClusterMatcher {
             Track smallestdrTrack = null;
             if(trackswDuplicateClusters == null)
                 return trackClusterResMap;
-            System.out.println("Size of tracksDuplicateCluster: " + trackswDuplicateClusters.size());
             for(Track duptrack : trackswDuplicateClusters.keySet()){
                 double dr = trackClusterResMap.get(duptrack).get(trackswDuplicateClusters.get(duptrack));
-                System.out.println("checking repeat list for dr value: " + dr);
                 if(dr < smallestdr){
                     smallestdr = dr;
                     smallestdrTrack = duptrack;
                 }
             }
-            System.out.println("Duplicate Track with the smallest dr: " + smallestdr);
             for(Track duptrack : trackswDuplicateClusters.keySet()){
                 skipTracks.add(duptrack);
                 if(duptrack != smallestdrTrack){
@@ -508,15 +527,17 @@ public class KFTrackECalClusterMatcher {
                 }
             }
         }
-        System.out.println("Finished checking for shared matching clusters");
         return trackClusterResMap;
     }
 
     public Map<Track,Cluster>  getTrackMinResClusterMap(Map<Track, Map<Cluster, Double>> trackClusterResMap){
 
-        Map<Track,Cluster> trackMinResClusterMap = new HashMap<Track, Cluster>();
+        //inputs a mapping of tracks with residuals for each possible cluster
+        //from all clusters in the map, for each track, match the cluster with
+        //the smallest position residual to that track
+        //build output map of track -> closest cluster
+        Map<Track,Cluster> Map = new HashMap<Track, Cluster>();
         for(Track track : trackClusterResMap.keySet()){
-            System.out.println("Matching Track to Cluster with minimum dr");
             double smallestdr = 99999.0;
             Cluster smallestdrCluster = null;
             Map<Cluster, Double> clusterResMap = trackClusterResMap.get(track);
@@ -526,13 +547,10 @@ public class KFTrackECalClusterMatcher {
                     smallestdr = dr;
                     smallestdrCluster = c;
                 }
-                System.out.println("[KFTEM] track dr: " + dr);
             }
-            trackMinResClusterMap.put(track, smallestdrCluster);
-            System.out.println("[KFTEM] smallest dr: " + smallestdr);
-            System.out.println("[KFTEM] Cluster smallest dr: " + clusterResMap.get(smallestdrCluster));
+            Map.put(track, smallestdrCluster);
         }
-        return trackMinResClusterMap;
+        return Map;
         
     }
 
