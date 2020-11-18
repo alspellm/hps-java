@@ -205,13 +205,23 @@ public class EcalScoringPlaneDriver extends Driver {
         plots1D.put(String.format("%s_pos_track_MatchedCluster_t",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_track_MatchedCluster_t",this.trackCollectionName), 2000, -2000, 2000));
         */
         ///
-        plots1D.put(String.format("%s_ele_fakeRate",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_fakeRate",this.trackCollectionName), 10, -1, 10));
-        plots1D.put(String.format("%s_pos_fakeRate",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_fakeRate",this.trackCollectionName), 10, -1, 10));
-        plots1D.put(String.format("%s_ele_Efficiency",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_Efficiency",this.trackCollectionName), 10, -1, 10));
-        plots1D.put(String.format("%s_pos_Efficiency",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_Efficiency",this.trackCollectionName), 10, -1, 10));
-        plots1D.put(String.format("%s_ele_Reco_Rate",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_Reco_Rate",this.trackCollectionName), 10, -1, 10));
-        plots1D.put(String.format("%s_pos_Reco_Rate",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_Reco_Rate",this.trackCollectionName), 10, -1, 10));
+        plots1D.put(String.format("%s_ele_fakeRate",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_fakeRate",this.trackCollectionName), 10, 0, 10));
+        plots1D.put(String.format("%s_pos_fakeRate",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_fakeRate",this.trackCollectionName), 10, 0, 10));
+        plots1D.put(String.format("%s_ele_Efficiency",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_Efficiency",this.trackCollectionName), 10, 0, 10));
+        plots1D.put(String.format("%s_pos_Efficiency",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_Efficiency",this.trackCollectionName), 10, 0, 10));
+        plots1D.put(String.format("%s_ele_Reco_Rate",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_Reco_Rate",this.trackCollectionName), 10, 0, 10));
+        plots1D.put(String.format("%s_pos_Reco_Rate",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_Reco_Rate",this.trackCollectionName), 10, 0, 10));
 
+        //Following plots used to identify quality of track truth matching
+        plots1D.put(String.format("%s_ele_NtruthMatched_Tracks",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_NtruthMatched_Tracks",this.trackCollectionName), 10, 0, 10));
+        plots1D.put(String.format("%s_pos_NtruthMatched_Tracks",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_NtruthMatched_Tracks",this.trackCollectionName), 10, 0, 10));
+        plots1D.put(String.format("%s_Nduplicate_trackTruthMatches",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_Nduplicate_trackTruthMatches",this.trackCollectionName), 10, 0, 10));
+
+        plots1D.put(String.format("%s_Matts_truthTrackMCP_Nhits",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_Matts_truthTrackMCP_Nhits",this.trackCollectionName), 15, 0, 15));
+        plots1D.put(String.format("%s_truthTrackMCP_Nhits",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_truthTrackMCP_Nhits",this.trackCollectionName), 15, 0, 15));
+        plots1D.put(String.format("%s_Matts_NtruthMatched_Tracks",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_Matts_NtruthMatched_Tracks",this.trackCollectionName), 10, 0, 10));
+        plots1D.put(String.format("%s_NtruthMatched_Tracks",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_NtruthMatched_Tracks",this.trackCollectionName), 10, 0, 10));
+        plots1D.put(String.format("%s_cut_Matts_truthTrackMCP_Nhits",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_cut_Matts_truthTrackMCP_Nhits",this.trackCollectionName), 15, 0, 15));
 
         //Hit multiplicity for truth matching
         plots1D.put(String.format("%s_Track_max_mcParticleMultiplicity",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_Track_max_mcParticleMultiplicity",this.trackCollectionName),30, 0, 30));
@@ -298,8 +308,8 @@ public class EcalScoringPlaneDriver extends Driver {
             }
         }
 
-        System.out.println("[EcalScoringPlane] track length: " + tracks.size()); 
         for(Track track : tracks){
+
             SimTrackerHit matchedScoringplaneHit = getTrackScoringPlaneHit(event, track, ecalScoringPlaneHitsCollectionName);
             if(matchedScoringplaneHit != null)
                 this.trackScoringPlanePlots(event, track, matchedScoringplaneHit);
@@ -311,20 +321,22 @@ public class EcalScoringPlaneDriver extends Driver {
             }
         }
 
+
         //Use matching algorithm to match tracks to clusters (without truth
         //info)
         Map<Track, Cluster> matchedTrackClusterMap = new HashMap<Track,Cluster>();
         matchedTrackClusterMap = matcher.trackClusterMatcher(truthmatchedTracks,event, this.trackCollectionName, clusters, this.trackClusterTimeOffset);
 
-        System.out.println("[EcalScoringPlane] truthmatched track length: " + truthmatchedTracks.size()); 
         if(truthmatchedTracks != null){
             for(Track track : truthmatchedTracks) {
                 int charge = -1* (int)Math.signum(track.getTrackStates().get(0).getOmega());
                 //Check purity and fake rate of KFTrackECalClusterMatcher
-                if(charge < 0)
+                if(charge < 0){
                     NtruthEleClustPairs = NtruthEleClustPairs + 1;
-                else
+                }
+                else{
                     NtruthPosClustPairs = NtruthPosClustPairs + 1;
+                }
 
                 checkTrackClusterMatch(track, matchedTrackClusterMap.get(track), truthTrackClusterMap.get(track));
                 trackClusterAnalysis(track,truthTrackClusterMap.get(track),"truth_matched");
@@ -333,12 +345,8 @@ public class EcalScoringPlaneDriver extends Driver {
 
     }
 
-    public Cluster truthMatchTracktoCluster(EventHeader event, Track track, List<Cluster> clusters){
+    public void comparetruthtracking(EventHeader event, Track track){
 
-        /**
-         * Get the MC particle associated with a track.
-         * Fill mape with Track -> MCParticle
-        **/
         String MCHitInputCollectionName = "TrackerHits";
         List<SimTrackerHit> allsimhits = event.get(SimTrackerHit.class, MCHitInputCollectionName);
         RelationalTable rawtomc = new BaseRelationalTable(RelationalTable.Mode.MANY_TO_MANY, RelationalTable.Weighting.UNWEIGHTED);
@@ -355,8 +363,47 @@ public class EcalScoringPlaneDriver extends Driver {
   
         //create instance of TrackTruthMatching (by Matt Solt)
         TrackTruthMatching truthmatcher = new TrackTruthMatching(track, rawtomc, allsimhits, isKalman);
-        MCParticle trackMCP = truthmatcher.getMCParticle();
-        //MCParticle trackMCP = this.getTrackMCP(track,event);
+        MCParticle trackMCP_matt = truthmatcher.getMCParticle();
+        int nhits_matt = truthmatcher.getNHits(); 
+        //ngoodhits = MC multiplicity on track
+        int ngoodhits_matt = truthmatcher.getNGoodHits();
+        System.out.println("[check] matts alg nhits: " + nhits_matt);
+        System.out.println("[check] matts alg ngoodhits: " + ngoodhits_matt);
+
+        //My algrithm MCP
+        MCParticle trackMCP = this.getTrackMCP(track,event);
+        
+        //comparisons
+        plots1D.get(String.format("%s_Matts_truthTrackMCP_Nhits",this.trackCollectionName)).fill(ngoodhits_matt);
+        if(this.trackCollectionName.contains("KalmanFullTracks")){
+            if(ngoodhits_matt > 9)
+                plots1D.get(String.format("%s_cut_Matts_truthTrackMCP_Nhits",this.trackCollectionName)).fill(ngoodhits_matt);
+        }
+
+        if(trackMCP_matt != null)
+            plots1D.get(String.format("%s_Matts_NtruthMatched_Tracks",this.trackCollectionName)).fill(1);
+        if(trackMCP != null)
+            plots1D.get(String.format("%s_NtruthMatched_Tracks",this.trackCollectionName)).fill(1);
+
+        if(trackMCP_matt != trackMCP){
+            if(trackMCP_matt == null && trackMCP != null)
+                System.out.println("Matts mcp null. Doesnt match my found mcp");
+            if(trackMCP_matt != null && trackMCP == null)
+                System.out.println("My algorithm returned null mcp. Matt's found a mcp");
+            else
+                System.out.println("MCPs do not match");
+
+        }
+
+    }
+    public Cluster truthMatchTracktoCluster(EventHeader event, Track track, List<Cluster> clusters){
+
+        /**
+         * Get the MC particle associated with a track.
+         * Fill mape with Track -> MCParticle
+        **/
+  
+        MCParticle trackMCP = this.getTrackMCP(track,event);
 
         if(trackMCP == null) return null;
 
@@ -383,6 +430,9 @@ public class EcalScoringPlaneDriver extends Driver {
 
         MCParticle trackMCP = this.getTrackMCP(track,event);
 
+        //Check for simtrackerhit MCP that matches trackMCP
+        if(trackMCP == null)
+            return null;
         SimTrackerHit matchedScoringPlaneHit = null;
         for(SimTrackerHit scoringPlaneHit : scoringPlaneHits){
             // If the MC particles don't match, move on to the next particle
@@ -612,7 +662,6 @@ public class EcalScoringPlaneDriver extends Driver {
 
         //Make plots
         if(charge < 0) {
-            if(track == null)
             plots1D.get(String.format("%s_ele_track_cluster_%s_dx",this.trackCollectionName,id)).fill(dx);
             plots1D.get(String.format("%s_ele_track_cluster_%s_dy",this.trackCollectionName,id)).fill(dy);
             plots1D.get(String.format("%s_ele_track_cluster_%s_dz",this.trackCollectionName,id)).fill(dz);
@@ -693,14 +742,173 @@ public class EcalScoringPlaneDriver extends Driver {
         //Retrieve all simulated hits
         String MCHitInputCollectionName = "TrackerHits";
         List<SimTrackerHit> allsimhits = event.get(SimTrackerHit.class, MCHitInputCollectionName);
+
+        MCParticle particle;
+        for(TrackerHit hit : track.getTrackerHits()){
+            List<RawTrackerHit> rawhits = hit.getRawHits();
+            Set<RawTrackerHit> EmaxRawHitPerLayer = new HashSet<RawTrackerHit>();
+            Map<RawTrackerHit,SimTrackerHit> rawToSimMap = new HashMap<RawTrackerHit, SimTrackerHit>();
+
+            for(RawTrackerHit rawhit : rawhits){
+                Set<SimTrackerHit> simhits = rawtomc.allFrom(rawhit);
+                SimTrackerHit rawhitSimhit = null;
+                double simhitMaxE = 0.0;
+                for(SimTrackerHit simhit : simhits){
+                    if (simhit != null && simhit.getMCParticle() != null) {
+                        double simhitEnergy = simhit.getdEdx();
+                        if(simhitEnergy > simhitMaxE){
+                            simhitMaxE = simhitEnergy;
+                            rawhitSimhit = simhit;
+                        }
+                    }
+                }
+                rawToSimMap.put(rawhit, rawhitSimhit);
+            }
+
+            Map<RawTrackerHit, Integer> layerMap = new HashMap<RawTrackerHit, Integer>(); 
+            Set<Integer> layers = new HashSet<Integer>();
+            for(RawTrackerHit rawhit : rawToSimMap.keySet()){
+                int layer = rawToSimMap.get(rawhit).getLayer(); 
+                layerMap.put(rawhit, layer);
+                layers.add(layer);
+            }
+
+            for(int layer : layers){
+                List<RawTrackerHit> rawhitsonLayer = new ArrayList<RawTrackerHit>();
+                for(Map.Entry<RawTrackerHit,Integer> entry : layerMap.entrySet()){
+                    if(entry.getValue().equals(layer)){
+                        rawhitsonLayer.add(entry.getKey());
+                    }
+                
+                }   
+                double simhitMaxE = 0.0;
+                SimTrackerHit bestSimhit = null;
+                for(RawTrackerHit rawhit : rawhitsonLayer){
+                    SimTrackerHit simhit = rawToSimMap.get(rawhit);
+                    if (simhit != null && simhit.getMCParticle() != null) {
+                        double simhitEnergy = simhit.getdEdx();
+                        if(simhitEnergy > simhitMaxE){
+                            simhitMaxE = simhitEnergy;
+                            bestSimhit = simhit;
+                        }
+                    }
+                }
+
+                if(bestSimhit != null && bestSimhit.getMCParticle() != null){
+                    particle = bestSimhit.getMCParticle();
+                    if(!mcParticleMultiplicity.containsKey(particle)){
+                        mcParticleMultiplicity.put(particle, new int[1]);
+                        mcParticleMultiplicity.get(particle)[0] = 0;
+                    }
+
+                    mcParticleMultiplicity.get(particle)[0]++;
+                }
+            }
+            
+
+
+
+        }
+
+
+            /*
+            for(RawTrackerHit rawhit : rawToSimMap.keySet()){
+                double simhitMaxE = 0.0;
+                Set<SimTrackerHit> simhitbyLayer = new HashSet<SimTrackerHit>();
+                Set<SimTrackerHit> simhits = rawToSimMap.values();
+                Set<SimTrackerHit> ruledoutHits = new HashSet<SimTrackerHit>();
+                for(SimTrackerHit simhit : simhits){
+                    if(ruledoutHits.contains(simhit))
+                            continue;
+                    SimTrackerHit largestSimHit = simhit;
+                    if (simhit != null && simhit.getMCParticle() != null) {
+                        double largestEnergy = simhit.getdEdx();
+                        for(SimTrackerHit simhit2 : simhits){
+                            if(simhit == simhit2)
+                                continue;
+                            if(ruledoutHits.contains(simhit2))
+                                continue;
+                            if (simhit2 != null && simhit2.getMCParticle() != null) {
+                                if(simhit.getLayer() == simhit2.getLayer()){
+                                   double simhit2Energy = simhit2.getdEdx();
+                                   if(simhit2Energy > largestEnergy){
+                                       largestEnergy = simhit2Energy;
+                                       largestSimHit = simhit2;
+                                   }
+                                   else{
+                                       ruledoutHits.add(simhit2);
+                                   }
+                                      
+                                }
+                            }
+                        }
+
+                    }
+                    else
+                        continue;
+
+                    simhitbyLayer.add(largestSimHit);
+                    ruledoutHits.add(largestSimHit);
+                }
+            }
+            
+        }
+
+
         MCParticle particle;
         for(TrackerHit hit : track.getTrackerHits()){
             int rawHitsLength = hit.getRawHits().size();
             List<RawTrackerHit> rawhits = hit.getRawHits();
-            SimTrackerHit largestSimhit = null;
             for(RawTrackerHit rawhit : rawhits){
                 double simhitMaxE = 0.0;
+                Set<SimTrackerHit> simhitbyLayer = new HashSet<SimTrackerHit>();
                 Set<SimTrackerHit> simhits = rawtomc.allFrom(rawhit);
+                Set<SimTrackerHit> ruledoutHits = new HashSet<SimTrackerHit>();
+                for(SimTrackerHit simhit : simhits){
+                    if(ruledoutHits.contains(simhit))
+                            continue;
+                    SimTrackerHit largestSimHit = simhit;
+                    double largestEnergy = simhit.getdEdx();
+                    if (simhit != null && simhit.getMCParticle() != null) {
+                        for(SimTrackerHit simhit2 : simhits){
+                            if(simhit == simhit2)
+                                continue;
+                            if(ruledoutHits.contains(simhit2))
+                                continue;
+                            if (simhit2 != null && simhit2.getMCParticle() != null) {
+                                if(simhit.getLayer() == simhit2.getLayer()){
+                                   double simhit2Energy = simhit2.getdEdx();
+                                   if(simhit2Energy > largestEnergy){
+                                       largestEnergy = simhit2Energy;
+                                       largestSimHit = simhit2;
+                                   }
+                                   else{
+                                       ruledoutHits.add(simhit2);
+                                   }
+                                      
+                                }
+                            }
+                        }
+
+                    }
+                    simhitbyLayer.add(largestSimHit);
+                    ruledoutHits.add(largestSimHit);
+                }
+                
+                if (simhit != null && simhit.getMCParticle() != null) {
+                    simhitsontrack.add(simhit);
+                    particle = simhit.getMCParticle();
+                    if(!mcParticleMultiplicity.containsKey(particle)){
+                        mcParticleMultiplicity.put(particle, new int[1]);
+                        mcParticleMultiplicity.get(particle)[0] = 0;
+                    }
+
+                    mcParticleMultiplicity.get(particle)[0]++;
+
+                    break;
+                }
+
+
                 for(SimTrackerHit simhit : simhits){
                     if (simhit != null && simhit.getMCParticle() != null) {
                         double simhitEnergy = simhit.getdEdx();
@@ -712,13 +920,8 @@ public class EcalScoringPlaneDriver extends Driver {
                 }
                             
 
-                /*IDDecoder decoder = rawhit.getIDDecoder();
-                decoder.setID(rawhit.getCellID());
-                int layer = decoder.getLayer();
-                SymmetricMatrix covmatrix = new SymmetricMatrix(3,hit.getCovMatrix(),false);
-                BarrelEndcapFlag bef = BarrelEndcapFlag.UNKNOWN;
-                BasicHep3Vector gpos = new BasicHep3Vector(hit.getPosition());
-                */
+
+            //multiplicity
                 SimTrackerHit simhit = largestSimhit;
                 if (simhit != null && simhit.getMCParticle() != null) {
                     simhitsontrack.add(simhit);
@@ -733,8 +936,8 @@ public class EcalScoringPlaneDriver extends Driver {
                     break;
                 }
             }
+            */
 
-        }
 
         // Look for the MC particle that occurs the most of the track
         int maxValue = 0;
