@@ -132,7 +132,19 @@ public class KFTrackECalClusterMatcher {
             trackx = ts_ecalPos[0];
             tracky = ts_ecalPos[1];
             trackz = ts_ecalPos[2];
-            dxoffset = 0.0;
+            if(charge < 0)
+                dxoffset = 3.3;
+            else
+                dxoffset = -3.6;
+        }
+
+        if(enablePlots){
+            if (charge > 0) {
+                plots1D.get(String.format("%s_PositronTrackTime",trackType)).fill(trackt);
+            }
+            else {
+                plots1D.get(String.format("%s_ElectronTrackTime",trackType)).fill(trackt);
+            }
         }
 
 
@@ -149,7 +161,7 @@ public class KFTrackECalClusterMatcher {
         double smallestdr = Double.MAX_VALUE;
         double offset = trackClusterTimeOffset;
         double tcut = 4.0;
-        double xcut = 20.0;
+        double xcut = 15.0;
         double ycut = 15.0;
 
         for(Cluster cluster : clusters) {
@@ -235,14 +247,6 @@ public class KFTrackECalClusterMatcher {
             
         }
 
-        if(enablePlots){
-            if (charge > 0) {
-                plots1D.get(String.format("%s_PositronTrackTime",trackType)).fill(trackt);
-            }
-            else {
-                plots1D.get(String.format("%s_ElectronTrackTime",trackType)).fill(trackt);
-            }
-        }
         if(matchedCluster == null){
             System.out.println("No matching cluster found for KF track at ECal");
             return null;
@@ -334,7 +338,10 @@ public class KFTrackECalClusterMatcher {
                 trackx = ts_ecalPos[0];
                 tracky = ts_ecalPos[1];
                 trackz = ts_ecalPos[2];
-                dxoffset = 0.0;
+                if(charge < 0)
+                    dxoffset = 3.3;
+                else
+                    dxoffset = - 3.6;
             }
 
             //Plot ele and pos track times
