@@ -66,7 +66,7 @@ public class EcalScoringPlaneDriver extends Driver {
     RelationalTable hitToStrips = null;
     RelationalTable TrktoData = new BaseRelationalTable(RelationalTable.Mode.ONE_TO_ONE, RelationalTable.Weighting.UNWEIGHTED);
 
-    KFTrackECalClusterMatcher matcher;
+    TrackClusterMatcher2019 matcher;
 
     //Counting fake rate
     boolean verbose = true;
@@ -256,7 +256,7 @@ public class EcalScoringPlaneDriver extends Driver {
     public void startOfData() {
         System.out.println("Starting job");
         bookHistograms();
-        matcher = new KFTrackECalClusterMatcher(this.trackCollectionName);
+        matcher = new TrackClusterMatcher2019(this.trackCollectionName);
     }
 
     public void endOfData() {
@@ -524,7 +524,7 @@ public class EcalScoringPlaneDriver extends Driver {
                     double[] trackP = track.getMomentum();
                     double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
 
-                    //Check purity and fake rate of KFTrackECalClusterMatcher
+                    //Check purity and fake rate of TrackClusterMatcher2019
                     if(charge < 0){
                         NtruthEleClustPairs = NtruthEleClustPairs + 1;
                     }
