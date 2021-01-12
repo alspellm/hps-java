@@ -154,10 +154,6 @@ public class TrackClusterMatcher2019 {
             }
         }
 
-        for(Cluster cluster : clusters) {
-            double clusterEnergy = cluster.getEnergy();
-            plots1D.get(String.format("%s_cluster_energy",trackType)).fill(clusterEnergy);
-        }
 
         for(Track track : tracks) {
 
@@ -274,6 +270,7 @@ public class TrackClusterMatcher2019 {
 
                 //Plot of cluster energy / track momentum
                 if(enablePlots){
+                    plots1D.get(String.format("%s_cluster_energy",trackType)).fill(clusterEnergy);
                     if(charge < 0)
                         plots1D.get(String.format("%s_ele_Track_Cluster_EdivP",trackType)).fill(clusterEnergy/trackPmag);
                     else
