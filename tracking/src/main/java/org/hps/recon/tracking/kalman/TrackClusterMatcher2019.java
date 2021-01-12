@@ -90,9 +90,29 @@ public class TrackClusterMatcher2019 {
         // Energy/Momentum plots
         plots1D.put(String.format("%s_ele_Track_Cluster_EdivP",trackType), histogramFactory.createHistogram1D(String.format("%s_ele_Track_Cluster_EdivP",trackType),  200, -10, 10));
         plots1D.put(String.format("%s_pos_Track_Cluster_EdivP",trackType), histogramFactory.createHistogram1D(String.format("%s_pos_Track_Cluster_EdivP",trackType),  200, -10, 10));
-
+        plots1D.put(String.format("%s_ele_Track_Momentum",trackType), histogramFactory.createHistogram1D(String.format("%s_ele_Track_Momentum",trackType),  100, 0, 5));
+        plots1D.put(String.format("%s_pos_Track_Momentum",trackType), histogramFactory.createHistogram1D(String.format("%s_pos_Track_Momentum",trackType),  100, 0, 5));
+        plots1D.put(String.format("%s_cluster_energy",trackType), histogramFactory.createHistogram1D(String.format("%s_cluster_energy",trackType),  100, 0, 5));
     }
 
+    public void plotClusterEnergy(EventHeader event, String tag, String ecalClustersCollectionName){
+        System.out.println("[TrackClusterMatcher2019] Event Number: " + event.getEventNumber());
+
+        List<Cluster> clusters = event.get(Cluster.class, ecalClustersCollectionName);    
+        for(Cluster cluster : clusters) {
+            double clusterEnergy = cluster.getEnergy();
+            plots1D.get(String.format("%s_cluster_energy_fromEvent_%s",trackType,tag)).fill(clusterEnergy);
+            System.out.println("[TrackClusterMatcher2019] " + this.trackType + " Cluster Energy: " + clusterEnergy);
+        }
+    }
+
+    public void plotClusterEnergy(List<Cluster> clusters, String tag){
+        for(Cluster cluster : clusters) {
+            double clusterEnergy = cluster.getEnergy();
+            plots1D.get(String.format("%s_cluster_energy_fromList_%s",trackType,tag)).fill(clusterEnergy);
+            System.out.println("List Cluster Energy: " + clusterEnergy);
+        }
+    }
 
     public Map<Track,Cluster> trackClusterMatcher(List<Track> tracks, EventHeader event,  String trackCollectionName, List<Cluster> clusters, double trackClusterTimeOffset)  {
 
@@ -103,6 +123,7 @@ public class TrackClusterMatcher2019 {
         //Output is a map between Tracks and matched Cluster
         //If no cluster is matched to a Track, Map contains Track + Null
         //cluster
+
         
         //Map of position residuals between all track+cluster combinations
         if(tracks == null || tracks.isEmpty()){
@@ -133,28 +154,33 @@ public class TrackClusterMatcher2019 {
             }
         }
 
+        for(Cluster cluster : clusters) {
+            double clusterEnergy = cluster.getEnergy();
+            plots1D.get(String.format("%s_cluster_energy",trackType)).fill(clusterEnergy);
+        }
+
         for(Track track : tracks) {
 
             //charge sign must be flipped by factor of -1 (WHY!?)
             int charge = -1* (int) Math.signum(track.getTrackStates().get(0).getOmega());
             double trackt;
-            //The mean of track time distribution, for GBL and KF, is at -4ns.
-            //Offset is hardcoded below
-            double tracktOffset = 4; 
-            double tanlambda = track.getTrackParameter(4);
-            double[] trackP;
-            double trackPmag;
+            double tracktOffset = 4; //Track time distribution is centered on -4ns, added offset to center ~0
+
             double trackx;
             double tracky;
             double trackz;
-            double dxoffset;
+            double dxoffset; //Track x-position at Ecal distriution not centered on 0. Offset varies depending on charge
+
+            //Track parameters that are useful for implementing cuts on
+            //potential cluster matches
+            double tanlambda = track.getTrackParameter(4);
 
             if (trackType.contains("GBLTracks")){
                 trackt = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
                 trackx = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[1]; 
                 tracky = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[2];
                 trackz = TrackUtils.getTrackStateAtECal(track).getReferencePoint()[0];
-                trackP = track.getTrackStates().get(0).getMomentum(); 
+                //trackP = track.getTrackStates().get(0).getMomentum(); 
 
                 //electron GBLTracks show x position bias at +5.5 mm. Offset
                 //accounted for below (IS THIS OKAY TO HARDCODE?)
@@ -170,36 +196,43 @@ public class TrackClusterMatcher2019 {
                 trackt = trackdata.getTrackTime();
                 //KF TrackState at ecal stored as the last TrackState in
                 //KalmanInterface.java
-                TrackState ts_ecal = track.getTrackStates().get(track.getTrackStates().size()-1);
-                trackP = track.getTrackStates().get(0).getMomentum(); 
+                TrackState ts_ecal = track.getTrackStates().get(track.getTrackStates().size()-1); //Be careful about the coordinate frame used for this track state. It is different between current master and pass1-dev-fix branches.
+                //trackP = track.getTrackStates().get(0).getMomentum(); 
                 double[] ts_ecalPos = ts_ecal.getReferencePoint();
-                trackx = ts_ecalPos[0];
-                tracky = ts_ecalPos[1];
-                trackz = ts_ecalPos[2];
+                if(ts_ecalPos[0] > 1000){
+                    trackx = ts_ecalPos[1];
+                    tracky = ts_ecalPos[2];
+                    trackz = ts_ecalPos[0];
+                }
+                else{
+                    trackx = ts_ecalPos[0];
+                    tracky = ts_ecalPos[1];
+                    trackz = ts_ecalPos[2];
+                }
                 if(charge < 0)
-                    dxoffset = 3.3;
+                    dxoffset = 3.3; //KF ele tracks have x-position bias of -3.3 mm, hardcode offset + 3.3
                 else
-                    dxoffset = - 3.6;
+                    dxoffset = - 3.6; //Similar case as above 
             }
 
-            //Plot ele and pos track times
+            //Track momentum magnitude
+            double[] trackP = track.getMomentum();
+            double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
+            //FEE's Only Cut
+            if(trackPmag < 2.0 || trackPmag > 2.5)
+                continue;
+
+            //Plots
             if(enablePlots){
                 if (charge > 0) {
                     plots1D.get(String.format("%s_PositronTrackTime",trackType)).fill(trackt);
+                    plots1D.get(String.format("%s_pos_Track_Momentum",trackType)).fill(trackPmag);
                 }
                 else {
                     plots1D.get(String.format("%s_ElectronTrackTime",trackType)).fill(trackt);
+                    plots1D.get(String.format("%s_ele_Track_Momentum",trackType)).fill(trackPmag);
                 }
             }
-
-            trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
-
-            /*
-            //Track state at ecal via RK extrap
-            TrackState ts_ecalRK = track.getTrackStates().get(track.getTrackStates().size()-2);
-            Hep3Vector ts_ecalPos_RK = new BasicHep3Vector(ts_ecalRK.getReferencePoint());
-            ts_ecalPos_RK = CoordinateTransformations.transformVectorToDetector(ts_ecalPos_RK);
-            */
 
             //Begin Cluster Matching Algorithm
             Map<Cluster, Double> clusterResMap = new HashMap<Cluster, Double>();
@@ -207,11 +240,13 @@ public class TrackClusterMatcher2019 {
 
             double smallestdt = Double.MAX_VALUE;
             double smallestdr = Double.MAX_VALUE;
-            //define time and position cuts for Track-Cluster matching
+            //define time and position cuts for Track-Cluster matching,
+            //determined by distributions
             double tcut = 4.0;
             double xcut = 10.0;
             double ycut = 10.0;
 
+            //Loop over all clusters, looking for best match to current track
             for(Cluster cluster : clusters) {
                 double clusterEnergy = cluster.getEnergy();
                 double clusTime = ClusterUtilities.getSeedHitTime(cluster);
@@ -225,6 +260,7 @@ public class TrackClusterMatcher2019 {
                 double dz = clusterz - trackz;
                 double dr = Math.sqrt(Math.pow(clusterx-trackx,2) + Math.pow(clustery-tracky,2));
 
+                /*
                 //Ecal fiducial cuts
                 if(clusterx < 0 && charge > 0)
                     continue;
@@ -234,6 +270,7 @@ public class TrackClusterMatcher2019 {
                     continue;
                 if(clustery < 0 && tanlambda > 0)
                     continue;
+                    */
 
                 //Plot of cluster energy / track momentum
                 if(enablePlots){
@@ -255,53 +292,31 @@ public class TrackClusterMatcher2019 {
                         if(charge > 0) {
                             //Time residual plot
                             plots1D.get(String.format("%s_PositronTrack-Cluster_dt",trackType)).fill(dt);
-                            //Energy/Momentum plot
 
                             //Kalman Extrapolated Residuals
                             plots1D.get(String.format("%s_PositronTrack@ECal_ECalCluster_dx",trackType)).fill(dx);
                             plots1D.get(String.format("%s_PositronTrack@ECal_ECalCluster_dy",trackType)).fill(dy);
                             plots1D.get(String.format("%s_PositronTrack@ECal_ECalCluster_dz",trackType)).fill(dz);
                             plots1D.get(String.format("%s_PositronTrack@ECal_ECalCluster_dr",trackType)).fill(dr);
-
-                            /*
-                            //RK Extrapolated Residuals
-                            plots1D.get(String.format("RK_PositronTrack@ECal_ECalCluster_dx").fill(dxRK);
-                            plots1D.get(String.format("RK_PositronTrack@ECal_ECalCluster_dy").fill(dyRK);
-                            plots1D.get(String.format("RK_PositronTrack@ECal_ECalCluster_dz").fill(dzRK);
-                            */
                         }
                         else {
 
                             //Time residual plot
                             plots1D.get(String.format("%s_ElectronTrack-Cluster_dt",trackType)).fill(dt);
-                            //Energy/Momentum plot
 
                             //Kalman Extrapolated Residuals
                             plots1D.get(String.format("%s_ElectronTrack@ECal_ECalCluster_dx",trackType)).fill(dx);
                             plots1D.get(String.format("%s_ElectronTrack@ECal_ECalCluster_dy",trackType)).fill(dy);
                             plots1D.get(String.format("%s_ElectronTrack@ECal_ECalCluster_dz",trackType)).fill(dz);
                             plots1D.get(String.format("%s_ElectronTrack@ECal_ECalCluster_dr",trackType)).fill(dr);
-                            /*
-                            //RK Extrapolated Residuals
-                            plots1D.get(String.format("RK_ElectronTrack@ECal_ECalCluster_dx").fill(dxRK);
-                            plots1D.get(String.format("RK_ElectronTrack@ECal_ECalCluster_dy").fill(dyRK);
-                            plots1D.get(String.format("RK_ElectronTrack@ECal_ECalCluster_dz").fill(dzRK);
-                            */
                         }
                     }
                 }
 
-                /*
-                //via RK Extrap
-                double dxRK = clusPos[0]-ts_ecalPos_RK.x();
-                double dyRK = clusPos[1]-ts_ecalPos_RK.y();
-                double dzRK = clusPos[2]-ts_ecalPos_RK.z();
-                */
             }
 
-            //Every Track is mapped to the map of cluster position residuals
-            //for that track. i.e (Track; clusterA_dr, clusterB_dr,
-            //clusterG_dr, clusterZ_dr)
+            //trackClusterResMap is a map of Tracks to the position residual of
+            //each potential cluster match
             trackClusterResMap.put(track, clusterResMap);
         }
 
@@ -310,14 +325,12 @@ public class TrackClusterMatcher2019 {
         //Algorithm checks for clusters matched to multiple Tracks, and sorts
         //them until only unique matches exist
 
-        //trackMinResClusterMap maps tracks with minimum position residual
-        //cluster
+        //trackMinResClusterMap maps Track to the Cluster with the smallest dr
         Map<Track,Cluster> trackMinResClusterMap = new HashMap<Track, Cluster>();
 
-        //build a map of track -> closest cluster
-        //check this map for repeat cluster matches
-        //if repeat matches are found for any tracks, keep best (closest)
-        //match, and loop over matching again, for size of clusters
+        //check map for the same Cluster being matched to multiple Tracks
+        //If found, keep Track-Cluster match with smallest dr
+        //Repeat matching process
         for(int i=0; i < clusters.size(); i++){
             trackMinResClusterMap = getTrackMinResClusterMap(trackClusterResMap);
             trackClusterResMap = checkDuplicateClusterMatching(trackClusterResMap,trackMinResClusterMap);
