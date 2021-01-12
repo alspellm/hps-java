@@ -744,17 +744,17 @@ public abstract class ReconParticleDriver extends Driver {
     protected List<ReconstructedParticle> makeReconstructedParticles(List<Cluster> clusters,
             List<List<Track>> trackCollections, EventHeader event) {
 
-
         // Create a list in which to store reconstructed particles.
         List<ReconstructedParticle> particles = new ArrayList<ReconstructedParticle>();
 
         // Create a list of unmatched clusters. A cluster should be
         // removed from the list if a matching track is found.
         Set<Cluster> unmatchedClusters = new HashSet<Cluster>(clusters);
-        //Set<Cluster> clustersCopy = new HashSet<Cluster>(clusters);
+        List<Cluster> clustersCopy = new ArrayList<Cluster>(clusters);
 
         // Create a mapping of matched clusters to corresponding tracks.
         HashMap<Cluster, Track> clusterToTrack = new HashMap<Cluster, Track>();
+
 
         // Loop through all of the track collections and try to match every
         // track to a cluster. Cluster matching algorithm here does not allow
@@ -786,6 +786,13 @@ public abstract class ReconParticleDriver extends Driver {
             //has no matched cluster, pair is null
             matchedTrackClusterMap = matcher2019.trackClusterMatcher(tracks, event,trackCollectionName, clusters, cuts.getTrackClusterTimeOffset());
 
+
+        for (List<Track> tracks : trackCollections) {
+            Map<Track, Cluster> matchedTrackClusterMap = new HashMap<Track, Cluster>();
+            //uses the trackClustermatcher driver to create a map of
+            //track collection with corresponding matched clusters. If track
+            //has no matched cluster, pair is null
+            matchedTrackClusterMap = matcher2019.trackClusterMatcher(tracks, event,trackCollectionName, clustersCopy, cuts.getTrackClusterTimeOffset());
 
             for (Track track : tracks) {
 

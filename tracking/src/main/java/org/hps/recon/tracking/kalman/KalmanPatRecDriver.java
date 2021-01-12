@@ -81,10 +81,6 @@ public class KalmanPatRecDriver extends Driver {
     private double beamSpotLoc;        // Beam spot location along the beam axis
     private boolean addResiduals;      // If true add the hit-on-track residuals to the LCIO event
     public boolean enablePlots = true;
-    //Instance of Kalman Track -> Ecal Cluster Matching
-    KalTrackClusterEcalMatch matcher;
-
-    
     
     public String getOutputFullTrackCollectionName() {
         return outputFullTrackCollectionName;
@@ -124,9 +120,6 @@ public class KalmanPatRecDriver extends Driver {
     
     @Override
     public void detectorChanged(Detector det) {
-
-        matcher = new KalTrackClusterEcalMatch("KalmanFullTracks");
-        matcher.enablePlots(enablePlots);
         logger = Logger.getLogger(KalmanPatRecDriver.class.getName());
         verbose = (logger.getLevel()==Level.FINE);
         executionTime = 0.;
@@ -429,9 +422,6 @@ public class KalmanPatRecDriver extends Driver {
 
     @Override
     public void endOfData() {
-        if(enablePlots){
-            matcher.saveHistograms();
-        }
         System.out.format("KalmanPatRecDriver.endOfData: total pattern recognition execution time=%12.4f ms for %d events and %d tracks.\n", 
                 executionTime, nEvents, nTracks);
         double evtTime = executionTime/(double)nEvents;

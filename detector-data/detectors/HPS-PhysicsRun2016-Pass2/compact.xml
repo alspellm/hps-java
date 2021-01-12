@@ -777,14 +777,14 @@
                 <module_component thickness="scoringThickness" material="Vacuum" sensitive="true" />
             </module>            
             <layer id="1"><!--top-->
-                <module_placement name="BeamLeft" id="0" x="(768.35-electronGapLeftEdge)/2+21.17" y="(457.2/2+17)/2" z="1318+20+scoringThickness" rx="0" ry="0" rz="-PI/2" />
-                <module_placement name="ElectronGap" id="0" x="768.35/2-electronGapRightEdge+(electronGapRightEdge-electronGapLeftEdge)/2+21.17" y="(457.2/2+64.66/2)/2" z="1318+20+scoringThickness" rx="0" ry="0" rz="-PI/2" />
-                <module_placement name="BeamRight" id="0" x="-1*electronGapRightEdge/2+21.17" y="(457.2/2+14)/2" z="1318+20+scoringThickness" rx="0" ry="0" rz="-PI/2" />
+                <module_placement name="BeamLeft" id="0" x="(768.35-electronGapLeftEdge)/2+21.17" y="(457.2/2+17)/2" z="1318+20+56+scoringThickness" rx="0" ry="0" rz="-PI/2" />
+                <module_placement name="ElectronGap" id="0" x="768.35/2-electronGapRightEdge+(electronGapRightEdge-electronGapLeftEdge)/2+21.17" y="(457.2/2+64.66/2)/2" z="1318+20+56+scoringThickness" rx="0" ry="0" rz="-PI/2" />
+                <module_placement name="BeamRight" id="0" x="-1*electronGapRightEdge/2+21.17" y="(457.2/2+14)/2" z="1318+20+56+scoringThickness" rx="0" ry="0" rz="-PI/2" />
             </layer>
             <layer id="2"><!--bottom-->
-                <module_placement name="BeamLeft" id="0" x="(768.35-electronGapLeftEdge)/2+21.17" y="-1*(457.2/2+17)/2" z="1318+20+scoringThickness" rx="0" ry="0" rz="-3*PI/2" />
-                <module_placement name="ElectronGap" id="0" x="768.35/2-electronGapRightEdge+(electronGapRightEdge-electronGapLeftEdge)/2+21.17" y="-1*(457.2/2+64.66/2)/2" z="1318+20+scoringThickness" rx="0" ry="0" rz="-3*PI/2" />
-                <module_placement name="BeamRight" id="0" x="-1*electronGapRightEdge/2+21.17" y="-1*(457.2/2+14)/2" z="1318+20+scoringThickness" rx="0" ry="0" rz="-3*PI/2" />
+                <module_placement name="BeamLeft" id="0" x="(768.35-electronGapLeftEdge)/2+21.17" y="-1*(457.2/2+17)/2" z="1318+20+56+scoringThickness" rx="0" ry="0" rz="-3*PI/2" />
+                <module_placement name="ElectronGap" id="0" x="768.35/2-electronGapRightEdge+(electronGapRightEdge-electronGapLeftEdge)/2+21.17" y="-1*(457.2/2+64.66/2)/2" z="1318+20+56+scoringThickness" rx="0" ry="0" rz="-3*PI/2" />
+                <module_placement name="BeamRight" id="0" x="-1*electronGapRightEdge/2+21.17" y="-1*(457.2/2+14)/2" z="1318+20+56+scoringThickness" rx="0" ry="0" rz="-3*PI/2" />
             </layer>
         </detector> 
 
