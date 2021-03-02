@@ -313,9 +313,9 @@ public class TrackClusterMatcher2019 extends AbstractTrackClusterMatcher{
                 Cluster matchedCluster = null;
 
                 //define time and position cuts for Track-Cluster matching,
-                double tcut = 4.0;
-                double xcut = 15.0;
-                double ycut = 15.0;
+                double tcut = 8.0;
+                double xcut = 20.0;
+                double ycut = 20.0;
 
                 //Loop over all clusters, looking for best match to current track
                 double smallestdt = Double.MAX_VALUE;
