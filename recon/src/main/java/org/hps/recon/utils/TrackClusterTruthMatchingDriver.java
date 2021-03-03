@@ -77,20 +77,27 @@ public class TrackClusterTruthMatchingDriver extends Driver {
     int ntruthClusters = 0;
     int nClusters = 0;
 
-    double x_ele;
-    double x_pos;
-    double y_ele;
-    double y_pos;
-    double z_ele;
-    double z_pos;
-    double q_ele;
-    double q_pos;
-    double b_ele;
-    double b_pos;
-    double c_ele;
-    double c_pos;
-    double d_ele;
-    double d_pos;
+    double goodMatch_ele=0;
+    double fakeMatch_ele=0;
+    double noMatch_ele=0;
+    double missedMatch_ele=0;
+    double unknownMatch_ele=0;
+    double goodMatch_pos=0;
+    double fakeMatch_pos=0;
+    double noMatch_pos=0;
+    double missedMatch_pos=0;
+    double unknownMatch_pos=0;
+
+    double noMatchTruthTrack_ele=0;
+    double unknownMatchTruthTrack_ele=0;
+    double unknownMatchTruthCluster_ele=0;
+    double truthTrackOutsideEcal_ele=0; 
+    double trackOutsideEcal_ele=0;
+    double noMatchTruthTrack_pos=0;
+    double unknownMatchTruthTrack_pos=0;
+    double unknownMatchTruthCluster_pos=0;
+    double truthTrackOutsideEcal_pos=0; 
+    double trackOutsideEcal_pos=0;
 
     double efficiency_ele;
     double efficiency_pos;
@@ -483,47 +490,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
         matcher.saveHistograms();
        
-
-        //Define Matching Efficiency
-        double efficiency_ele = (x_ele + y_ele + z_ele)/(x_ele + y_ele + z_ele + b_ele + c_ele - d_ele); 
-        double efficiency_pos = (x_pos + y_pos + z_pos)/(x_pos + y_pos + z_pos + b_pos + c_pos - d_pos); 
-        System.out.println("end of data");
-
-        System.out.println("Number of ele reco tracks: " + nrecoTracks_ele);
-        System.out.println("Number of ele truth tracks: " + ntruthTracks_ele);
-        System.out.println("Number of ele truth pairs: " + ntruthpairs_ele);
-
-        System.out.println("Number of pos reco tracks: " + nrecoTracks_pos);
-        System.out.println("Number of pos truth tracks: " + ntruthTracks_pos);
-        System.out.println("Number of pos truth pairs: " + ntruthpairs_pos);
-
-        System.out.println("Number of clusters: " + nClusters);
-        System.out.println("Number of truth clusters: " + ntruthClusters);
-
-        System.out.println("Real ele tracks matched to correct cluster: " + x_ele);
-        System.out.println("Real ele tracks matched to wrong cluster: " + y_ele);
-        System.out.println("Unconfirmed ele tracks matched to any cluster: " + z_ele);
-        System.out.println("Real ele tracks not matched to cluster: " + b_ele);
-        System.out.println("Unconfirmed ele tracks not matched to cluster: " + c_ele);
-        System.out.println("ele tracks outside ecal: " + d_ele);
-
-        System.out.println("Real pos tracks matched to correct cluster: " + x_pos);
-        System.out.println("Real pos tracks matched to wrong cluster: " + y_pos);
-        System.out.println("Unconfirmed pos tracks matched to any cluster: " + z_pos);
-        System.out.println("Real pos tracks not matched to cluster: " + c_pos);
-        System.out.println("Unconfirmed pos tracks not matched to cluster: " + b_pos);
-        System.out.println("pos tracks outside ecal: " + d_pos);
-
-        //Define Fake Rate
-        double fakerate_ele = y_ele/(y_ele + x_ele);
-        double fakerate_pos = y_pos/(y_pos + x_pos);
-        System.out.println("Fakerate ele: " + fakerate_ele);
-        System.out.println("Eficiency ele: " + fakerate_ele);
-        System.out.println("Fakerate pos: " + fakerate_pos);
-        System.out.println("Eficiency pos: " + fakerate_pos);
-
-
-
         //track reco efficiency
         trackEfficiency = NrecoTruthTracks/NpossibleTracks;
         for(int i=0; i < Math.round(trackEfficiency*100); i++)
@@ -532,6 +498,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         for(int i = 0; i < Math.round(nDuplicates); i++)
             plots1D.get(String.format("%s_n_duplicate_TrackMCP_matches",this.trackCollectionName)).fill(1.0);
 
+        /*
         for(int i=0; i < Math.round(fakerate_ele*100); i++){
             System.out.println("Filling Histogram fakerate");
             plots1D.get(String.format("%s_ele_fakeRate",this.trackCollectionName)).fill(1.0);
@@ -542,7 +509,29 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             plots1D.get(String.format("%s_pos_Efficiency",this.trackCollectionName)).fill(1.0);
         for(int i=0; i < Math.round(efficiency_pos*100); i++)
             plots1D.get(String.format("%s_ele_Efficiency",this.trackCollectionName)).fill(1.0);
+            */
         saveHistograms();
+        System.out.println("goodMatch_ele: " + goodMatch_ele);
+        System.out.println("fakeMatch_ele: " + fakeMatch_ele);
+        System.out.println("noMatch_ele: " + noMatch_ele);
+        System.out.println("missedMatch_ele: " + missedMatch_ele);
+        System.out.println("unknownMatch_ele: " + unknownMatch_ele);
+        System.out.println("goodMatch_pos: " + goodMatch_pos);
+        System.out.println("fakeMatch_pos: " + fakeMatch_pos);
+        System.out.println("noMatch_pos: " + noMatch_pos);
+        System.out.println("missedMatch_pos: " + missedMatch_pos);
+        System.out.println("unknownMatch_pos: " + unknownMatch_pos);
+
+        System.out.println("noMatchTruthTrack_ele: " + noMatchTruthTrack_ele);
+        System.out.println("unknownMatchTruthTrack_ele: " + unknownMatchTruthTrack_ele);
+        System.out.println("unknownMatchTruthCluster_ele: " + unknownMatchTruthCluster_ele);
+        System.out.println("truthTrackOutsideEcal_ele: " + truthTrackOutsideEcal_ele);
+        System.out.println("trackOutsideEcal_ele: " + trackOutsideEcal_ele);
+        System.out.println("noMatchTruthTrack_pos: " + noMatchTruthTrack_pos);
+        System.out.println("unknownMatchTruthTrack_pos: " + unknownMatchTruthTrack_pos);
+        System.out.println("unknownMatchTruthCluster_pos: " + unknownMatchTruthCluster_pos);
+        System.out.println("truthTrackOutsideEcal_pos: " + truthTrackOutsideEcal_pos);
+        System.out.println("trackOutsideEcal_pos: " + trackOutsideEcal_pos);
     }
 
 
@@ -617,7 +606,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
         //Truth Match Clusters to MCParticles    
         //Map<Cluster,MCParticle> truthClustersMap = getUniqueTruthClusters(event,clusters);
-        Map<Cluster, MCParticle> truthClustersMap = getMCPclusterMap(clusters, event, false);
+        Map<Cluster, MCParticle> truthClustersMap = getClusterMcpMap(clusters, event, false);
         List<Cluster> truthClusters = new ArrayList<Cluster>();
         for(Map.Entry<Cluster,MCParticle> entry : truthClustersMap.entrySet()){
             truthClusters.add(entry.getKey());
@@ -1004,141 +993,159 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                 double[] trackP = TrackUtils.getTrackStateAtLocation(track,TrackState.AtLastHit).getMomentum();
                 double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
 
-                boolean truthTrack = false;
-                double truthTrackPDGID;
-                boolean truthCluster = false;
-                double truthClusterPDGID;
-                boolean notruthTrack = false;
-                boolean notruthCluster = false;
-                boolean truthpairTrack = false;
-                boolean truthpairCluster = false;
-                boolean noCluster = false;
-                boolean wrongcluster = false;
-                boolean unknownMatch = false;
-
-                if(truthTracksMap.containsKey(track)){
-                    truthTrack = true;
-                    truthTrackPDGID = truthTracksMap.get(track).getPDGID();
-                }
-                if(truthClustersMap.containsKey(cluster)){
-                    truthCluster = true;
-                    truthClusterPDGID = truthClustersMap.get(cluster).getPDGID();
-                }
-
-
-
-                
-                 
-                
-                
-                
-
-
-
-
-
-
-                boolean realtrack = false;
-                boolean unconfirmedtrack = false;
-                boolean nocluster = false;
-                boolean correctcluster = false;
-                boolean wrongcluster = false;
-                boolean unconfirmed = false;
-                boolean notfound = true;
-
-                for(Map.Entry<Track,Cluster> truth : truthTracktruthClusterMap.entrySet()){
-                    if(track == truth.getKey()){
-                        notfound = false;
-                        realtrack = true;
-                        if(cluster == null){
-                            nocluster = true;
-                        }
-                        else if(cluster == truth.getValue()){
-                            correctcluster = true;
-                        }
-                        else{
-                            wrongcluster = true;
-                        }
-                        break;
-                    }
-                }
-                if(notfound == true){
-                    unconfirmedtrack = true;
-                    if(cluster == null){
-                        nocluster = true;
-                    }
-                    else if (truthTracktruthClusterMap.containsValue(cluster)){
-                        wrongcluster = true;
-                    }
-                    else
-                        unconfirmedcluster = true;
-                }
-
-                
                 //plot xy positions
                 List<Double> trackpos = getTrackPositionAtEcal(track);
-                double trackx = trackpos.get(0);
-                double tracky = trackpos.get(1);
-                double trackz = trackpos.get(2);
+                boolean isinEcal = isTrackInEcal(trackpos.get(0),trackpos.get(1)); //if track is outside of ecal, returns false
 
-                //"real" means that Track has a truth cluster
-                //Real track matched to correct cluster
-                boolean x = realtrack & correctcluster;
-                boolean y = realtrack & wrongcluster;
-                boolean z = unconfirmedtrack & unconfirmedcluster;
-                boolean q = unconfirmedtrack & wrongcluster;
-                boolean b = realtrack & nocluster;
-                boolean c = unconfirmedtrack & nocluster;
-                boolean d = isTrackInEcal(trackpos.get(0),trackpos.get(1)); //if track is outside of ecal, returns false
+                boolean truthTrack = false;
+                double truthTrackPDGID = -9999;
+                MCParticle truthTrackMCP = null;
+                boolean trackOutsideEcal = false;
+
+                boolean truthCluster = false;
+                double truthClusterPDGID = 9999;
+                MCParticle truthClusterMCP = null;
+
+                boolean noCluster = false;
+                boolean fakeMatch = false;
+                boolean unknownMatch = false;
+                boolean goodMatch = false;
+                boolean missedMatch = false;
+                boolean noMatch = false;
+                boolean noMatchExpected = false;
 
 
-                if(x){
-                    if(charge < 0)
-                        x_ele = x_ele + 1;
-                    else
-                        x_pos = x_pos + 1;
-                }
-                if(y){
-                    if(charge < 0)
-                        y_ele = y_ele + 1;
-                    else
-                        y_pos = y_pos + 1;
-                }
-                if(z){
-                    if(charge < 0)
-                        z_ele = z_ele + 1;
-                    else
-                        z_pos = z_pos + 1;
-                }
-                if(q){
-                    if(charge < 0)
-                        q_ele = q_ele + 1;
-                    else
-                        q_pos = q_pos + 1;
-                }
-                if(b){
-                    if(charge < 0)
-                        b_ele = b_ele + 1;
-                    else
-                        b_pos = b_pos + 1;
-                }
-                if(c){
-                    if(charge < 0)
-                        c_ele = c_ele + 1;
-                    else
-                        c_pos = c_pos + 1;
-                }
-                //if track is outside of ecal, increment. This is used in
-                //calculating efficiency
-                if(d == false){
-                    if(charge < 0)
-                        d_ele = d_ele + 1; 
-                    if(charge > 0)
-                        d_pos = d_pos + 1; 
+                if(cluster == null)
+                    noCluster = true;
 
+                if(!isinEcal)
+                    trackOutsideEcal = true;
+
+                if(noCluster == false){
+                    if(truthTracksMap.containsKey(track)){
+                        truthTrack = true;
+                        truthTrackPDGID = truthTracksMap.get(track).getPDGID();
+                        truthTrackMCP = truthTracksMap.get(track);
+                    }
+                    if(truthClustersMap.containsKey(cluster)){
+                        truthCluster = true;
+                        truthClusterPDGID = truthClustersMap.get(cluster).getPDGID();
+                        truthClusterMCP = truthClustersMap.get(cluster);
+                    }
+
+                    if(truthTrack & truthCluster){
+                        if(truthTrackMCP == truthClusterMCP)
+                            goodMatch = true;
+                        else
+                            fakeMatch = true;
+                    }
+
+                    if(truthTrack & !truthCluster){
+                        //if MCP has track and cluster, but track is paired to
+                        //different cluster, bad match
+                        if(truthClustersMap.containsValue(truthTrackMCP))
+                            fakeMatch = true;
+                        else
+                            unknownMatch = true;
+                    }
+
+                    if(truthCluster & !truthTrack){
+                        if(truthTracksMap.containsValue(truthClusterMCP))
+                            fakeMatch = true;
+                        else if(truthClusterPDGID == 22 || (truthClusterPDGID == -11 & charge < 0) || (truthClusterPDGID == 11 & charge > 0))                    {
+                            fakeMatch = true;
+                        }
+                        else
+                            unknownMatch = true;
+                    }
+
+                    if(!truthCluster & !truthTrack){
+                        unknownMatch = true;
+                    }
+                }
+
+                else if(noCluster == true){
+                    noMatch = true;
+                    if(truthTracksMap.containsKey(track)){
+                        if(truthClustersMap.containsValue(truthTrackMCP))
+                            missedMatch = true;
+                    }
+                }
+
+                //add numbers
+                
+                if(noMatch & truthTrack){
+                    if(charge < 0)
+                        noMatchTruthTrack_ele = noMatchTruthTrack_ele + 1;
+                    else
+                        noMatchTruthTrack_pos = noMatchTruthTrack_pos + 1;
+                }
+
+                if(unknownMatch & truthTrack){
+                    if(charge < 0)
+                        unknownMatchTruthTrack_ele = unknownMatchTruthTrack_ele + 1;
+                    else
+                        unknownMatchTruthTrack_pos = unknownMatchTruthTrack_pos + 1;
+                }
+
+                if(unknownMatch & truthCluster){
+                    if(charge < 0)
+                        unknownMatchTruthCluster_ele = unknownMatchTruthCluster_ele + 1;
+                    else
+                        unknownMatchTruthCluster_pos = unknownMatchTruthCluster_pos + 1;
+                }
+
+                if(truthTrack & trackOutsideEcal){
+                    if(charge < 0)
+                        truthTrackOutsideEcal_ele = truthTrackOutsideEcal_ele + 1;
+                    else
+                        truthTrackOutsideEcal_pos = truthTrackOutsideEcal_pos + 1;
+                }
+
+                if(trackOutsideEcal){
+                    if(charge < 0)
+                        trackOutsideEcal_ele = trackOutsideEcal_ele + 1;
+                    else
+                        trackOutsideEcal_pos = trackOutsideEcal_pos + 1;
+                }
+
+                if(goodMatch){
+                    if(charge < 0)
+                        goodMatch_ele = goodMatch_ele + 1;
+                    else
+                        goodMatch_pos = goodMatch_pos + 1;
+                }
+
+                if(fakeMatch){
+                    if(charge < 0)
+                        fakeMatch_ele = fakeMatch_ele + 1;
+                    else
+                        fakeMatch_pos = fakeMatch_pos + 1;
+                }
+
+                if(noMatch){
+                    if(charge < 0)
+                        noMatch_ele = noMatch_ele + 1;
+                    else
+                        noMatch_pos = noMatch_pos + 1;
+                }
+
+                if(unknownMatch){
+                    if(charge < 0)
+                        unknownMatch_ele = unknownMatch_ele + 1;
+                    else
+                        unknownMatch_pos = unknownMatch_pos + 1;
+                }
+
+                if(missedMatch){
+                    if(charge < 0)
+                        missedMatch_ele = missedMatch_ele + 1;
+                    else
+                        missedMatch_pos = missedMatch_pos + 1;
                 }
             }
         }
+
         List<MCParticle> possibleTrackMCPs = getPossibleTrackMCPs(event, 9);
         NpossibleTracks = NpossibleTracks + possibleTrackMCPs.size();
         NrecoTruthTracks = NrecoTruthTracks + truthTracksMap.size();
@@ -1838,7 +1845,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
     }
 
 
-    private Map<Cluster, MCParticle> getMCPclusterMap(List<Cluster> clusters, EventHeader event, boolean verbose){
+    private Map<Cluster, MCParticle> getClusterMcpMap(List<Cluster> clusters, EventHeader event, boolean verbose){
 
         HashMap<MCParticle, HashSet<Cluster>> mcpClusterMap = new HashMap<MCParticle, HashSet<Cluster>>();
         HashMap<Cluster,MCParticle> mcpClusterMapFinal = new HashMap<Cluster, MCParticle>();
@@ -1943,29 +1950,53 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                         System.out.println("mcp from simcalhit NOT FOUND in LCIO MCPartice collection");
                 }
 
+                if(mcp.getEnergy() > bestMCPEnergyContr){
+                    bestMCPEnergyContr = mcp.getEnergy();
+                    bestMCP = mcp;
+                }
 
+                //Test if we should choose largest MCParticle in the simcalhit,
+                //or parent of largest contributor 03021515
+                /*
                 if(largest_simcalhit.getContributedEnergy(i) > bestMCPEnergyContr){
                     bestMCPEnergyContr = largest_simcalhit.getContributedEnergy(i);
                     bestMCP = largest_simcalhit.getMCParticle(i);
                 }
+                */
             }
+            /*
             //if MCP energy is less than what it contributes...it's likely that
             //the energy contribution assignments were wrong in simulation, and
             //the simcalhit should be matched to the parent of that contributor
             if(bestMCPEnergyContr > bestMCP.getEnergy()){
+                if(verbose)
+                    System.out.println("MCParticle with energy " + bestMCP.getEnergy() + " claims to have contributed " + bestMCPEnergyContr + "to simcalorimeter hit" );
                 if(bestMCP.getParents() != null){
+                    if(verbose)
+                        System.out.println("MCParticle has parents in this simcalorimeter hit");
                     double bestParentEnergy = 0.0;
                     MCParticle bestParent = null;
                     for(MCParticle parent : bestMCP.getParents()){
                         double energy = parent.getEnergy();
+                        if(verbose)
+                            System.out.println("Parent energy: " + energy);
                         if(energy > bestParentEnergy){
                             bestParentEnergy = energy;
                             bestParent = parent;
                         }
                     }
+                    if(verbose)
+                        System.out.println("Matching parent with energy " + bestParentEnergy + "instead of previous match with energy " + bestMCP.getEnergy());
+
                     bestMCP = bestParent;
                 }
+                else{
+                    if(verbose)
+                        System.out.println("No parents found for this strange case....ignore this match");
+                    bestMCP = null;
+                }
             }
+                */
 
             if(bestMCP == null)
                 continue;
