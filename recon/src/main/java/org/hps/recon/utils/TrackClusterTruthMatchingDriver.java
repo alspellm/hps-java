@@ -170,9 +170,15 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         plots1D.put(String.format("mcp_nRawTrackerHits_per_Track",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nRawTrackerHits_per_Track",this.trackCollectionName), 30, 0, 30));
         plots1D.put(String.format("mcp_nTracks",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nTracks",this.trackCollectionName), 20, 0, 20));
         plots2D.put(String.format("mcp_momentum_v_nRawTrackerHits_per_Track",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_nRawTrackerHits_per_Track",this.trackCollectionName),500, 0, 5, 30, 0, 30));
-        plots2D.put(String.format("mcp_momentum_v_nTracks",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_nTracks",this.trackCollectionName),500, 0, 5, 20, 0, 20));
+        plots2D.put(String.format("mcp_momentum_v_nTracks_disambiguated",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_nTracks_disambiguated",this.trackCollectionName),500, 0, 5, 20, 0, 20));
 
         plots1D.put(String.format("mcp_mostHitsTrack_nHits",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_mostHitsTrack_nHits",this.trackCollectionName), 20, 0, 20));
+
+        //post disambiguation
+        plots1D.put(String.format("mcp_nTracks_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nTracks_disambiguated",this.trackCollectionName), 20, 0, 20));
+        plots2D.put(String.format("mcp_momentum_v_nTracks",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_nTracks",this.trackCollectionName),500, 0, 5, 20, 0, 20));
+        plots1D.put(String.format("mcp_most_hits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_most_hits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
+        plots1D.put(String.format("mcp_nhits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nhits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
 
 //FINAL CLUSTER TRUTH MATCHING PLOTS
         
@@ -1889,8 +1895,10 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                 plots1D.get("mcp_nRawTrackerHits_per_Track").fill(rawhitMultiplicity.get(track)[0]);
                 plots2D.get("mcp_momentum_v_nRawTrackerHits_per_Track").fill(momentum,rawhitMultiplicity.get(track)[0]);
             }
+
             if(rawhitMultiplicity.size() == 0)
                 continue;
+
             mcpTracksMap.put(mcp,rawhitMultiplicity);
             plots1D.get("mcp_nTracks").fill(mcpTracksMap.get(mcp).size());
             plots2D.get("mcp_momentum_v_nTracks").fill(momentum,mcpTracksMap.get(mcp).size());
@@ -1907,6 +1915,75 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
         //Disambiguate MCP Track matches. Tracks must be exclusively matched to
         //a MCP
+
+        Map<Track, Map<MCParticle,Integer>> trackMap = new HashMap<Track, Map<MCParticle, Integer>>();
+        for(Track track : tracks){
+            Map<MCParticle, Integer> bMap = new HashMap<MCParticle, Integer>();
+            for(Map.Entry<MCParticle, Map<Track, int[]>> entry : mcpTracksMap.entrySet()){
+                if(entry.getValue().containsKey(track)){
+                    System.out.println("Adding mcp and int to track map");
+                    System.out.println("mcp energy: " + entry.getKey().getEnergy());
+                    System.out.println("int " + entry.getValue().get(track)[0]);
+                    bMap.put(entry.getKey(),entry.getValue().get(track)[0]);
+                }
+            }
+            if(bMap.size() > 0)
+                trackMap.put(track, bMap);
+        }
+
+        Map<MCParticle, Map<Track, Integer>> mcpTracksMapDisamb = new HashMap<MCParticle, Map<Track, Integer>>();
+        System.out.println("rebuild mcp map");
+        for(Map.Entry<Track, Map<MCParticle,Integer>> entry : trackMap.entrySet()){
+            System.out.println("checking track");
+            int mosthits = 0;
+            MCParticle bestMCP = null;
+            Map<MCParticle, Integer> bMap = entry.getValue();
+            for(Map.Entry<MCParticle, Integer> subentry : bMap.entrySet()){
+                System.out.println("mcp energy " + subentry.getKey().getEnergy());
+                System.out.println("mcp hits " + subentry.getValue());
+                if(subentry.getValue() > mosthits){
+                    mosthits = subentry.getValue();
+                    bestMCP = subentry.getKey();
+                }
+            }
+            System.out.println("most hits " + mosthits);
+            System.out.println("mcp energy " + bestMCP.getEnergy());
+            if(!mcpTracksMapDisamb.containsKey(bestMCP)){
+                Map<Track, Integer> tmpMap = new HashMap<Track,Integer>();
+                tmpMap.put(entry.getKey(),mosthits);
+                mcpTracksMapDisamb.put(bestMCP,tmpMap);
+            }
+            else{
+                Map<Track, Integer> gammaMap = mcpTracksMapDisamb.get(bestMCP);
+                gammaMap.put(entry.getKey(),mosthits);
+                mcpTracksMapDisamb.put(bestMCP,gammaMap);
+                System.out.println("returning mcp");
+
+            }
+        }
+
+        Set<Track> checkTracks = new HashSet<Track>();
+        for(Map.Entry<MCParticle, Map<Track, Integer>> entry : mcpTracksMapDisamb.entrySet()){
+            MCParticle mcp = entry.getKey();
+            System.out.println("[BROKEN] mcp energy: " + mcp.getEnergy());
+            Map<Track, Integer> tmpMap = entry.getValue();
+            plots1D.get("mcp_nTracks_disambiguated").fill(entry.getValue().size());
+            plots2D.get("mcp_momentum_v_nTracks_disambiguated").fill(mcp.getMomentum().magnitude(),tmpMap.size());
+            int mosthits = 0;
+            for(Map.Entry<Track, Integer> subentry : tmpMap.entrySet()){
+                Track track = subentry.getKey();
+                System.out.println("[BROKEN] track charge: " + track.getCharge());
+                int nhits = subentry.getValue();
+                plots1D.get("mcp_nhits_on_track_disambiguated").fill(nhits);
+                if(nhits > mosthits){
+                    mosthits = nhits;
+                }
+                if(checkTracks.contains(track))
+                    System.out.println("FAILURE! TRACKS NOT DISAMBIGUATED");
+                checkTracks.add(track);
+            }
+            plots1D.get("mcp_most_hits_on_track_disambiguated").fill(mosthits);
+        }
 
 
         return null;
