@@ -172,14 +172,44 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         plots2D.put(String.format("mcp_momentum_v_nRawTrackerHits_per_Track",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_nRawTrackerHits_per_Track",this.trackCollectionName),500, 0, 5, 30, 0, 30));
         plots2D.put(String.format("mcp_momentum_v_nTracks_disambiguated",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_nTracks_disambiguated",this.trackCollectionName),500, 0, 5, 20, 0, 20));
 
+        plots1D.put(String.format("nMCPs_on_track",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nTracks",this.trackCollectionName), 20, 0, 20));
+
         plots1D.put(String.format("mcp_mostHitsTrack_nHits",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_mostHitsTrack_nHits",this.trackCollectionName), 20, 0, 20));
+
+        plots1D.put(String.format("nPrimary_mcps_FEEs_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPrimary_mcps_FEEs_per_event",this.trackCollectionName), 500, 0, 500));
+        plots1D.put(String.format("nPrimary_mcps_radiativeFEEs_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPrimary_mcps_radiativeFEEs_per_event",this.trackCollectionName), 500, 0, 500));
+        plots1D.put(String.format("nPrimary_mcps_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPrimary_mcps_per_event",this.trackCollectionName), 500, 0, 500));
+        plots2D.put(String.format("nPrimary_mcps_per_event_v_nTracks_per_event",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("nPrimary_mcps_per_event_v_nTracks_per_event",this.trackCollectionName),500, 0, 500, 500 , 0, 500));
+        plots1D.put(String.format("nPrimary_mcps_per_event_noFEEs",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPrimary_mcps_per_event_noFEEs",this.trackCollectionName), 500, 0, 500));
+        plots2D.put(String.format("nPrimary_mcps_per_event_v_nTracks_per_event_noFEEs",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("nPrimary_mcps_per_event_v_nTracks_per_event_noFEEs",this.trackCollectionName),500, 0, 500, 500 , 0, 500));
+
+        plots1D.put(String.format("nPrimary_mcps_622_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPrimary_mcps_622_per_event",this.trackCollectionName), 500, 0, 500));
+        plots1D.put(String.format("nPrimary_mcps_623_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPrimary_mcps_623_per_event",this.trackCollectionName), 500, 0, 500));
+
+
+        plots1D.put(String.format("mcp_nHits_in_Tracker",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nHits_in_Tracker",this.trackCollectionName), 20, 0, 20));
+        plots1D.put(String.format("mcp_nHits_in_Tracker_minus_nHits_on_all_Tracks",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nHits_in_Tracker_minus_nHits_on_all_Tracks",this.trackCollectionName), 20, 0, 20));
 
         //post disambiguation
         plots1D.put(String.format("mcp_nTracks_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nTracks_disambiguated",this.trackCollectionName), 20, 0, 20));
         plots2D.put(String.format("mcp_momentum_v_nTracks",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_nTracks",this.trackCollectionName),500, 0, 5, 20, 0, 20));
         plots1D.put(String.format("mcp_most_hits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_most_hits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
+        plots1D.put(String.format("mcp_FEEs_most_hits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_FEEs_most_hits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
+        plots1D.put(String.format("mcp_NOT_FEEs_most_hits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_NOT_FEEs_most_hits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
         plots1D.put(String.format("mcp_nhits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nhits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
 
+
+        plots1D.put(String.format("mcp_NOT_FEE_wAtLeast_one_track_per_event_disamb",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_NOT_FEE_wAtLeast_one_track_per_event_disamb",this.trackCollectionName), 500, 0, 500));
+        plots1D.put(String.format("mcp_FEE_wAtLeast_one_track_per_event_disamb",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_FEE_wAtLeast_one_track_per_event_disamb",this.trackCollectionName), 500, 0, 500));
+
+
+
+        plots1D.put(String.format("mcp_FEE_nTracks_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_FEE_nTracks_disambiguated",this.trackCollectionName), 20, 0, 20));
+        plots1D.put(String.format("mcp_nonFEE_nTracks_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nonFEE_nTracks_disambiguated",this.trackCollectionName), 20, 0, 20));
+
+
+        plots2D.put(String.format("mcp_momentum_v_best_track_momentum_disam",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_best_track_momentum_disam",this.trackCollectionName),500, 0, 5, 500, 0, 5));
+        plots1D.put(String.format("mcp_momentum_best_track_momentum_ratio_disam",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_momentum_best_track_momentum_ratio_disam",this.trackCollectionName), 200, 0, 2));
 //FINAL CLUSTER TRUTH MATCHING PLOTS
         
         plots1D.put(String.format("cluster_truth_stage_0_energy",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_0_energy",this.trackCollectionName), 1000, 0, 10));
@@ -1819,29 +1849,68 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         }
 
         List<MCParticle> allmcps = event.get(MCParticle.class,"MCParticle");
-        List<MCParticle> primaryMCPs = new ArrayList<MCParticle>();
         Map<MCParticle,Map<Track, int[]>> mcpTracksMap = new HashMap<MCParticle,Map<Track, int[]>>();
+        List<MCParticle> primaryMCPs = new ArrayList<MCParticle>();
+        List<MCParticle> radFEEs = new ArrayList<MCParticle>();
+        List<MCParticle> FEEs = new ArrayList<MCParticle>();
+        List<MCParticle> primaryFEEs = new ArrayList<MCParticle>();
+        List<MCParticle> mcp622 = new ArrayList<MCParticle>();
+        List<MCParticle> mcp623 = new ArrayList<MCParticle>();
 
         double fee = 2.25;
 
+        int nPrimaryMCPs_noFEEs = 0;
         for(MCParticle mcp : allmcps){
+            boolean skip = false;
             Set<RawTrackerHit> rawhitsMCP = new HashSet<RawTrackerHit>();
             Map <Track, int[]> rawhitMultiplicity = new HashMap<Track, int[]>();
 
             int pdgid = mcp.getPDGID();
-            double momentum = mcp.getMomentum().magnitude();
-
             List<Integer> parent_ids = new ArrayList<Integer>();
             List<MCParticle> parents = mcp.getParents();
-            if(parents == null)
+            //ignore all photons
+            if(Math.abs(pdgid) != 11)
                 continue;
-            for(MCParticle parent : parents){
-                parent_ids.add(parent.getPDGID());
+            double momentum = mcp.getMomentum().magnitude();
+
+            if(pdgid == 622)
+                mcp622.add(mcp);
+            if(pdgid == 623)
+                mcp623.add(mcp);
+            if(momentum > fee)
+                FEEs.add(mcp);
+
+            boolean isRadiative = false;
+
+            if(momentum > fee){
+                parents = mcp.getParents();
+                if(parents == null)
+                    primaryFEEs.add(mcp);
+                else{
+                    for(MCParticle parent : parents){
+                        if(parent.getMomentum().magnitude() > fee){
+                            radFEEs.add(mcp);
+                            break;
+                        }
+                    }
+                }
             }
 
-            if((!parent_ids.contains(622) && !parent_ids.contains(623) && momentum < fee) || Math.abs(mcp.getPDGID()) != 11 ){
+            else{
+                if(parents == null)
+                    continue;
+                for(MCParticle parent : parents){
+                    parent_ids.add(parent.getPDGID());
+                }
+            }
+
+            //Skip mcp unless it is daughter of interesting event, or is FEE
+            if((!parent_ids.contains(622) && !parent_ids.contains(623) && momentum < fee) || radFEEs.contains(mcp)){
                 continue;
             }
+
+            if(momentum < fee)
+                nPrimaryMCPs_noFEEs = nPrimaryMCPs_noFEEs + 1;
 
             System.out.println("Particle of interest found");
             System.out.println("MCP has energy: " + mcp.getEnergy());
@@ -1913,41 +1982,72 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                 plots1D.get("mcp_mostHitsTrack_nHits").fill(mostHits);
         }
 
+        plots1D.get("nPrimary_mcps_per_event").fill(primaryMCPs.size());
+        plots1D.get("nPrimary_mcps_FEEs_per_event").fill(FEEs.size());
+        plots1D.get("nPrimary_mcps_radiativeFEEs_per_event").fill(radFEEs.size());
+        plots1D.get("nPrimary_mcps_per_event_noFEEs").fill(nPrimaryMCPs_noFEEs);
+        plots1D.get("nPrimary_mcps_622_per_event").fill(mcp622.size());
+        plots1D.get("nPrimary_mcps_623_per_event").fill(mcp623.size());
+
+        plots2D.get("nPrimary_mcps_per_event_v_nTracks_per_event").fill(primaryMCPs.size(),tracks.size());
+        plots2D.get("nPrimary_mcps_per_event_v_nTracks_per_event_noFEEs").fill(nPrimaryMCPs_noFEEs,tracks.size());
+
         //Disambiguate MCP Track matches. Tracks must be exclusively matched to
         //a MCP
-
         Map<Track, Map<MCParticle,Integer>> trackMap = new HashMap<Track, Map<MCParticle, Integer>>();
         for(Track track : tracks){
             Map<MCParticle, Integer> bMap = new HashMap<MCParticle, Integer>();
             for(Map.Entry<MCParticle, Map<Track, int[]>> entry : mcpTracksMap.entrySet()){
                 if(entry.getValue().containsKey(track)){
-                    System.out.println("Adding mcp and int to track map");
-                    System.out.println("mcp energy: " + entry.getKey().getEnergy());
-                    System.out.println("int " + entry.getValue().get(track)[0]);
                     bMap.put(entry.getKey(),entry.getValue().get(track)[0]);
                 }
             }
             if(bMap.size() > 0)
                 trackMap.put(track, bMap);
+            else
+                trackMap.put(track, null);
         }
 
+        List<Track> unmatchedTracks = new ArrayList<Track>();
         Map<MCParticle, Map<Track, Integer>> mcpTracksMapDisamb = new HashMap<MCParticle, Map<Track, Integer>>();
-        System.out.println("rebuild mcp map");
+
         for(Map.Entry<Track, Map<MCParticle,Integer>> entry : trackMap.entrySet()){
-            System.out.println("checking track");
+
+            double[] trackP = TrackUtils.getTrackStateAtLocation(entry.getKey(),TrackState.AtIP).getMomentum();
+            double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
+            if(entry.getValue() == null){
+                unmatchedTracks.add(entry.getKey());
+                plots1D.get("nMCPs_on_track").fill(0);
+                continue;
+            }
+
             int mosthits = 0;
             MCParticle bestMCP = null;
+            double bestMCPmomentum = 0.0;
             Map<MCParticle, Integer> bMap = entry.getValue();
+            plots1D.get("nMCPs_on_track").fill(bMap.size());
+
             for(Map.Entry<MCParticle, Integer> subentry : bMap.entrySet()){
-                System.out.println("mcp energy " + subentry.getKey().getEnergy());
-                System.out.println("mcp hits " + subentry.getValue());
+                if(subentry.getValue() == mosthits){
+                    System.out.println("Tie between two MCPs with " + mosthits + " for this track!");
+                    System.out.println("Momentum of previous best mcp: " + bestMCPmomentum);
+                    System.out.println("Momentum of current mcp: " + subentry.getKey().getMomentum().magnitude());
+                    System.out.println("Momentum of current track: " + trackPmag);
+                    if(Math.abs((1-(subentry.getKey().getMomentum().magnitude()/trackPmag))) <= 
+                            Math.abs((1-(bestMCPmomentum/trackPmag)))){
+                        bestMCP = subentry.getKey();
+                        bestMCPmomentum = subentry.getKey().getMomentum().magnitude();
+                        mosthits = subentry.getValue();
+                        System.out.println("New best MCP momentum " + bestMCPmomentum);
+                    }
+                }
                 if(subentry.getValue() > mosthits){
                     mosthits = subentry.getValue();
                     bestMCP = subentry.getKey();
+                    bestMCPmomentum = subentry.getKey().getMomentum().magnitude();
                 }
             }
-            System.out.println("most hits " + mosthits);
-            System.out.println("mcp energy " + bestMCP.getEnergy());
+            System.out.println("MCP with " + mosthits + " hits on Track chosen");
             if(!mcpTracksMapDisamb.containsKey(bestMCP)){
                 Map<Track, Integer> tmpMap = new HashMap<Track,Integer>();
                 tmpMap.put(entry.getKey(),mosthits);
@@ -1957,33 +2057,111 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                 Map<Track, Integer> gammaMap = mcpTracksMapDisamb.get(bestMCP);
                 gammaMap.put(entry.getKey(),mosthits);
                 mcpTracksMapDisamb.put(bestMCP,gammaMap);
-                System.out.println("returning mcp");
-
             }
         }
 
         Set<Track> checkTracks = new HashSet<Track>();
+        int nNonFeeMCPwithTracks=0;
+        int nFEEwithTracks = 0;
+        int nMCPwithTracks = 0;
         for(Map.Entry<MCParticle, Map<Track, Integer>> entry : mcpTracksMapDisamb.entrySet()){
             MCParticle mcp = entry.getKey();
-            System.out.println("[BROKEN] mcp energy: " + mcp.getEnergy());
             Map<Track, Integer> tmpMap = entry.getValue();
+
+            //Check how many hits this MCP left in the tracker
+            int nmcpHits = 0;
+            Set<Integer> layers = new HashSet<Integer>();
+            List<SimTrackerHit> simhits = event.get(SimTrackerHit.class, "TrackerHits");
+            for(SimTrackerHit simhit : simhits){
+                if(layers.contains(simhit.getLayerNumber()))
+                    continue;
+                MCParticle simhitmcp = simhit.getMCParticle();
+                if(simhitmcp == mcp){
+                    layers.add(simhit.getLayerNumber());
+                    nmcpHits = nmcpHits + 1;
+                }
+            }
+            plots1D.get("mcp_nHits_in_Tracker").fill(nmcpHits);
+            System.out.println("N single layer hits left in tracker by this MCP: " + nmcpHits);
+
+            int sumHitsOnTracks = 0;
+            for(Map.Entry<Track, int[]> og : mcpTracksMap.get(mcp).entrySet()){
+                sumHitsOnTracks = sumHitsOnTracks + og.getValue()[0];
+            }
+            plots1D.get("mcp_nHits_in_Tracker_minus_nHits_on_all_Tracks").fill(nmcpHits-sumHitsOnTracks);;
+            System.out.println("mc total N of single layer hits ON Tracks: " + sumHitsOnTracks);
+            System.out.println("mcp single layer hits minus total N hits on Tracks before disambiguation");
+
+            boolean isFEE = false;
+            if(mcp.getMomentum().magnitude() > fee){
+                isFEE = true;
+                plots1D.get("mcp_FEE_nTracks_disambiguated").fill(tmpMap.size());
+                if(tmpMap.size() > 0)
+                    nFEEwithTracks = nFEEwithTracks + 1;
+            }
+            else{
+                plots1D.get("mcp_nonFEE_nTracks_disambiguated").fill(tmpMap.size());
+                if(tmpMap.size() > 0){
+                    nNonFeeMCPwithTracks = nNonFeeMCPwithTracks + 1;
+                }
+            }
+
+            if(tmpMap.size() > 0){
+                nMCPwithTracks = nMCPwithTracks + 1;
+            }
+            
             plots1D.get("mcp_nTracks_disambiguated").fill(entry.getValue().size());
             plots2D.get("mcp_momentum_v_nTracks_disambiguated").fill(mcp.getMomentum().magnitude(),tmpMap.size());
+
             int mosthits = 0;
+            Track mosthitsTrack = null;
             for(Map.Entry<Track, Integer> subentry : tmpMap.entrySet()){
                 Track track = subentry.getKey();
-                System.out.println("[BROKEN] track charge: " + track.getCharge());
                 int nhits = subentry.getValue();
                 plots1D.get("mcp_nhits_on_track_disambiguated").fill(nhits);
                 if(nhits > mosthits){
                     mosthits = nhits;
+                    mosthitsTrack = track;
                 }
                 if(checkTracks.contains(track))
                     System.out.println("FAILURE! TRACKS NOT DISAMBIGUATED");
                 checkTracks.add(track);
             }
             plots1D.get("mcp_most_hits_on_track_disambiguated").fill(mosthits);
+
+            double[] trackP = TrackUtils.getTrackStateAtLocation(mosthitsTrack,TrackState.AtIP).getMomentum();
+            double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
+            double [] params = mosthitsTrack.getTrackParameters();
+
+            if(isFEE)
+                plots1D.get("mcp_FEEs_most_hits_on_track_disambiguated").fill(mosthits);
+            else
+                plots1D.get("mcp_NOT_FEEs_most_hits_on_track_disambiguated").fill(mosthits);
+
+            if(mosthits == 1){
+                System.out.println("ANALYZE! MCP 'most hits on Track' = 1");
+                System.out.println("MCP energy: " + mcp.getEnergy());
+                System.out.println("MCP mom: " + mcp.getMomentum().magnitude() + "; energy: " + mcp.getEnergy());
+                System.out.println("MCP px: " + mcp.getMomentum().x() + "; py: " + mcp.getMomentum().y() + "; pz: " + mcp.getMomentum().z());
+                System.out.println("Track momentum: " + trackPmag);
+                System.out.println("Track px: " + trackP[0] + "; py: " + trackP[1] + "; pz: " + trackP[2]);
+                System.out.println("Track d0: " + params[0] + "; phi0: " + params[1] + "; omega: " + params[2] + "; z0: " + params[3] + "; tanlambda: " + params[4]);
+                System.out.println("Ntracks corresponding to this MCP before disambiguation: " + mcpTracksMap.get(mcp).size());
+                System.out.println("Ntracks corresponding to this MCP after disambiguation: " + entry.getValue().size());
+                System.out.println("Where are the remaining hits on this Track? Before disambiguation");
+                Map<MCParticle, Integer> map = trackMap.get(mosthitsTrack);
+                System.out.println("Track matched to " + map.size() + " other MCPs before disamb");
+                for(Map.Entry<MCParticle, Integer> e : map.entrySet()){
+                    System.out.println("Track includes mcp of energy : " + e.getKey().getEnergy() + "with " + e.getValue() + " hits");
+                }
+            }
+
+            plots2D.get("mcp_momentum_v_best_track_momentum_disam").fill(mcp.getMomentum().magnitude(),trackPmag);
+            plots1D.get("mcp_momentum_best_track_momentum_ratio_disam").fill(mcp.getMomentum().magnitude()/trackPmag);
         }
+
+        plots1D.get("mcp_FEE_wAtLeast_one_track_per_event_disamb").fill(nFEEwithTracks);
+        plots1D.get("mcp_NOT_FEE_wAtLeast_one_track_per_event_disamb").fill(nNonFeeMCPwithTracks);
 
 
         return null;
