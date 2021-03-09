@@ -601,7 +601,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         // Get collection of tracks from event
         List<Track> tracks = event.get(Track.class, trackCollectionName);
 
-        Map<MCParticle, List<Track>> mcpTracks = getMCPTracks(event, tracks);
+        Map<MCParticle, Map<Track,Integer>> mcpTracks = getMCPTracks(event, tracks);
 
         /*
 
@@ -1835,7 +1835,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         return rawhitsPerLayer;
     }   
         
-    public Map<MCParticle, List<Track>> getMCPTracks(EventHeader event, List<Track> tracks){
+    public Map<MCParticle, Map<Track,Integer>> getMCPTracks(EventHeader event, List<Track> tracks){
 
         System.out.println("Event: " + event.getEventNumber());
 
@@ -2158,13 +2158,22 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
             plots2D.get("mcp_momentum_v_best_track_momentum_disam").fill(mcp.getMomentum().magnitude(),trackPmag);
             plots1D.get("mcp_momentum_best_track_momentum_ratio_disam").fill(mcp.getMomentum().magnitude()/trackPmag);
+
+            //apply nhit cuts
+            if(mosthits >= 6){
+                plots2D.get("mcp_momentum_v_best_track_momentum_disam").fill(mcp.getMomentum().magnitude(),trackPmag);
+                plots1D.get("mcp_momentum_best_track_momentum_ratio_disam").fill(mcp.getMomentum().magnitude()/trackPmag);
+            }
+            else{
+                mcpTracksMapDisamb.remove(mcp);           
+            }
         }
 
         plots1D.get("mcp_FEE_wAtLeast_one_track_per_event_disamb").fill(nFEEwithTracks);
         plots1D.get("mcp_NOT_FEE_wAtLeast_one_track_per_event_disamb").fill(nNonFeeMCPwithTracks);
 
 
-        return null;
+        return mcpTracksMapDisamb;
     }
 
     public MCParticle newgetTrackMCP(EventHeader event, Track track, String trackCollectionName, Boolean hitRequirement){
