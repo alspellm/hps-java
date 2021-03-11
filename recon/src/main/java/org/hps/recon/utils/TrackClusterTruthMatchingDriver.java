@@ -123,6 +123,15 @@ public class TrackClusterTruthMatchingDriver extends Driver {
     boolean truthComparisons = true;
 
 
+    //NEW ADDED MAR 8 21
+    int nGoodMatches = 0;
+    int nBadMatches = 0;
+    int nGoodMatches_ele = 0;
+    int nBadMatches_ele = 0;
+    int nGoodMatches_pos = 0;
+    int nBadMatches_pos = 0;
+
+
     //Collection Names
     String ecalScoringPlaneHitsCollectionName = "TrackerHitsECal";
     String trackCollectionName = "KalmanFullTracks";
@@ -164,6 +173,14 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
 
 
+//MATCHING PLOT
+
+        plots1D.put(String.format("%s_mcp_truth_track_cluster_pair_momentum",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_mcp_truth_track_cluster_pair_momentum",this.trackCollectionName), 500, 0, 5));
+        plots1D.put(String.format("%s_mcp_truth_track_cluster_pair_energy",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_mcp_truth_track_cluster_pair_energy",this.trackCollectionName), 500, 0, 5));
+
+        plots1D.put(String.format("mcp_truth_track_cluster_pair_ntrackersimhits",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nRawTrackerHits_per_Track",this.trackCollectionName), 30, 0, 30));
+        plots2D.put(String.format("mcp_truth_track_cluster_pair_ntrackersimhits_v_momentum",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_truth_track_cluster_pair_ntrackersimhits_v_momentum",this.trackCollectionName),20, 0, 20, 500, 0, 5));
+        plots2D.put(String.format("mcp_truth_track_ntrackersimhits_v_mcp_momentum",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_truth_track_ntrackersimhits_v_mcp_momentum",this.trackCollectionName), 20, 0, 20, 500, 0, 5));
 
 //MCP TRUTH MATCH TO TRACKS
         
@@ -210,6 +227,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
         plots2D.put(String.format("mcp_momentum_v_best_track_momentum_disam",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_best_track_momentum_disam",this.trackCollectionName),500, 0, 5, 500, 0, 5));
         plots1D.put(String.format("mcp_momentum_best_track_momentum_ratio_disam",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_momentum_best_track_momentum_ratio_disam",this.trackCollectionName), 200, 0, 2));
+        plots2D.put(String.format("mcp_nsimtrackerHits_v_best_track_nhits_disam",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_nsimtrackerHits_v_best_track_nhits_disam",this.trackCollectionName),20, 0, 20, 20, 0, 20));
 //FINAL CLUSTER TRUTH MATCHING PLOTS
         
         plots1D.put(String.format("cluster_truth_stage_0_energy",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_0_energy",this.trackCollectionName), 1000, 0, 10));
@@ -460,6 +478,12 @@ public class TrackClusterTruthMatchingDriver extends Driver {
     public void endOfData() {
 
         matcher.saveHistograms();
+        System.out.println("number of good matches: " + nGoodMatches);
+        System.out.println("number of bad matches: " + nBadMatches);
+        System.out.println("number of good matches ele: " + nGoodMatches_ele);
+        System.out.println("number of bad matches ele: " + nBadMatches_ele);
+        System.out.println("number of good matches pos: " + nGoodMatches_pos);
+        System.out.println("number of bad matches pos: " + nBadMatches_pos);
        
         //track reco efficiency
         trackEfficiency = NrecoTruthTracks/NpossibleTracks;
@@ -581,27 +605,178 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         Map<Cluster, MCParticle> truthClustersMap = getClusterMcpMap(clusters, event, false);
         List<Cluster> truthClusters = new ArrayList<Cluster>();
         for(Map.Entry<Cluster,MCParticle> entry : truthClustersMap.entrySet()){
-            truthClusters.add(entry.getKey());
-        }
-        drawEcalFace(truthClusters);
-
-        for(Cluster cluster : truthClusters){
-            double clustx = cluster.getPosition()[0];
-            double clusty = cluster.getPosition()[1];
-            double clustz = cluster.getPosition()[2];
-            double clusterEnergy = cluster.getEnergy();
-            double energyRatio = clusterEnergy/truthClustersMap.get(cluster).getEnergy();
+            Cluster truthcluster = entry.getKey();
+            double clustx = truthcluster.getPosition()[0];
+            double clusty = truthcluster.getPosition()[1];
+            double clustz = truthcluster.getPosition()[2];
+            double clusterEnergy = truthcluster.getEnergy();
+            double energyRatio = clusterEnergy/truthClustersMap.get(truthcluster).getEnergy();
 
             plots1D.get(String.format("cluster_truth_energy",trackCollectionName)).fill(clusterEnergy);
             plots2D.get(String.format("cluster_truthpositions_xy_plane")).fill(clustx,clusty);
             plots1D.get(String.format("cluster_truthMCP_energy_ratio_sorted",this.trackCollectionName)).fill(energyRatio);
+            truthClusters.add(entry.getKey());
         }
+        drawEcalFace(truthClusters);
 
 
         // Get collection of tracks from event
         List<Track> tracks = event.get(Track.class, trackCollectionName);
 
+        //Get Kalman Track Data
+        hitToRotated = TrackUtils.getHitToRotatedTable(event);
+        hitToStrips = TrackUtils.getHitToStripsTable(event);
+        List<TrackData> TrackData;
+        List<LCRelation> trackRelations;
+        if (this.trackCollectionName.contains("KalmanFullTracks")) {
+            TrackData = event.get(TrackData.class, "KFTrackData");
+            trackRelations = event.get(LCRelation.class, "KFTrackDataRelations");
+            for (LCRelation relation : trackRelations) {
+                if (relation != null && relation.getTo() != null){
+                    TrktoData.add(relation.getFrom(), relation.getTo());
+                }
+            }
+        }
+
+        //Get Map of MCParticles to truth matched Tracks (and nhits on Track)
         Map<MCParticle, Map<Track,Integer>> mcpTracks = getMCPTracks(event, tracks);
+
+        //Feed Track and Cluster collections to matcher algorithm to get
+        //algorithm matched Tracks and Clusters
+        Map<Track, Cluster> matchedTrackClusterMap = new HashMap<Track,Cluster>();
+        List<List<Track>> trackCollections = new ArrayList<List<Track>>();
+        trackCollections.add(tracks);
+        matchedTrackClusterMap = matcher.matchTracksToClusters(event, trackCollections, clusters, cuts, -1, false, true, ecal, beamEnergy);
+
+        //Photon matcher evaluation
+        for(Map.Entry<Cluster,MCParticle> entry : truthClustersMap.entrySet()){
+            Cluster truthCluster = entry.getKey();
+            MCParticle mcp = entry.getValue();
+            if(mcp.getPDGID() != 22)
+                continue;
+            plots2D.get("photon_truth_energy_v_cluster_energy").fill(mcp.getEnergy(),truthCluster.getEnergy());
+            if(matchedTrackClusterMap.containsValue(truthCluster)){
+                nBadPhotons = nBadPhotons + 1;
+                plots2D.get("photon_truth_energy_v_cluster_energy_trackMatched").fill(mcp.getEnergy(),truthCluster.getEnergy());
+            }
+            else
+                nGoodPhotons = nGoodPhotons + 1;
+        }
+
+        int nRogueClusters = 0;
+        int nRogueClusterMatch = 0;
+
+        for(Cluster cluster : clusters){
+            if(truthClustersMap.containsKey(cluster))
+                continue;
+            boolean isNotRogueMatch = true;
+            if(matchedTrackClusterMap.containsValue(cluster)){
+                for(Map.Entry<Track, Cluster> entry : matchedTrackClusterMap.entrySet()){
+                    if(entry.getValue() == cluster){
+                        //rogue match
+                        for(Map.Entry<MCParticle,Map<Track,Integer>> subentry : mcpTrackMap.entrySet()){
+                            if(subentry.getValue().containsKey(entry.getKey())){
+                                nTruthlessClusterMatch = nTruthlessCluserMatch + 1;    
+                                isNotRogueMatch = false;
+                            }
+                        }
+                    }
+                }
+                continue;
+            }
+            else
+                nRoguePhotons = nRoguePhotons + 1;
+            nRogueClusters = nRogueClusters + 1;
+
+        }
+
+        //Charged Track matcher Evaluation
+        Map<Track, Cluster> goodMatchTracks = new HashMap<Track,Cluster>();
+        Map<Track, Cluster> badMatchTracks = new HashMap<Track,Cluster>();
+
+        //Loop over MCParticle Track map. 
+        //Check if MCParticle has Track AND Cluster...If not...skip MCP
+        for(Map.Entry<MCParticle,Map<Track,Integer>> entry : mcpTracks.entrySet()){
+            MCParticle mcp = entry.getKey();
+            int nmcpHits = getNSimTrackerHits(event, mcp);
+            plots2D.get("mcp_truth_track_ntrackersimhits_v_mcp_momentum").fill(nmcpHits,mcp.getMomentum().magnitude());
+            Map<Track, Integer> mcpTrackMap = entry.getValue();
+
+            //Check if there is a cluster that goes with this MCP
+            Cluster truthCluster = null;
+            if(truthClustersMap.containsValue(mcp)){
+                for(Map.Entry<Cluster, MCParticle> clusterMap : truthClustersMap.entrySet()){
+                    if(clusterMap.getValue() == mcp){
+                        System.out.println("Found Cluster for MCP with Track");
+                        truthCluster = clusterMap.getKey();
+                        plots1D.get(String.format("%s_mcp_truth_track_cluster_pair_momentum",this.trackCollectionName)).fill(mcp.getMomentum().magnitude());
+                        plots1D.get(String.format("%s_mcp_truth_track_cluster_pair_energy",this.trackCollectionName)).fill(mcp.getEnergy());
+                        plots1D.get("mcp_truth_track_cluster_pair_ntrackersimhits").fill(nmcpHits);
+                        plots2D.get("mcp_truth_track_cluster_pair_ntrackersimhits_v_momentum").fill(nmcpHits,mcp.getMomentum().magnitude());
+                        break;
+                    }
+                }
+            }
+            else{
+                //MCP with Tracks does not have a cluster...move to next MCP
+                System.out.println("MCP with Track does not have truth Cluster");
+                continue;
+            }
+
+            //Loop over algorithm matched Track+Cluster pairs. Check if
+            //algorithm returns a match that can be validated using truth
+            //information
+            for(Map.Entry<Track,Cluster> matches : matchedTrackClusterMap.entrySet()){
+                Track track = matches.getKey();
+                int charge = -1* (int)Math.signum(track.getTrackStates().get(0).getOmega());
+                System.out.println("Algorithm Track with momentum  " + track.getMomentum()[0]);
+
+                Cluster cluster = matches.getValue();
+                if(cluster == null)
+                    System.out.println("Algorithm Track not matched with cluster");
+                else
+                    System.out.println("Algorithm Track matched to cluster w energy: " + cluster.getEnergy());
+                if(cluster != truthCluster){
+                    continue;
+                }
+                if(cluster == truthCluster)
+                    System.out.println("Cluster matches truth cluster");
+                for(Map.Entry<Track,Integer> e : mcpTrackMap.entrySet()){
+                    System.out.println("Possible Track momentum: " + e.getKey().getMomentum()[0]);
+                }
+
+                //check if algorithm Track matches truth Track
+                if(mcpTrackMap.containsKey(track)){
+                    goodMatchTracks.put(track, cluster); 
+                    if(charge < 0)
+                        nGoodMatches_ele = nGoodMatches_ele + 1;
+                    else
+                        nGoodMatches_pos = nGoodMatches_pos + 1;
+                    
+                    break;
+                }
+                else{
+                    badMatchTracks.put(track, cluster);
+                    if(charge < 0)
+                        nBadMatches_ele = nBadMatches_ele + 1;
+                    else
+                        nBadMatches_pos = nBadMatches_pos + 1;
+                    break;
+                }
+            }
+        }
+
+        nGoodMatches = nGoodMatches + goodMatchTracks.size();
+        nBadMatches = nBadMatches + badMatchTracks.size();
+        //Fake fraction
+        //fakeFrac_ele = nBadMatches_ele/(nBadMatches_ele + nGoodMatches_ele);
+
+
+
+
+
+
+
 
         /*
 
@@ -1154,18 +1329,18 @@ public class TrackClusterTruthMatchingDriver extends Driver {
     }
 
 
-    public SimTrackerHit getTrackScoringPlaneHit(EventHeader event, Track track, MCParticle trackMCP, String ecalScoringPlaneHitsCollectionName) {
+    public SimTrackerHit getTrackScoringPlaneHit(EventHeader event, MCParticle mcp, String ecalScoringPlaneHitsCollectionName) {
 
         List<SimTrackerHit> scoringPlaneHits = event.get(SimTrackerHit.class, ecalScoringPlaneHitsCollectionName);
 
 
         //Check for simtrackerhit MCP that matches trackMCP
-        if(trackMCP == null)
+        if(mcp == null)
             return null;
         SimTrackerHit matchedScoringPlaneHit = null;
         for(SimTrackerHit scoringPlaneHit : scoringPlaneHits){
             // If the MC particles don't match, move on to the next particle
-            if(!(scoringPlaneHit.getMCParticle() == trackMCP)) continue;
+            if(!(scoringPlaneHit.getMCParticle() == mcp)) continue;
             matchedScoringPlaneHit = scoringPlaneHit;
             // Once a match is found, there is no need to loop through the rest of the list
             break;
@@ -1835,6 +2010,23 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         return rawhitsPerLayer;
     }   
         
+    public int getNSimTrackerHits(EventHeader event, MCParticle mcp){
+        //Check how many hits this MCP left in the tracker
+        int nmcpHits = 0;
+        Set<Integer> layers = new HashSet<Integer>();
+        List<SimTrackerHit> simhits = event.get(SimTrackerHit.class, "TrackerHits");
+        for(SimTrackerHit simhit : simhits){
+            if(layers.contains(simhit.getLayerNumber()))
+                continue;
+            MCParticle simhitmcp = simhit.getMCParticle();
+            if(simhitmcp == mcp){
+                layers.add(simhit.getLayerNumber());
+                nmcpHits = nmcpHits + 1;
+            }
+        }
+        return nmcpHits;
+    }
+
     public Map<MCParticle, Map<Track,Integer>> getMCPTracks(EventHeader event, List<Track> tracks){
 
         System.out.println("Event: " + event.getEventNumber());
@@ -1862,6 +2054,9 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         int nPrimaryMCPs_noFEEs = 0;
         for(MCParticle mcp : allmcps){
             boolean skip = false;
+
+            int nmcpHits = getNSimTrackerHits(event, mcp);
+            plots1D.get("mcp_nHits_in_Tracker").fill(nmcpHits);
             Set<RawTrackerHit> rawhitsMCP = new HashSet<RawTrackerHit>();
             Map <Track, int[]> rawhitMultiplicity = new HashMap<Track, int[]>();
 
@@ -2047,6 +2242,9 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                     bestMCPmomentum = subentry.getKey().getMomentum().magnitude();
                 }
             }
+            //Any Tracks with less than 6 MCP hits on Track are discarded
+            //if(mosthits < 6)
+              //  continue;
             System.out.println("MCP with " + mosthits + " hits on Track chosen");
             if(!mcpTracksMapDisamb.containsKey(bestMCP)){
                 Map<Track, Integer> tmpMap = new HashMap<Track,Integer>();
@@ -2068,29 +2266,10 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             MCParticle mcp = entry.getKey();
             Map<Track, Integer> tmpMap = entry.getValue();
 
-            //Check how many hits this MCP left in the tracker
-            int nmcpHits = 0;
-            Set<Integer> layers = new HashSet<Integer>();
-            List<SimTrackerHit> simhits = event.get(SimTrackerHit.class, "TrackerHits");
-            for(SimTrackerHit simhit : simhits){
-                if(layers.contains(simhit.getLayerNumber()))
-                    continue;
-                MCParticle simhitmcp = simhit.getMCParticle();
-                if(simhitmcp == mcp){
-                    layers.add(simhit.getLayerNumber());
-                    nmcpHits = nmcpHits + 1;
-                }
-            }
-            plots1D.get("mcp_nHits_in_Tracker").fill(nmcpHits);
-            System.out.println("N single layer hits left in tracker by this MCP: " + nmcpHits);
-
             int sumHitsOnTracks = 0;
             for(Map.Entry<Track, int[]> og : mcpTracksMap.get(mcp).entrySet()){
                 sumHitsOnTracks = sumHitsOnTracks + og.getValue()[0];
             }
-            plots1D.get("mcp_nHits_in_Tracker_minus_nHits_on_all_Tracks").fill(nmcpHits-sumHitsOnTracks);;
-            System.out.println("mc total N of single layer hits ON Tracks: " + sumHitsOnTracks);
-            System.out.println("mcp single layer hits minus total N hits on Tracks before disambiguation");
 
             boolean isFEE = false;
             if(mcp.getMomentum().magnitude() > fee){
@@ -2158,15 +2337,12 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
             plots2D.get("mcp_momentum_v_best_track_momentum_disam").fill(mcp.getMomentum().magnitude(),trackPmag);
             plots1D.get("mcp_momentum_best_track_momentum_ratio_disam").fill(mcp.getMomentum().magnitude()/trackPmag);
+            plots2D.get("mcp_nsimtrackerHits_v_best_track_nhits_disam").fill(getNSimTrackerHits(event,mcp),mosthits);
 
-            //apply nhit cuts
-            if(mosthits >= 6){
-                plots2D.get("mcp_momentum_v_best_track_momentum_disam").fill(mcp.getMomentum().magnitude(),trackPmag);
-                plots1D.get("mcp_momentum_best_track_momentum_ratio_disam").fill(mcp.getMomentum().magnitude()/trackPmag);
-            }
-            else{
-                mcpTracksMapDisamb.remove(mcp);           
-            }
+            //Get scoringplane hit and plot
+            SimTrackerHit scoringplanehit = getTrackScoringPlaneHit(event, mcp, ecalScoringPlaneHitsCollectionName);
+            if(scoringplanehit != null)
+                trackScoringPlanePlots(event, mosthitsTrack, scoringplanehit);
         }
 
         plots1D.get("mcp_FEE_wAtLeast_one_track_per_event_disamb").fill(nFEEwithTracks);
