@@ -67,6 +67,16 @@ public class TrackClusterTruthMatchingDriver extends Driver {
     protected StandardCuts cuts = new StandardCuts();
     TrackClusterMatcherInter matcher;
 
+    //030112021
+    //Charged Track matcher Evaluation
+    Map<Track, Cluster> goodMatches = new HashMap<Track,Cluster>();
+    Map<Track, Cluster> badMatches = new HashMap<Track,Cluster>();
+    Map<Track, Cluster> unknownMatches = new HashMap<Track, Cluster>();
+    Map<Track, Cluster> notTrackableMatches = new HashMap<Track, Cluster>();
+    Map<Track, Cluster> rogueMatches = new HashMap<Track,Cluster>();
+    List<Track> rogueTracks = new ArrayList<Track>();
+    List<Cluster> roguePhotons = new ArrayList<Cluster>();
+
     //INITIALIZE TERMS TO EVALUATE MATCHING PERFORMANCE
     int ntruthpairs_ele = 0;
     int ntruthpairs_pos = 0;
@@ -477,7 +487,20 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
     public void endOfData() {
 
+
+
         matcher.saveHistograms();
+        saveHistograms();
+
+        System.out.println("number of good matches: " + goodMatches.size());
+        System.out.println("number of bad matches: " + badMatches.size());
+        System.out.println("number of unknown matches: " + unknownMatches.size());
+        System.out.println("number of not trackable matches: " + notTrackableMatches.size());
+        System.out.println("number of rogue matches: " + rogueMatches.size());
+        System.out.println("number of rogue Tracks: " + rogueTracks.size());
+        System.out.println("number of rogue photons: " + roguePhotons.size());
+
+        /*
         System.out.println("number of good matches: " + nGoodMatches);
         System.out.println("number of bad matches: " + nBadMatches);
         System.out.println("number of good matches ele: " + nGoodMatches_ele);
@@ -493,7 +516,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         for(int i = 0; i < Math.round(nDuplicates); i++)
             plots1D.get(String.format("%s_n_duplicate_TrackMCP_matches",this.trackCollectionName)).fill(1.0);
 
-        /*
+        //
         for(int i=0; i < Math.round(fakerate_ele*100); i++){
             System.out.println("Filling Histogram fakerate");
             plots1D.get(String.format("%s_ele_fakeRate",this.trackCollectionName)).fill(1.0);
@@ -504,8 +527,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             plots1D.get(String.format("%s_pos_Efficiency",this.trackCollectionName)).fill(1.0);
         for(int i=0; i < Math.round(efficiency_pos*100); i++)
             plots1D.get(String.format("%s_ele_Efficiency",this.trackCollectionName)).fill(1.0);
-            */
-        saveHistograms();
+            //
         System.out.println("goodMatch_ele: " + goodMatch_ele);
         System.out.println("fakeMatch_ele: " + fakeMatch_ele);
         System.out.println("noMatch_ele: " + noMatch_ele);
@@ -527,6 +549,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         System.out.println("unknownMatchTruthCluster_pos: " + unknownMatchTruthCluster_pos);
         System.out.println("truthTrackOutsideEcal_pos: " + truthTrackOutsideEcal_pos);
         System.out.println("trackOutsideEcal_pos: " + trackOutsideEcal_pos);
+        */
     }
 
 
@@ -593,24 +616,23 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         //If event has no collection of tracks, skip
         if(!event.hasCollection(Track.class, trackCollectionName)) return;
 
-        //If even doesnt have collection of Ecal scoring plane hits, skip
-        if(!event.hasCollection(SimTrackerHit.class, ecalScoringPlaneHitsCollectionName)) return;
 
         //Get EcalClusters from event
         List<Cluster> clusters = event.get(Cluster.class, ecalClustersCollectionName);
 
-
         //Truth Match Clusters to MCParticles    
-        //Map<Cluster,MCParticle> truthClustersMap = getUniqueTruthClusters(event,clusters);
-        Map<Cluster, MCParticle> truthClustersMap = getClusterMcpMap(clusters, event, false);
+        Map<MCParticle, Cluster> mcpClustersMap = new HashMap<MCParticle, Cluster>();
+        Map<Cluster, MCParticle> clustersMCPMap = new HashMap<Cluster, MCParticle>();
+        getClusterMcpMap(clusters, event, false, mcpClustersMap, clustersMCPMap);
+
         List<Cluster> truthClusters = new ArrayList<Cluster>();
-        for(Map.Entry<Cluster,MCParticle> entry : truthClustersMap.entrySet()){
+        for(Map.Entry<Cluster,MCParticle> entry : clustersMCPMap.entrySet()){
             Cluster truthcluster = entry.getKey();
             double clustx = truthcluster.getPosition()[0];
             double clusty = truthcluster.getPosition()[1];
             double clustz = truthcluster.getPosition()[2];
             double clusterEnergy = truthcluster.getEnergy();
-            double energyRatio = clusterEnergy/truthClustersMap.get(truthcluster).getEnergy();
+            double energyRatio = clusterEnergy/clustersMCPMap.get(truthcluster).getEnergy();
 
             plots1D.get(String.format("cluster_truth_energy",trackCollectionName)).fill(clusterEnergy);
             plots2D.get(String.format("cluster_truthpositions_xy_plane")).fill(clustx,clusty);
@@ -618,7 +640,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             truthClusters.add(entry.getKey());
         }
         drawEcalFace(truthClusters);
-
 
         // Get collection of tracks from event
         List<Track> tracks = event.get(Track.class, trackCollectionName);
@@ -639,7 +660,42 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         }
 
         //Get Map of MCParticles to truth matched Tracks (and nhits on Track)
-        Map<MCParticle, Map<Track,Integer>> mcpTracks = getMCPTracks(event, tracks);
+        Map<MCParticle, Map<Track, Integer>> mcpTracksMap = new HashMap<MCParticle, Map<Track, Integer>>();
+        Map<Track, MCParticle> tracksMCPMap = new HashMap<Track, MCParticle>();
+        getMCPTracks(event, tracks, mcpTracksMap, tracksMCPMap);
+
+
+        //Combine Cluster and Track MCParticle Map into one map
+        Map<MCParticle, Pair<Cluster, List<Track>>> comboMap = new HashMap<MCParticle, Pair<Cluster, List<Track>>>();
+        Set<MCParticle> mcpsOfInterest = new HashSet<MCParticle>();
+
+        for(Map.Entry<MCParticle, Map<Track, Integer>> entry : mcpTracksMap.entrySet()){
+            MCParticle mcp = entry.getKey();
+            mcpsOfInterest.add(mcp);
+        }
+        for(Map.Entry<MCParticle, Cluster> entry : mcpClustersMap.entrySet()){
+            MCParticle mcp = entry.getKey();
+            mcpsOfInterest.add(mcp);
+        }
+        for(MCParticle mcp : mcpsOfInterest){
+            List<Track> mcpTracks = new ArrayList<Track>();
+            Cluster mcpCluster = null;
+            //get tracks matched to this mcp
+            if(mcpTracksMap.containsKey(mcp)){
+                for(Map.Entry<Track, Integer> subentry : mcpTracksMap.get(mcp).entrySet()){
+                    mcpTracks.add(subentry.getKey());
+                }
+            }
+
+            //get cluster matched to this mcp
+            if(mcpClustersMap.containsKey(mcp))
+                mcpCluster = mcpClustersMap.get(mcp);
+
+            Pair<Cluster, List<Track>> pairs = new Pair<Cluster,List<Track>>(mcpCluster, mcpTracks);
+            comboMap.put(mcp, pairs);
+        }
+
+
 
         //Feed Track and Cluster collections to matcher algorithm to get
         //algorithm matched Tracks and Clusters
@@ -647,53 +703,162 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         List<List<Track>> trackCollections = new ArrayList<List<Track>>();
         trackCollections.add(tracks);
         matchedTrackClusterMap = matcher.matchTracksToClusters(event, trackCollections, clusters, cuts, -1, false, true, ecal, beamEnergy);
+        /*
+        //Charged Track matcher Evaluation
+        Map<Track, Cluster> goodMatches = new HashMap<Track,Cluster>();
+        Map<Track, Cluster> badMatches = new HashMap<Track,Cluster>();
+        Map<Track, Cluster> unknownMatches = new HashMap<Track, Cluster>();
+        Map<Track, Cluster> notTrackableMatches = new HashMap<Track, Cluster>();
+        Map<Track, Cluster> rogueMatches = new HashMap<Track,Cluster>();
+        List<Track> rogueTracks = new ArrayList<Track>();
+        List<Cluster> roguePhotons = new ArrayList<Cluster>();
+        */
 
-        //Photon matcher evaluation
-        for(Map.Entry<Cluster,MCParticle> entry : truthClustersMap.entrySet()){
-            Cluster truthCluster = entry.getKey();
-            MCParticle mcp = entry.getValue();
-            if(mcp.getPDGID() != 22)
-                continue;
-            plots2D.get("photon_truth_energy_v_cluster_energy").fill(mcp.getEnergy(),truthCluster.getEnergy());
-            if(matchedTrackClusterMap.containsValue(truthCluster)){
-                nBadPhotons = nBadPhotons + 1;
-                plots2D.get("photon_truth_energy_v_cluster_energy_trackMatched").fill(mcp.getEnergy(),truthCluster.getEnergy());
-            }
-            else
-                nGoodPhotons = nGoodPhotons + 1;
-        }
+        //Loop over MCParticles
+        for(Map.Entry<MCParticle, Pair<Cluster, List<Track>>> entry : comboMap.entrySet()){
+            MCParticle mcp = entry.getKey();
+            int nmcpHits = getNSimTrackerHits(event, mcp);
+            plots2D.get("mcp_truth_track_ntrackersimhits_v_mcp_momentum").fill(nmcpHits,mcp.getMomentum().magnitude());
+            Pair<Cluster, List<Track>> pair = entry.getValue();
+            Cluster mcpCluster = pair.getFirstElement();
+            List<Track> mcpTracks = pair.getSecondElement();
 
-        int nRogueClusters = 0;
-        int nRogueClusterMatch = 0;
+            //Check charged MCP's first
+            if(Math.abs(mcp.getPDGID()) == 11){
 
-        for(Cluster cluster : clusters){
-            if(truthClustersMap.containsKey(cluster))
-                continue;
-            boolean isNotRogueMatch = true;
-            if(matchedTrackClusterMap.containsValue(cluster)){
-                for(Map.Entry<Track, Cluster> entry : matchedTrackClusterMap.entrySet()){
-                    if(entry.getValue() == cluster){
-                        //rogue match
-                        for(Map.Entry<MCParticle,Map<Track,Integer>> subentry : mcpTrackMap.entrySet()){
-                            if(subentry.getValue().containsKey(entry.getKey())){
-                                nTruthlessClusterMatch = nTruthlessCluserMatch + 1;    
-                                isNotRogueMatch = false;
+                //If MCP does have a truth cluster, we can check to see if that
+                //cluster was matched to any tracks by the macher algorithm
+                if(mcpCluster != null){
+
+                    //Check if mcpCluster is matched to track in algorithm matcher
+                    if(matchedTrackClusterMap.containsValue(mcpCluster)){
+                        //find the track matched to this cluster by algorithm,
+                        //if any
+                        Track algTrack = null;
+                        for(Map.Entry<Track, Cluster> subentry : matchedTrackClusterMap.entrySet()){
+                            if(subentry.getValue() == mcpCluster){
+                                algTrack = subentry.getKey();
+                                break;
+                            }
+                        }
+
+                        //If we know the truth info for this algTrack, we can
+                        //determine if the match is correct. 
+                        if(tracksMCPMap.containsKey(algTrack)){
+                            //if alg track is one of the tracks matched to this
+                            //mcp, good match
+                            if(mcpTracks.contains(algTrack)){
+                                goodMatches.put(algTrack, mcpCluster);
+                            }
+                            else{
+                                badMatches.put(algTrack, mcpCluster);
+                            }
+                        }
+
+                        //if we dont know the truth info for this algTrack
+                        else{
+                            //If this algTrack has no truth information, and it
+                            //was matched to the cluster of a MCP that does
+                            //have truth tracks, then we know this algTrack
+                            //match is wrong.
+                            if(mcpTracks.size() > 0){
+                                badMatches.put(algTrack, mcpCluster);
+                            }
+                            //If MCP has no truth track, we cant be sure that
+                            //this algTrack is wrong
+                            else{
+                                unknownMatches.put(algTrack, mcpCluster);
                             }
                         }
                     }
-                }
-                continue;
-            }
-            else
-                nRoguePhotons = nRoguePhotons + 1;
-            nRogueClusters = nRogueClusters + 1;
 
+                    else{
+                        //mcpCluster was not matched to any Track. 
+
+                        //If this mcp has mcpTracks, then it should have
+                        //matched the mcpCluster to one of those mcpTracks.
+                        if(mcpTracks.size() > 0){
+                            badMatches.put(null, mcpCluster);
+                        }
+                        else{
+                            //If mcp has no mcpTracks, then we cant determine
+                            //if the mcpCluster was matched incorrectly.
+                            notTrackableMatches.put(null, mcpCluster);
+                        }
+                    }
+                }
+
+                //If mcpCluster is null, there is no truth cluster for this
+                //MCP. 
+                //So instead of looking for the mcpCluster to have been matched
+                //to a Track...we now check if the mcpTracks were matched to a
+                //cluster.
+                else{
+                    //Check to see if this MCP leaves any simcalhits.
+                    //If it does, then we expect the MCP to leave a cluster.
+                    //If it does not, we do not expect the MCP to leave a
+                    //cluster.
+
+                    boolean clusterExpected = false;
+                    boolean algClusterIsRogue = true;
+                    //If this MCP left simcalhits, it should get matched to a
+                    //cluster.
+                    if(getNmcpSimcalhits(event, "EcalHits", mcp) > 0){
+                        clusterExpected = true;
+                    }
+                    //loop over all mcpTracks
+                    Cluster matchedCluster = null;
+                    Track matchedTrack = null;
+                    Track mcpBestTrack = getMcpBestTrack(mcp, mcpTracksMap);
+                    matchedCluster = matchedTrackClusterMap.get(mcpBestTrack);
+                    matchedTrack = mcpBestTrack;
+                    if(matchedCluster == null){
+                        for(Track track : mcpTracks){
+                            matchedCluster = matchedTrackClusterMap.get(track);
+                            if(matchedCluster != null){
+                                matchedTrack = track;
+                                break;
+                            }
+                        }
+                    }
+
+                    if(clusterExpected){
+                        if(matchedCluster == null){
+                            unknownMatches.put(matchedTrack,null);
+                        }
+                        //if this matchedCluster belongs to a different
+                        //MCP, this is a bad match
+                        else if(clustersMCPMap.containsKey(matchedCluster)){
+                            badMatches.put(matchedTrack, matchedCluster);
+                        }
+                        else{
+                            unknownMatches.put(matchedTrack, matchedCluster);
+                        }
+                    }
+                    else{
+                        if(matchedCluster == null){
+                            goodMatches.put(matchedTrack,null);
+                        }
+                        else{
+                            badMatches.put(matchedTrack,matchedCluster);
+                        }
+                    }
+                }
+            }
+
+            //Loop over photon MCPs
+            if(Math.abs(mcp.getPDGID()) == 22){
+                //If photon is matched to any track            
+                if(matchedTrackClusterMap.containsValue(mcpCluster)){
+                    badMatches.put(null,mcpCluster);
+                }
+                else{
+                    goodMatches.put(null, mcpCluster);
+                }
+            }
         }
 
-        //Charged Track matcher Evaluation
-        Map<Track, Cluster> goodMatchTracks = new HashMap<Track,Cluster>();
-        Map<Track, Cluster> badMatchTracks = new HashMap<Track,Cluster>();
-
+        /*
         //Loop over MCParticle Track map. 
         //Check if MCParticle has Track AND Cluster...If not...skip MCP
         for(Map.Entry<MCParticle,Map<Track,Integer>> entry : mcpTracks.entrySet()){
@@ -770,6 +935,53 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         nBadMatches = nBadMatches + badMatchTracks.size();
         //Fake fraction
         //fakeFrac_ele = nBadMatches_ele/(nBadMatches_ele + nGoodMatches_ele);
+        */
+
+        /*
+        //Photon matcher evaluation
+        for(Map.Entry<Cluster,MCParticle> entry : truthClustersMap.entrySet()){
+            Cluster truthCluster = entry.getKey();
+            MCParticle mcp = entry.getValue();
+            if(mcp.getPDGID() != 22)
+                continue;
+            plots2D.get("photon_truth_energy_v_cluster_energy").fill(mcp.getEnergy(),truthCluster.getEnergy());
+            if(matchedTrackClusterMap.containsValue(truthCluster)){
+                nBadPhotons = nBadPhotons + 1;
+                plots2D.get("photon_truth_energy_v_cluster_energy_trackMatched").fill(mcp.getEnergy(),truthCluster.getEnergy());
+            }
+            else
+                nGoodPhotons = nGoodPhotons + 1;
+        }
+
+        int nRogueClusters = 0;
+        int nRogueClusterMatch = 0;
+
+        for(Cluster cluster : clusters){
+            if(truthClustersMap.containsKey(cluster))
+                continue;
+            boolean isNotRogueMatch = true;
+            if(matchedTrackClusterMap.containsValue(cluster)){
+                for(Map.Entry<Track, Cluster> entry : matchedTrackClusterMap.entrySet()){
+                    if(entry.getValue() == cluster){
+                        //rogue match
+                        for(Map.Entry<MCParticle,Map<Track,Integer>> subentry : mcpTrackMap.entrySet()){
+                            if(subentry.getValue().containsKey(entry.getKey())){
+                                nTruthlessClusterMatch = nTruthlessCluserMatch + 1;    
+                                isNotRogueMatch = false;
+                            }
+                        }
+                    }
+                }
+                continue;
+            }
+            else
+                nRoguePhotons = nRoguePhotons + 1;
+            nRogueClusters = nRogueClusters + 1;
+
+        }
+        */
+
+
 
 
 
@@ -1331,6 +1543,10 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
     public SimTrackerHit getTrackScoringPlaneHit(EventHeader event, MCParticle mcp, String ecalScoringPlaneHitsCollectionName) {
 
+        
+        //If even doesnt have collection of Ecal scoring plane hits, skip
+        if(!event.hasCollection(SimTrackerHit.class, ecalScoringPlaneHitsCollectionName)) return null;
+
         List<SimTrackerHit> scoringPlaneHits = event.get(SimTrackerHit.class, ecalScoringPlaneHitsCollectionName);
 
 
@@ -1618,8 +1834,21 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         return mcparticles;
     }
 
+    public int getNmcpSimcalhits(EventHeader event, String simcalhitsCollectionName, MCParticle mcp){
 
-    private Map<Cluster, MCParticle> getClusterMcpMap(List<Cluster> clusters, EventHeader event, boolean verbose){
+        List<SimCalorimeterHit> simcalhits = event.get(SimCalorimeterHit.class, simcalhitsCollectionName);
+        int nHits = 0;
+        for(SimCalorimeterHit simcalhit : simcalhits){
+            for(int i = 0; i < simcalhit.getMCParticleCount(); i++){
+                MCParticle particle = simcalhit.getMCParticle(i);           
+                if(particle == mcp)
+                    nHits = nHits + 1;
+            }
+        }
+        return nHits;
+    }
+
+    private void getClusterMcpMap(List<Cluster> clusters, EventHeader event, boolean verbose, Map<MCParticle, Cluster> mcpClustersMapIn, Map<Cluster, MCParticle> clustersMCPMapIn){
 
         HashMap<MCParticle, HashSet<Cluster>> mcpClusterMap = new HashMap<MCParticle, HashSet<Cluster>>();
         HashMap<Cluster,MCParticle> mcpClusterMapFinal = new HashMap<Cluster, MCParticle>();
@@ -1785,7 +2014,8 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             if(tClusters.size() < 2){
                 for(Cluster tCluster : tClusters){
                     mcpClusterMapFinal.put(tCluster, mcp);
-
+                    mcpClustersMapIn.put(mcp, tCluster);
+                    clustersMCPMapIn.put(tCluster, mcp);
                 }
             }
 
@@ -1824,6 +2054,8 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                 }
                 else if(recoveredDup.size() > 0 & recoveredDup.size() < 2) {
                     mcpClusterMapFinal.put(recoveredDup.get(0),mcp);
+                    mcpClustersMapIn.put(mcp, recoveredDup.get(0));
+                    clustersMCPMapIn.put(recoveredDup.get(0),mcp);
                 }
             }
         }
@@ -1838,7 +2070,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             plots1D.get(String.format("cluster_truth_stage_final_energy_ratio",this.trackCollectionName)).fill(energyRatio);
             plots2D.get("cluster_truth_stage_final_cluster_v_mcp_energy").fill(cluster.getEnergy(),mcp.getEnergy());
         }
-        return mcpClusterMapFinal;
+        //return mcpClusterMapFinal;
     }
 
     private MCParticle getClusterMCP(Cluster cluster, EventHeader event, boolean verbose) {
@@ -2027,7 +2259,19 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         return nmcpHits;
     }
 
-    public Map<MCParticle, Map<Track,Integer>> getMCPTracks(EventHeader event, List<Track> tracks){
+    public Track getMcpBestTrack(MCParticle mcp, Map<MCParticle, Map<Track, Integer>> mcpTracksMap){
+        int mostHits = 0;
+        Track mcpBestTrack = null;
+        for(Map.Entry<Track, Integer> entry : mcpTracksMap.get(mcp).entrySet()){
+            if(entry.getValue() > mostHits){
+                mostHits = entry.getValue();
+                mcpBestTrack = entry.getKey();
+            }
+        }
+        return mcpBestTrack;
+    }
+
+    public void getMCPTracks(EventHeader event, List<Track> tracks, Map<MCParticle,Map<Track,Integer>> mcpTracksMapIn, Map<Track, MCParticle> tracksMCPMapIn){
 
         System.out.println("Event: " + event.getEventNumber());
 
@@ -2107,44 +2351,28 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             if(momentum < fee)
                 nPrimaryMCPs_noFEEs = nPrimaryMCPs_noFEEs + 1;
 
-            System.out.println("Particle of interest found");
-            System.out.println("MCP has energy: " + mcp.getEnergy());
-            System.out.println("MCP has momentum: " + momentum);
-
             List<SimTrackerHit> simhits = event.get(SimTrackerHit.class, "TrackerHits");
-            System.out.println(simhits.size() + " Simhits in event");
             for(SimTrackerHit simhit : simhits){
                 MCParticle simhitmcp = simhit.getMCParticle();
                 if(simhitmcp == mcp){
-                    System.out.println("Simhit MCP matches MCP of interest");
                     Set<RawTrackerHit> rawhits = rawtomc.allTo(simhit);
                     for(RawTrackerHit hit : rawhits)
                         rawhitsMCP.add(hit);
                 }
             }
-            System.out.println("MCP Rawhits size: " + rawhitsMCP.size());
 
             for(Track track : tracks){
-                System.out.println("Checking track");
                 List<TrackerHit> trackerhits = track.getTrackerHits();
                 for(TrackerHit trackerhit : trackerhits){
-                    System.out.println("Trackerhit cell ID: " + trackerhit.getCellID());
                     List<RawTrackerHit> trackerRawhits = trackerhit.getRawHits();
                     Set<Integer> layers = new HashSet<Integer>();
                     for(RawTrackerHit trackerRawhit : trackerRawhits){
-                        System.out.println("RawTrackerhit cell ID: " + trackerRawhit.getCellID());
                         int layer = trackerRawhit.getLayerNumber();
                         if(layers.contains(layer))
                             continue;
                         short [] adcs = trackerRawhit.getADCValues();
-                        System.out.println("RawTrackerhit ADCs");
-                        for(short adc : adcs){
-                            System.out.print(adc + " ");
-                        }
-                        System.out.println("RawTrackerhit cell ID: " + trackerRawhit.getCellID());
                         if(rawhitsMCP.contains(trackerRawhit)){
                             layers.add(layer);
-                            System.out.println("Found rawhit on Track that matches MCP rawhit");
                             if(!rawhitMultiplicity.containsKey(track)){
                                 rawhitMultiplicity.put(track, new int[1]);
                                 rawhitMultiplicity.get(track)[0] = 0;
@@ -2242,19 +2470,22 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                     bestMCPmomentum = subentry.getKey().getMomentum().magnitude();
                 }
             }
-            //Any Tracks with less than 6 MCP hits on Track are discarded
-            //if(mosthits < 6)
-              //  continue;
-            System.out.println("MCP with " + mosthits + " hits on Track chosen");
+
+            //Add track and best MCP to map
+            tracksMCPMapIn.put(entry.getKey(),bestMCP);
+
+            //Build map of MCP with list of best Tracks
             if(!mcpTracksMapDisamb.containsKey(bestMCP)){
                 Map<Track, Integer> tmpMap = new HashMap<Track,Integer>();
                 tmpMap.put(entry.getKey(),mosthits);
                 mcpTracksMapDisamb.put(bestMCP,tmpMap);
+                mcpTracksMapIn.put(bestMCP, tmpMap);
             }
             else{
                 Map<Track, Integer> gammaMap = mcpTracksMapDisamb.get(bestMCP);
                 gammaMap.put(entry.getKey(),mosthits);
                 mcpTracksMapDisamb.put(bestMCP,gammaMap);
+                mcpTracksMapIn.put(bestMCP, gammaMap);
             }
         }
 
@@ -2349,7 +2580,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         plots1D.get("mcp_NOT_FEE_wAtLeast_one_track_per_event_disamb").fill(nNonFeeMCPwithTracks);
 
 
-        return mcpTracksMapDisamb;
+        //return mcpTracksMapDisamb;
     }
 
     public MCParticle newgetTrackMCP(EventHeader event, Track track, String trackCollectionName, Boolean hitRequirement){
