@@ -287,7 +287,9 @@ public class TrackClusterMatcher2019 extends AbstractTrackClusterMatcher{
                 }
 
                 //Track momentum magnitude
-                double[] trackP = TrackUtils.getTrackStateAtLocation(track,TrackState.AtLastHit).getMomentum();
+                //broken for Kalman...
+                //double[] trackP = TrackUtils.getTrackStateAtLocation(track,TrackState.AtLastHit).getMomentum();
+                double[] trackP = track.getTrackStates().get(track.getTrackStates().size()-1).getMomentum();
                 double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
 
                 //Plots

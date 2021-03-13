@@ -69,13 +69,18 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
     //030112021
     //Charged Track matcher Evaluation
-    Map<Track, Cluster> goodMatches = new HashMap<Track,Cluster>();
-    Map<Track, Cluster> badMatches = new HashMap<Track,Cluster>();
-    Map<Track, Cluster> unknownMatches = new HashMap<Track, Cluster>();
-    Map<Track, Cluster> notTrackableMatches = new HashMap<Track, Cluster>();
+    Map<MCParticle,Pair<Track,Cluster>> goodMatches = new HashMap<MCParticle,Pair<Track,Cluster>>();
+    Map<MCParticle,Pair<Track,Cluster>> badMatches = new HashMap<MCParticle,Pair<Track,Cluster>>();
+    Map<MCParticle,Pair<Track,Cluster>> missedMatches = new HashMap<MCParticle,Pair<Track,Cluster>>();
+    Map<MCParticle,Pair<Track,Cluster>> photonsMatchedToTrack = new HashMap<MCParticle,Pair<Track,Cluster>>();
+    Map<MCParticle,Pair<Track,Cluster>> truthPhotonClusters = new HashMap<MCParticle,Pair<Track,Cluster>>();
+    Map<MCParticle,Pair<Track,Cluster>> unknownMatches_mcpToRogueTrack = new HashMap<MCParticle,Pair<Track,Cluster>>();
+    Map<MCParticle,Pair<Track,Cluster>> unknownMatches_mcpToRogueCluster = new HashMap<MCParticle,Pair<Track,Cluster>>();
+    Map<MCParticle, Pair<Track,Cluster>> unmatchedUntrackableMCPs = new HashMap<MCParticle, Pair<Track,Cluster>>();
     Map<Track, Cluster> rogueMatches = new HashMap<Track,Cluster>();
     List<Track> rogueTracks = new ArrayList<Track>();
-    List<Cluster> roguePhotons = new ArrayList<Cluster>();
+    List<Cluster> iddPhotons = new ArrayList<Cluster>();
+    List<MCParticle> mcparticlesEvaluated = new ArrayList<MCParticle>();
 
     //INITIALIZE TERMS TO EVALUATE MATCHING PERFORMANCE
     int ntruthpairs_ele = 0;
@@ -183,97 +188,209 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
 
 
+//Total Counts of Interesting Events
+    
+        plots1D.put(String.format("nMCPsEvaluated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMCPsEvaluated",this.trackCollectionName), 10000, 0, 10000));
+        plots1D.put(String.format("nGoodMatches",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nGoodMatches",this.trackCollectionName), 10000, 0, 10000));
+        plots1D.put(String.format("nBadMatches",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nBadMatches",this.trackCollectionName), 10000, 0, 10000));
+        plots1D.put(String.format("nMissedMatches",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMissedMatches",this.trackCollectionName), 10000, 0, 10000));
+        plots1D.put(String.format("nUnknownMatches_mcpToRogueTrack",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nUnknownMatches_mcpToRogueTrack",this.trackCollectionName), 10000, 0, 10000));
+        plots1D.put(String.format("nUnknownMatches_mcpToRogueCluster",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nUnknownMatches_mcpToRogueCluster",this.trackCollectionName), 10000, 0, 10000));
+        plots1D.put(String.format("nUnmatchedUntrackableMCPs",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nUnmatchedUntrackableMCPs",this.trackCollectionName), 10000, 0, 10000));
+        plots1D.put(String.format("nPhotons_matched_to_track",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPhotons_matched_to_track",this.trackCollectionName), 10000, 0, 10000));
+        plots1D.put(String.format("nTruth_photon_clusters",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nTruth_photon_clusters",this.trackCollectionName), 10000, 0, 10000));
+        plots1D.put(String.format("nRogue_matches",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nRogue_matches",this.trackCollectionName), 10000, 0, 10000));
+        plots1D.put(String.format("nRogue_tracks",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nRogue_tracks",this.trackCollectionName), 10000, 0, 10000));
+        plots1D.put(String.format("nRogue_photons",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nRogue_photons",this.trackCollectionName), 10000, 0, 10000));
+
+
+//Event characterization plots
+
+        plots1D.put(String.format("nEvents",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nEvents",this.trackCollectionName),10000 , 0, 10000));
+
+        plots1D.put(String.format("nMCParticles_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMCParticles_per_event",this.trackCollectionName),10000 , 0, 10000));
+
+        plots1D.put(String.format("nClusters_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nClusters_per_event",this.trackCollectionName),100 , 0, 100));
+
+        plots1D.put(String.format("nTracks_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nTracks_per_event",this.trackCollectionName),100 , 0, 100));
+
+        plots2D.put(String.format("nTracks_v_nClusters_per_event",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("nTracks_v_nClusters_per_event",this.trackCollectionName),100, 0, 100, 100, 0, 100));
+
+        plots2D.put(String.format("nMCP_truth_clusters_v_clusters_per_event",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("nMCP_truth_clusters_v_clusters_per_event",this.trackCollectionName),100, 0, 100, 100, 0, 100));
+
+        plots2D.put(String.format("nMCP_w_truth_tracks_v_nMCP_w_truth_clusters_per_event",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("nMCP_w_truth_tracks_v_nMCP_w_truth_clusters_per_event",this.trackCollectionName),100, 0, 100, 100, 0, 100));
+        plots1D.put(String.format("mcp_w_truth_cluster_but_no_truth_tracks_momentum",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_w_truth_cluster_but_no_truth_tracks_momentum",this.trackCollectionName),500, 0, 5));
+
+        plots1D.put(String.format("mcp_w_truth_cluster_but_no_truth_tracks_nSimTrackerHits",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_w_truth_cluster_but_no_truth_tracks_nSimTrackerHits",this.trackCollectionName),30, 0, 30));
+
+        plots1D.put(String.format("mcp_w_truth_tracks_but_no_truth_cluster_momentum",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_w_truth_tracks_but_no_truth_cluster_momentum",this.trackCollectionName),500, 0, 5));
+
+        plots1D.put(String.format("mcp_w_truth_cluster_but_no_truth_tracks_nSimCalHits",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_w_truth_cluster_but_no_truth_tracks_nSimCalHits",this.trackCollectionName), 30, 0, 30));
+
+        plots1D.put(String.format("mcp_w_truth_tracks_AND_truth_cluster_momentum",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_w_truth_tracks_AND_truth_cluster_momentum",this.trackCollectionName),500, 0, 5));
+
+        plots2D.put(String.format("mcp_w_truth_track_AND_truth_cluster_track_v_cluster_momentum",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_w_truth_track_AND_truth_cluster_track_v_cluster_momentum",this.trackCollectionName),500, 0, 5, 500, 0, 5));
+
+        plots1D.put(String.format("mcps_all_checked_against_matcher_momentum",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcps_all_checked_against_matcher_momentum",this.trackCollectionName),500, 0, 5));
+
+        plots2D.put(String.format("mcps_loop_nSimTrackerHits_v_nSimCalHits",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcps_loop_nSimTrackerHits_v_nSimCalHits",this.trackCollectionName),30, 0, 30, 30, 0, 30));
+
+        plots1D.put(String.format("nMCP_w_truth_tracks_BUT_NO_truth_cluster_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMCP_w_truth_tracks_BUT_NO_truth_cluster_per_event",this.trackCollectionName),100 , 0, 100));
+
+        plots1D.put(String.format("nMCP_w_truth_cluster_BUT_NO_truth_tracks_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMCP_w_truth_cluster_BUT_NO_truth_tracks_per_event",this.trackCollectionName),100 , 0, 100));
+
+        plots1D.put(String.format("nMCP_w_truth_tracks_AND_truth_cluster_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMCP_w_truth_tracks_AND_truth_cluster_per_event",this.trackCollectionName),100 , 0, 100));
+
+
+//MCP LOOP OVER MATCHE RESULTS
+
+        plots2D.put(String.format("mcp_loop_truth_cluster_matched_to_wrong_track_p_v_p",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_loop_truth_cluster_matched_to_wrong_track_p_v_p",this.trackCollectionName),500, 0, 5, 500, 0, 5));
+
+        plots1D.put(String.format("mcp_loop_trackless_truth_cluster_matched_to_rogue_track_nSimTrackerHits",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_loop_trackless_truth_cluster_matched_to_rogue_track_nSimTrackerHits",this.trackCollectionName),300 , 0, 30));
+
+        plots1D.put(String.format("mcp_loop_no_truth_tracks_truth_cluster_not_matched_to_track_nSimTrackerHits",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_loop_no_truth_tracks_truth_cluster_not_matched_to_track_nSimTrackerHits",this.trackCollectionName),300 , 0, 30));
+
+        plots2D.put(String.format("mcp_loop_truth_track_matched_to_wrong_cluster_E_v_E",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_loop_truth_track_matched_to_wrong_cluster_E_v_E",this.trackCollectionName),500, 0, 5, 500, 0, 5));
+
+
+
+        plots1D.put(String.format("mcp_loop_nEle_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_loop_nEle_per_event",this.trackCollectionName),100 , 0, 100));
+        
+        plots1D.put(String.format("mcp_loop_nPos_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_loop_nPos_per_event",this.trackCollectionName),100 , 0, 100));
+        
+        plots1D.put(String.format("mcp_loop_nPhotons_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_loop_nPhotons_per_event",this.trackCollectionName),100 , 0, 100));
+        
+        plots1D.put(String.format("mcp_loop_nCharged_particles_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_loop_nCharged_particles_per_event",this.trackCollectionName),100 , 0, 100));
+        
+        plots2D.put(String.format("mcp_loop_nCharged_particles_v_nTracks_per_event",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_loop_nCharged_particles_v_nTracks_per_event",this.trackCollectionName),100, 0, 100, 100, 0, 100));
+        
+        plots2D.put(String.format("mcp_loop_nMCPs_v_nClusters_per_event",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_loop_nMCPs_v_nClusters_per_event",this.trackCollectionName),100, 0, 100, 100, 0, 100));
+
 //MATCHING PLOT
 
         plots1D.put(String.format("%s_mcp_truth_track_cluster_pair_momentum",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_mcp_truth_track_cluster_pair_momentum",this.trackCollectionName), 500, 0, 5));
         plots1D.put(String.format("%s_mcp_truth_track_cluster_pair_energy",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_mcp_truth_track_cluster_pair_energy",this.trackCollectionName), 500, 0, 5));
 
-        plots1D.put(String.format("mcp_truth_track_cluster_pair_ntrackersimhits",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nRawTrackerHits_per_Track",this.trackCollectionName), 30, 0, 30));
         plots2D.put(String.format("mcp_truth_track_cluster_pair_ntrackersimhits_v_momentum",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_truth_track_cluster_pair_ntrackersimhits_v_momentum",this.trackCollectionName),20, 0, 20, 500, 0, 5));
         plots2D.put(String.format("mcp_truth_track_ntrackersimhits_v_mcp_momentum",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_truth_track_ntrackersimhits_v_mcp_momentum",this.trackCollectionName), 20, 0, 20, 500, 0, 5));
 
 //MCP TRUTH MATCH TO TRACKS
-        
-        plots1D.put(String.format("mcp_nRawTrackerHits_per_Track",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nRawTrackerHits_per_Track",this.trackCollectionName), 30, 0, 30));
-        plots1D.put(String.format("mcp_nTracks",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nTracks",this.trackCollectionName), 20, 0, 20));
-        plots2D.put(String.format("mcp_momentum_v_nRawTrackerHits_per_Track",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_nRawTrackerHits_per_Track",this.trackCollectionName),500, 0, 5, 30, 0, 30));
-        plots2D.put(String.format("mcp_momentum_v_nTracks_disambiguated",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_nTracks_disambiguated",this.trackCollectionName),500, 0, 5, 20, 0, 20));
 
-        plots1D.put(String.format("nMCPs_on_track",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nTracks",this.trackCollectionName), 20, 0, 20));
+        plots1D.put(String.format("mcp_nHits_in_Tracker",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nHits_in_Tracker",this.trackCollectionName), 20, 0, 20));
+        
+        plots1D.put(String.format("mcp_ofInterest_nRawTrackerHits_per_track",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_ofInterest_nRawTrackerHits_per_track",this.trackCollectionName), 30, 0, 30));
+
+        plots2D.put(String.format("mcp_ofInterest_momentum_v_nRawTrackerHits_per_track",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_ofInterest_momentum_v_nRawTrackerHits_per_track",this.trackCollectionName),500, 0, 5, 30, 0, 30));
 
         plots1D.put(String.format("mcp_mostHitsTrack_nHits",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_mostHitsTrack_nHits",this.trackCollectionName), 20, 0, 20));
 
-        plots1D.put(String.format("nPrimary_mcps_FEEs_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPrimary_mcps_FEEs_per_event",this.trackCollectionName), 500, 0, 500));
-        plots1D.put(String.format("nPrimary_mcps_radiativeFEEs_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPrimary_mcps_radiativeFEEs_per_event",this.trackCollectionName), 500, 0, 500));
-        plots1D.put(String.format("nPrimary_mcps_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPrimary_mcps_per_event",this.trackCollectionName), 500, 0, 500));
-        plots2D.put(String.format("nPrimary_mcps_per_event_v_nTracks_per_event",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("nPrimary_mcps_per_event_v_nTracks_per_event",this.trackCollectionName),500, 0, 500, 500 , 0, 500));
-        plots1D.put(String.format("nPrimary_mcps_per_event_noFEEs",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPrimary_mcps_per_event_noFEEs",this.trackCollectionName), 500, 0, 500));
-        plots2D.put(String.format("nPrimary_mcps_per_event_v_nTracks_per_event_noFEEs",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("nPrimary_mcps_per_event_v_nTracks_per_event_noFEEs",this.trackCollectionName),500, 0, 500, 500 , 0, 500));
+        plots1D.put(String.format("mcp_nTracks",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nTracks",this.trackCollectionName), 20, 0, 20));
 
-        plots1D.put(String.format("nPrimary_mcps_622_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPrimary_mcps_622_per_event",this.trackCollectionName), 500, 0, 500));
-        plots1D.put(String.format("nPrimary_mcps_623_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nPrimary_mcps_623_per_event",this.trackCollectionName), 500, 0, 500));
-
-
-        plots1D.put(String.format("mcp_nHits_in_Tracker",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nHits_in_Tracker",this.trackCollectionName), 20, 0, 20));
-        plots1D.put(String.format("mcp_nHits_in_Tracker_minus_nHits_on_all_Tracks",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nHits_in_Tracker_minus_nHits_on_all_Tracks",this.trackCollectionName), 20, 0, 20));
-
-        //post disambiguation
-        plots1D.put(String.format("mcp_nTracks_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nTracks_disambiguated",this.trackCollectionName), 20, 0, 20));
         plots2D.put(String.format("mcp_momentum_v_nTracks",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_nTracks",this.trackCollectionName),500, 0, 5, 20, 0, 20));
-        plots1D.put(String.format("mcp_most_hits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_most_hits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
-        plots1D.put(String.format("mcp_FEEs_most_hits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_FEEs_most_hits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
-        plots1D.put(String.format("mcp_NOT_FEEs_most_hits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_NOT_FEEs_most_hits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
-        plots1D.put(String.format("mcp_nhits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nhits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
 
+        plots1D.put(String.format("nMCP_primary_FEEs_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMCP_primary_FEEs_per_event",this.trackCollectionName), 500, 0, 500));
 
-        plots1D.put(String.format("mcp_NOT_FEE_wAtLeast_one_track_per_event_disamb",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_NOT_FEE_wAtLeast_one_track_per_event_disamb",this.trackCollectionName), 500, 0, 500));
-        plots1D.put(String.format("mcp_FEE_wAtLeast_one_track_per_event_disamb",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_FEE_wAtLeast_one_track_per_event_disamb",this.trackCollectionName), 500, 0, 500));
+        plots1D.put(String.format("nMCP_radiative_FEEs_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMCP_radiative_FEEs_per_event",this.trackCollectionName), 500, 0, 500));
 
+        plots1D.put(String.format("nMCP_622_primary_daughters_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMCP_622_primary_daughters_per_event",this.trackCollectionName), 500, 0, 500));
 
+        plots1D.put(String.format("nMCP_623_primary_daughters_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMCP_623_primary_daughters_per_event",this.trackCollectionName), 500, 0, 500));
+
+        plots2D.put(String.format("nMCP_622or623_primary_daughters_v_primary_FEEs_per_event",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("nMCP_622or623_primary_daughters_v_primary_FEEs_per_event",this.trackCollectionName),500, 0, 500, 500, 0, 500));
+
+        plots2D.put(String.format("nMCP_622and623_primary_daughters_and_primary_FEEs_v_nTracks_per_event",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("nMCP_622and623_primary_daughters_and_primary_FEEs_v_nTracks_per_event",this.trackCollectionName),500, 0, 500, 500, 0, 500));
+
+        plots1D.put(String.format("nMCPs_on_track",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMCPs_on_track",this.trackCollectionName), 20, 0, 20));
+
+        plots1D.put(String.format("tracks_unmatched_to_mcp_ofInterest_momentum",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("tracks_unmatched_to_mcp_ofInterest_momentum",this.trackCollectionName), 500, 0, 5));
+
+        plots2D.put(String.format("mcp_nSimTrackerHits_v_sum_nHitsOnTrack",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_nSimTrackerHits_v_sum_nHitsOnTrack",this.trackCollectionName),20, 0, 20, 20, 0, 20));
 
         plots1D.put(String.format("mcp_FEE_nTracks_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_FEE_nTracks_disambiguated",this.trackCollectionName), 20, 0, 20));
+
         plots1D.put(String.format("mcp_nonFEE_nTracks_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nonFEE_nTracks_disambiguated",this.trackCollectionName), 20, 0, 20));
 
+        plots1D.put(String.format("mcp_nTracks_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nTracks_disambiguated",this.trackCollectionName), 20, 0, 20));
+
+        plots2D.put(String.format("mcp_momentum_v_nTracks_disambiguated",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_nTracks_disambiguated",this.trackCollectionName),500, 0, 5, 20, 0, 20));
+
+        plots1D.put(String.format("mcp_nhits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_nhits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
+
+        plots1D.put(String.format("mcp_most_hits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_most_hits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
+
+        plots1D.put(String.format("mcp_FEEs_most_hits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_FEEs_most_hits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
+
+        plots1D.put(String.format("mcp_NOT_FEEs_most_hits_on_track_disambiguated",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_NOT_FEEs_most_hits_on_track_disambiguated",this.trackCollectionName), 20, 0, 20));
 
         plots2D.put(String.format("mcp_momentum_v_best_track_momentum_disam",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_momentum_v_best_track_momentum_disam",this.trackCollectionName),500, 0, 5, 500, 0, 5));
+
         plots1D.put(String.format("mcp_momentum_best_track_momentum_ratio_disam",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_momentum_best_track_momentum_ratio_disam",this.trackCollectionName), 200, 0, 2));
-        plots2D.put(String.format("mcp_nsimtrackerHits_v_best_track_nhits_disam",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_nsimtrackerHits_v_best_track_nhits_disam",this.trackCollectionName),20, 0, 20, 20, 0, 20));
+
+        plots2D.put(String.format("mcp_nSimTrackerHits_most_nHitsOnTrack_disam",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("mcp_nSimTrackerHits_most_nHitsOnTrack_disam",this.trackCollectionName),20, 0, 20, 20, 0, 20));
+
+        plots1D.put(String.format("mcp_FEE_wAtLeast_one_track_per_event_disamb",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_FEE_wAtLeast_one_track_per_event_disamb",this.trackCollectionName), 500, 0, 500));
+
+        plots1D.put(String.format("mcp_NOT_FEE_wAtLeast_one_track_per_event_disamb",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("mcp_NOT_FEE_wAtLeast_one_track_per_event_disamb",this.trackCollectionName), 500, 0, 500));
+
+
+
+
 //FINAL CLUSTER TRUTH MATCHING PLOTS
+
+        //Cluster Positions in XY plane
+        plots2D.put(String.format("ecal_cluster_positions_xy_plane",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("ecal_cluster_positions_xy_plane",this.trackCollectionName),1000, -500, 500,1000, -500, 500));
+
+        plots2D.put(String.format("cluster_truthpositions_xy_plane",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("cluster_truthpositions_xy_plane",this.trackCollectionName),50, -280, 370, 18, -110, 124));
         
         plots1D.put(String.format("cluster_truth_stage_0_energy",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_0_energy",this.trackCollectionName), 1000, 0, 10));
 
         plots1D.put(String.format("cluster_truth_stage_1_energy",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_1_energy",this.trackCollectionName), 1000, 0, 10));
+
         plots2D.put(String.format( "cluster_truth_stage_1_mcpEndpointz_v_ds"), histogramFactory.createHistogram2D(String.format("cluster_truth_stage_1_mcpEndpointz_v_ds"),200, -100, 1900,1000, 0, 2000));
+
         plots1D.put(String.format("cluster_truth_stage_1_energy_ratio",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_1_energy_ratio",this.trackCollectionName), 1000, 0, 10));
+        
         plots2D.put(String.format("cluster_truth_stage_1_cluster_v_mcp_energy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("cluster_truth_stage_1_cluster_v_mcp_energy",this.trackCollectionName),1000, 0, 5,1000, 0, 5));
 
         plots1D.put(String.format("cluster_truth_stage_2_energy",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_2_energy",this.trackCollectionName), 1000, 0, 10));
+        
         plots2D.put(String.format( "cluster_truth_stage_2_mcpEndpointz_v_ds"), histogramFactory.createHistogram2D(String.format("cluster_truth_stage_2_mcpEndpointz_v_ds"),200, -100, 1900,1000, 0, 2000));
+        
         plots1D.put(String.format("cluster_truth_stage_2_energy_ratio",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_2_energy_ratio",this.trackCollectionName), 1000, 0, 10));
+        
         plots2D.put(String.format("cluster_truth_stage_2_cluster_v_mcp_energy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("cluster_truth_stage_2_cluster_v_mcp_energy",this.trackCollectionName),1000, 0, 5,1000, 0, 5));
 
         plots2D.put(String.format("cluster_truth_stage_2_mcpPy_v_clustery",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("cluster_truth_stage_2_mcpPy_v_clustery",this.trackCollectionName),1000, -5, 5, 1000, -500, 500));
 
-
         plots1D.put(String.format("cluster_truth_stage_3_energy",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_3_energy",this.trackCollectionName), 1000, 0, 10));
+        
         plots2D.put(String.format( "cluster_truth_stage_3_mcpEndpointz_v_ds"), histogramFactory.createHistogram2D(String.format("cluster_truth_stage_3_mcpEndpointz_v_ds"),200, -100, 1900,1000, 0, 2000));
+        
         plots1D.put(String.format("cluster_truth_stage_3_energy_ratio",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_3_energy_ratio",this.trackCollectionName), 1000, 0, 10));
+        
         plots2D.put(String.format("cluster_truth_stage_3_cluster_v_mcp_energy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("cluster_truth_stage_3_cluster_v_mcp_energy",this.trackCollectionName),1000, 0, 5,1000, 0, 5));
 
+        plots1D.put(String.format("clusters_matched_to_n_mcps"), histogramFactory.createHistogram1D(String.format("clusters_matched_to_n_mcps"),  10, 0, 10));
 
-        //duplicate matches
+        //Cluster Duplicates
         plots1D.put(String.format("cluster_truth_stage_3_duplicate_mcp_match_dx",trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_3_duplicate_mcp_match_dx",trackCollectionName),  1000, -1000, 1000));
+        
         plots1D.put(String.format("cluster_truth_stage_3_duplicate_mcp_match_dy",trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_3_duplicate_mcp_match_dy",trackCollectionName),  1000, -1000, 1000));
 
         plots1D.put(String.format("cluster_truth_stage_3_cut_remaining_duplicate_mcp_match_dx",trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_3_cut_remaining_duplicate_mcp_match_dx",trackCollectionName),  1000, -1000, 1000));
+        
         plots1D.put(String.format("cluster_truth_stage_3_cut_remaining_duplicate_mcp_match_dy",trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_3_cut_remaining_duplicate_mcp_match_dy",trackCollectionName),  1000, -1000, 1000));
 
+        //Final Cut Clusters
         plots1D.put(String.format("cluster_truth_stage_final_energy",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_final_energy",this.trackCollectionName), 1000, 0, 10));
+        
         plots2D.put(String.format( "cluster_truth_stage_final_mcpEndpointz_v_ds"), histogramFactory.createHistogram2D(String.format("cluster_truth_stage_final_mcpEndpointz_v_ds"),200, -100, 1900,1000, 0, 2000));
+        
         plots1D.put(String.format("cluster_truth_stage_final_energy_ratio",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_stage_final_energy_ratio",this.trackCollectionName), 1000, 0, 10));
+        
         plots2D.put(String.format("cluster_truth_stage_final_cluster_v_mcp_energy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("cluster_truth_stage_final_cluster_v_mcp_energy",this.trackCollectionName),1000, 0, 5,1000, 0, 5));
 
-        plots1D.put(String.format("nclusters_matched_to_single_mcp"), histogramFactory.createHistogram1D(String.format("nclusters_matched_to_single_mcp"),  10, 0, 10));
+        plots1D.put(String.format("cluster_truth_energy",trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_energy",trackCollectionName),  100, 0, 5));
 
 
 
@@ -433,7 +550,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         plots1D.put(String.format("%s_pos_duplicate_track_momentum",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_duplicate_track_momentum",this.trackCollectionName), 1000, 0, 5));
         //Checking E/P for track+cluster pair
         
-        plots1D.put(String.format("cluster_truth_energy",trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truth_energy",trackCollectionName),  100, 0, 5));
 
         //MCP hits along z
         plots1D.put(String.format("%s_EcalCluster_Simcalhit_MCParticle_origin_z",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_EcalCluster_Simcalhit_MCParticle_origin_z",this.trackCollectionName), 1500, -1000, 2000));
@@ -456,17 +572,10 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
 
 
-        //Cluster Positions in XY plane
-        plots2D.put(String.format("ecal_cluster_positions_xy_plane",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("ecal_cluster_positions_xy_plane",this.trackCollectionName),1000, -500, 500,1000, -500, 500));
-        plots2D.put(String.format("cluster_truthpositions_xy_plane",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("cluster_truthpositions_xy_plane",this.trackCollectionName),50, -280, 370, 18, -110, 124));
 
         //Check track quality
         plots1D.put(String.format("%s_ele_track_chi2divndf",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_track_chi2divndf",this.trackCollectionName), 200, 0, 200));
         plots1D.put(String.format("%s_pos_track_chi2divndf",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_track_chi2divndf",this.trackCollectionName), 200, 0, 200));
-
-        plots1D.put(String.format("cluster_truthMCP_energy_ratio_sorted",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("cluster_truthMCP_energy_ratio_sorted",this.trackCollectionName), 1000, 0, 10));
-
-
 
     }
 
@@ -474,7 +583,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         this.verbose = verbose;
     }
 
-    int localEventNumber = 0;
     public void startOfData() {
         System.out.println("Starting job");
         bookHistograms();
@@ -492,13 +600,18 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         matcher.saveHistograms();
         saveHistograms();
 
+        System.out.println("number of MCParticle matches evaluated: " + mcparticlesEvaluated.size());
         System.out.println("number of good matches: " + goodMatches.size());
         System.out.println("number of bad matches: " + badMatches.size());
-        System.out.println("number of unknown matches: " + unknownMatches.size());
-        System.out.println("number of not trackable matches: " + notTrackableMatches.size());
+        System.out.println("number of missed matches: " + missedMatches.size());
+        System.out.println("number of unknown matches mcpToRogueTrack: " + unknownMatches_mcpToRogueTrack.size());
+        System.out.println("number of unknown matches mcpToRogueCluster: " + unknownMatches_mcpToRogueCluster.size());
+        System.out.println("number of not trackable matches: " + unmatchedUntrackableMCPs.size());
+        System.out.println("number of photons matched to a track: " + photonsMatchedToTrack.size());
+        System.out.println("number of good photons: " + truthPhotonClusters.size());
         System.out.println("number of rogue matches: " + rogueMatches.size());
         System.out.println("number of rogue Tracks: " + rogueTracks.size());
-        System.out.println("number of rogue photons: " + roguePhotons.size());
+        System.out.println("number of rogue photons: " + iddPhotons.size());
 
         /*
         System.out.println("number of good matches: " + nGoodMatches);
@@ -610,20 +723,35 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
     protected void process(EventHeader event) {
 
-        this.localEventNumber = this.localEventNumber + 1;
-        cuts.setTrackClusterTimeOffset(44.8);
 
-        //If event has no collection of tracks, skip
-        if(!event.hasCollection(Track.class, trackCollectionName)) return;
-
+        //count objects event by event
+        System.out.println("Counting for Event " + event.getEventNumber());
+        plots1D.get("nEvents").fill(1);
+        
+        //MCPs
+        List<MCParticle> allmcps = event.get(MCParticle.class,"MCParticle");
+        plots1D.get("nMCParticles_per_event").fill(allmcps.size());
+        System.out.println("MCPs for Event " + event.getEventNumber() + ": " + allmcps.size());
 
         //Get EcalClusters from event
         List<Cluster> clusters = event.get(Cluster.class, ecalClustersCollectionName);
+        plots1D.get("nClusters_per_event").fill(clusters.size());
+        System.out.println("Clusters for Event " + event.getEventNumber() + ": " + clusters.size());
+
+        // Get collection of tracks from event
+        List<Track> tracks = event.get(Track.class, trackCollectionName);
+        plots1D.get("nTracks_per_event").fill(tracks.size());
+        System.out.println("Tracks for Event " + event.getEventNumber() + ": " + tracks.size());
+
+        plots2D.get("nTracks_v_nClusters_per_event").fill(tracks.size(),clusters.size());
+
+        cuts.setTrackClusterTimeOffset(44.8);
 
         //Truth Match Clusters to MCParticles    
         Map<MCParticle, Cluster> mcpClustersMap = new HashMap<MCParticle, Cluster>();
         Map<Cluster, MCParticle> clustersMCPMap = new HashMap<Cluster, MCParticle>();
         getClusterMcpMap(clusters, event, false, mcpClustersMap, clustersMCPMap);
+        plots2D.get("nMCP_truth_clusters_v_clusters_per_event").fill(mcpClustersMap.size(),clusters.size());
 
         List<Cluster> truthClusters = new ArrayList<Cluster>();
         for(Map.Entry<Cluster,MCParticle> entry : clustersMCPMap.entrySet()){
@@ -636,13 +764,10 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
             plots1D.get(String.format("cluster_truth_energy",trackCollectionName)).fill(clusterEnergy);
             plots2D.get(String.format("cluster_truthpositions_xy_plane")).fill(clustx,clusty);
-            plots1D.get(String.format("cluster_truthMCP_energy_ratio_sorted",this.trackCollectionName)).fill(energyRatio);
             truthClusters.add(entry.getKey());
         }
         drawEcalFace(truthClusters);
 
-        // Get collection of tracks from event
-        List<Track> tracks = event.get(Track.class, trackCollectionName);
 
         //Get Kalman Track Data
         hitToRotated = TrackUtils.getHitToRotatedTable(event);
@@ -664,6 +789,8 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         Map<Track, MCParticle> tracksMCPMap = new HashMap<Track, MCParticle>();
         getMCPTracks(event, tracks, mcpTracksMap, tracksMCPMap);
 
+        plots2D.get("nMCP_w_truth_tracks_v_nMCP_w_truth_clusters_per_event").fill(mcpTracksMap.size(),mcpClustersMap.size());
+
 
         //Combine Cluster and Track MCParticle Map into one map
         Map<MCParticle, Pair<Cluster, List<Track>>> comboMap = new HashMap<MCParticle, Pair<Cluster, List<Track>>>();
@@ -677,6 +804,11 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             MCParticle mcp = entry.getKey();
             mcpsOfInterest.add(mcp);
         }
+
+        int nMcp_wo_cluster = 0;
+        int nMcp_wo_track = 0;
+        int nMcp_w_both = 0;
+        //build full map of MCPs to check against matcher results
         for(MCParticle mcp : mcpsOfInterest){
             List<Track> mcpTracks = new ArrayList<Track>();
             Cluster mcpCluster = null;
@@ -687,15 +819,39 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                 }
             }
 
+
             //get cluster matched to this mcp
             if(mcpClustersMap.containsKey(mcp))
                 mcpCluster = mcpClustersMap.get(mcp);
 
             Pair<Cluster, List<Track>> pairs = new Pair<Cluster,List<Track>>(mcpCluster, mcpTracks);
             comboMap.put(mcp, pairs);
+            if(mcpTracks.size() == 0 && mcpCluster != null){
+                plots1D.get("mcp_w_truth_cluster_but_no_truth_tracks_momentum").fill(mcp.getMomentum().magnitude());
+                plots1D.get("mcp_w_truth_cluster_but_no_truth_tracks_nSimTrackerHits").fill(getNSimTrackerHits(event, mcp));
+                nMcp_wo_track = nMcp_wo_track + 1;
+            }
+            if(mcpTracks.size() > 1 && mcpCluster == null){
+                plots1D.get("mcp_w_truth_tracks_but_no_truth_cluster_momentum").fill(mcp.getMomentum().magnitude());
+                plots1D.get("mcp_w_truth_cluster_but_no_truth_tracks_nSimCalHits").fill(getNSimCalHits(event, "EcalHits", mcp));
+                nMcp_wo_cluster = nMcp_wo_cluster + 1;
+            }
+
+            if(mcpTracks.size() > 1 && mcpCluster != null){
+                Track bestTrack = getMcpBestTrack(mcp,mcpTracksMap);
+                double[] trackP = bestTrack.getTrackStates().get(bestTrack.getTrackStates().size()-1).getMomentum();
+                double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
+                plots1D.get("mcp_w_truth_tracks_AND_truth_cluster_momentum").fill(mcp.getMomentum().magnitude());
+                plots2D.get("mcp_w_truth_track_AND_truth_cluster_track_v_cluster_momentum").fill(trackPmag,mcpCluster.getEnergy());
+                nMcp_w_both = nMcp_w_both + 1;
+            }
+
+            plots1D.get("mcps_all_checked_against_matcher_momentum").fill(mcp.getMomentum().magnitude());
+            plots2D.get("mcps_loop_nSimTrackerHits_v_nSimCalHits").fill(getNSimTrackerHits(event, mcp),getNSimCalHits(event,"EcalHits", mcp));
         }
-
-
+        plots1D.get("nMCP_w_truth_tracks_BUT_NO_truth_cluster_per_event").fill(nMcp_wo_cluster);
+        plots1D.get("nMCP_w_truth_cluster_BUT_NO_truth_tracks_per_event").fill(nMcp_wo_track);
+        plots1D.get("nMCP_w_truth_tracks_AND_truth_cluster_per_event").fill(nMcp_w_both);
 
         //Feed Track and Cluster collections to matcher algorithm to get
         //algorithm matched Tracks and Clusters
@@ -708,23 +864,33 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         Map<Track, Cluster> goodMatches = new HashMap<Track,Cluster>();
         Map<Track, Cluster> badMatches = new HashMap<Track,Cluster>();
         Map<Track, Cluster> unknownMatches = new HashMap<Track, Cluster>();
-        Map<Track, Cluster> notTrackableMatches = new HashMap<Track, Cluster>();
+        Map<Track, Cluster> unmatchedUntrackableMCPs = new HashMap<Track, Cluster>();
         Map<Track, Cluster> rogueMatches = new HashMap<Track,Cluster>();
         List<Track> rogueTracks = new ArrayList<Track>();
-        List<Cluster> roguePhotons = new ArrayList<Cluster>();
+        List<Cluster> iddPhotons = new ArrayList<Cluster>();
         */
 
         //Loop over MCParticles
+        int nele = 0;
+        int npos = 0;
+        int nphoton = 0;
+
         for(Map.Entry<MCParticle, Pair<Cluster, List<Track>>> entry : comboMap.entrySet()){
             MCParticle mcp = entry.getKey();
             int nmcpHits = getNSimTrackerHits(event, mcp);
-            plots2D.get("mcp_truth_track_ntrackersimhits_v_mcp_momentum").fill(nmcpHits,mcp.getMomentum().magnitude());
             Pair<Cluster, List<Track>> pair = entry.getValue();
             Cluster mcpCluster = pair.getFirstElement();
             List<Track> mcpTracks = pair.getSecondElement();
 
             //Check charged MCP's first
             if(Math.abs(mcp.getPDGID()) == 11){
+
+                if(mcp.getPDGID() == 11){
+                    nele = nele + 1;
+                }
+                if(mcp.getPDGID() == -11){
+                    nele = npos + 1;
+                }
 
                 //If MCP does have a truth cluster, we can check to see if that
                 //cluster was matched to any tracks by the macher algorithm
@@ -741,6 +907,8 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                                 break;
                             }
                         }
+                        double[] trackP = TrackUtils.getTrackStateAtLocation(algTrack,TrackState.AtIP).getMomentum();
+                        double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
 
                         //If we know the truth info for this algTrack, we can
                         //determine if the match is correct. 
@@ -748,10 +916,11 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                             //if alg track is one of the tracks matched to this
                             //mcp, good match
                             if(mcpTracks.contains(algTrack)){
-                                goodMatches.put(algTrack, mcpCluster);
+                                goodMatches.put(mcp, new Pair<Track, Cluster>(algTrack, mcpCluster));
                             }
                             else{
-                                badMatches.put(algTrack, mcpCluster);
+                                badMatches.put(mcp, new Pair<Track, Cluster>(algTrack, mcpCluster));
+                                plots2D.get("mcp_loop_truth_cluster_matched_to_wrong_track_p_v_p").fill(mcp.getMomentum().magnitude(),trackPmag);
                             }
                         }
 
@@ -762,12 +931,14 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                             //have truth tracks, then we know this algTrack
                             //match is wrong.
                             if(mcpTracks.size() > 0){
-                                badMatches.put(algTrack, mcpCluster);
+                                badMatches.put(mcp, new Pair<Track, Cluster>(algTrack, mcpCluster));
+                                plots2D.get("mcp_loop_truth_cluster_matched_to_wrong_track_p_v_p").fill(mcp.getMomentum().magnitude(),trackPmag);
                             }
                             //If MCP has no truth track, we cant be sure that
                             //this algTrack is wrong
                             else{
-                                unknownMatches.put(algTrack, mcpCluster);
+                                unknownMatches_mcpToRogueTrack.put(mcp, new Pair<Track, Cluster>(algTrack, mcpCluster));
+                                plots1D.get("mcp_loop_trackless_truth_cluster_matched_to_rogue_track_nSimTrackerHits").fill(nmcpHits);
                             }
                         }
                     }
@@ -778,12 +949,14 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                         //If this mcp has mcpTracks, then it should have
                         //matched the mcpCluster to one of those mcpTracks.
                         if(mcpTracks.size() > 0){
-                            badMatches.put(null, mcpCluster);
+                            missedMatches.put(mcp, new Pair<Track, Cluster>(null, mcpCluster));
                         }
                         else{
-                            //If mcp has no mcpTracks, then we cant determine
-                            //if the mcpCluster was matched incorrectly.
-                            notTrackableMatches.put(null, mcpCluster);
+                            //If mcpCluster unmatched, and we dont know if
+                            //thats right or wrong.
+                            unmatchedUntrackableMCPs.put(mcp, new Pair<Track, Cluster>(null, mcpCluster));
+                            plots1D.get("mcp_loop_no_truth_tracks_truth_cluster_not_matched_to_track_nSimTrackerHits").fill(nmcpHits);
+                            //check Nsimtrackerhits
                         }
                     }
                 }
@@ -803,7 +976,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                     boolean algClusterIsRogue = true;
                     //If this MCP left simcalhits, it should get matched to a
                     //cluster.
-                    if(getNmcpSimcalhits(event, "EcalHits", mcp) > 0){
+                    if(getNSimCalHits(event, "EcalHits", mcp) > 0){
                         clusterExpected = true;
                     }
                     //loop over all mcpTracks
@@ -824,23 +997,25 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
                     if(clusterExpected){
                         if(matchedCluster == null){
-                            unknownMatches.put(matchedTrack,null);
+                            missedMatches.put(mcp, new Pair<Track, Cluster>(matchedTrack, null));
                         }
                         //if this matchedCluster belongs to a different
                         //MCP, this is a bad match
                         else if(clustersMCPMap.containsKey(matchedCluster)){
-                            badMatches.put(matchedTrack, matchedCluster);
+                            badMatches.put(mcp, new Pair<Track, Cluster>(matchedTrack,matchedCluster));
+                            plots2D.get("mcp_loop_truth_track_matched_to_wrong_cluster_E_v_E").fill(mcp.getEnergy(),matchedCluster.getEnergy());
                         }
                         else{
-                            unknownMatches.put(matchedTrack, matchedCluster);
+                            unknownMatches_mcpToRogueCluster.put(mcp, new Pair<Track, Cluster>(matchedTrack, matchedCluster));
                         }
                     }
                     else{
                         if(matchedCluster == null){
-                            goodMatches.put(matchedTrack,null);
+                            goodMatches.put(mcp, new Pair<Track, Cluster>(mcpBestTrack, null)); 
                         }
                         else{
-                            badMatches.put(matchedTrack,matchedCluster);
+                            badMatches.put(mcp, new Pair<Track, Cluster>(mcpBestTrack,matchedCluster));
+                            plots2D.get("mcp_loop_truth_track_matched_to_wrong_cluster_E_v_E").fill(mcp.getEnergy(),matchedCluster.getEnergy());
                         }
                     }
                 }
@@ -848,14 +1023,68 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
             //Loop over photon MCPs
             if(Math.abs(mcp.getPDGID()) == 22){
+                nphoton = nphoton + 1;
                 //If photon is matched to any track            
+                Track matchedTrack = null;
                 if(matchedTrackClusterMap.containsValue(mcpCluster)){
-                    badMatches.put(null,mcpCluster);
+                    for(Map.Entry<Track, Cluster> subentry : matchedTrackClusterMap.entrySet()){
+                        if(subentry.getValue() == mcpCluster){
+                            matchedTrack = subentry.getKey();
+                            break;
+                        }
+                    }
+                    photonsMatchedToTrack.put(mcp, new Pair<Track, Cluster>(matchedTrack, mcpCluster));
                 }
                 else{
-                    goodMatches.put(null, mcpCluster);
+                    truthPhotonClusters.put(mcp, new Pair<Track, Cluster>(null, mcpCluster));
                 }
             }
+            mcparticlesEvaluated.add(mcp);
+        }
+
+        plots1D.get("mcp_loop_nEle_per_event").fill(nele);
+        plots1D.get("mcp_loop_nPos_per_event").fill(npos);
+        plots1D.get("mcp_loop_nPhotons_per_event").fill(nphoton);
+        plots1D.get("mcp_loop_nCharged_particles_per_event").fill(nele + npos);
+        plots2D.get("mcp_loop_nCharged_particles_v_nTracks_per_event").fill(nele + npos, tracks.size());
+        plots2D.get("mcp_loop_nMCPs_v_nClusters_per_event").fill(nele + npos + nphoton,clusters.size());
+
+
+        //Loop over rogue clusters to find rogue matches and rogue photons
+        for(Cluster cluster : clusters){
+            if(clustersMCPMap.containsKey(cluster))
+                continue;
+            if(matchedTrackClusterMap.containsValue(cluster)){
+                Track matchedTrack = null;
+                for(Map.Entry<Track, Cluster> subentry : matchedTrackClusterMap.entrySet()){
+                    if(subentry.getValue() == cluster){
+                        matchedTrack = subentry.getKey();
+                    }
+                }
+                if(tracksMCPMap.containsKey(matchedTrack)){
+                    continue;
+                }
+                else{
+                    rogueMatches.put(matchedTrack, cluster);
+                }
+            }
+            else{
+                iddPhotons.add(cluster);
+            }
+        }
+
+        //Loop over rogue tracks to find rogue matches and rogue tracks
+        for(Track track : tracks){
+            if(tracksMCPMap.containsKey(track))
+                continue;
+            Cluster matchedCluster = matchedTrackClusterMap.get(track);
+            if(matchedCluster == null)
+                rogueTracks.add(track);
+            if(clustersMCPMap.containsKey(matchedCluster))
+                continue;
+            else
+                if(!rogueMatches.containsKey(track))
+                    rogueMatches.put(track, matchedCluster);
         }
 
         /*
@@ -1834,7 +2063,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         return mcparticles;
     }
 
-    public int getNmcpSimcalhits(EventHeader event, String simcalhitsCollectionName, MCParticle mcp){
+    public int getNSimCalHits(EventHeader event, String simcalhitsCollectionName, MCParticle mcp){
 
         List<SimCalorimeterHit> simcalhits = event.get(SimCalorimeterHit.class, simcalhitsCollectionName);
         int nHits = 0;
@@ -2009,7 +2238,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         for(Map.Entry<MCParticle, HashSet<Cluster>> entry : mcpClusterMap.entrySet()){
             MCParticle mcp = entry.getKey();
             HashSet<Cluster> tClusters = entry.getValue();
-            plots1D.get("nclusters_matched_to_single_mcp").fill(tClusters.size());
+            plots1D.get("clusters_matched_to_n_mcps").fill(tClusters.size());
 
             if(tClusters.size() < 2){
                 for(Cluster tCluster : tClusters){
@@ -2273,8 +2502,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
     public void getMCPTracks(EventHeader event, List<Track> tracks, Map<MCParticle,Map<Track,Integer>> mcpTracksMapIn, Map<Track, MCParticle> tracksMCPMapIn){
 
-        System.out.println("Event: " + event.getEventNumber());
-
         //Retrieve rawhits to mc
         RelationalTable rawtomc = new BaseRelationalTable(RelationalTable.Mode.MANY_TO_MANY, RelationalTable.Weighting.UNWEIGHTED);
         if (event.hasCollection(LCRelation.class, "SVTTrueHitRelations")) {
@@ -2286,7 +2513,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
         List<MCParticle> allmcps = event.get(MCParticle.class,"MCParticle");
         Map<MCParticle,Map<Track, int[]>> mcpTracksMap = new HashMap<MCParticle,Map<Track, int[]>>();
-        List<MCParticle> primaryMCPs = new ArrayList<MCParticle>();
         List<MCParticle> radFEEs = new ArrayList<MCParticle>();
         List<MCParticle> FEEs = new ArrayList<MCParticle>();
         List<MCParticle> primaryFEEs = new ArrayList<MCParticle>();
@@ -2295,7 +2521,8 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
         double fee = 2.25;
 
-        int nPrimaryMCPs_noFEEs = 0;
+        int nMCPs = allmcps.size();
+
         for(MCParticle mcp : allmcps){
             boolean skip = false;
 
@@ -2307,17 +2534,12 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             int pdgid = mcp.getPDGID();
             List<Integer> parent_ids = new ArrayList<Integer>();
             List<MCParticle> parents = mcp.getParents();
+
             //ignore all photons
             if(Math.abs(pdgid) != 11)
                 continue;
             double momentum = mcp.getMomentum().magnitude();
 
-            if(pdgid == 622)
-                mcp622.add(mcp);
-            if(pdgid == 623)
-                mcp623.add(mcp);
-            if(momentum > fee)
-                FEEs.add(mcp);
 
             boolean isRadiative = false;
 
@@ -2335,6 +2557,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                 }
             }
 
+
             else{
                 if(parents == null)
                     continue;
@@ -2348,16 +2571,21 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                 continue;
             }
 
-            if(momentum < fee)
-                nPrimaryMCPs_noFEEs = nPrimaryMCPs_noFEEs + 1;
+            if(parent_ids.contains(622))
+                mcp622.add(mcp);
+            if(parent_ids.contains(623))
+                mcp623.add(mcp);
+            if(momentum > fee)
+                FEEs.add(mcp);
 
             List<SimTrackerHit> simhits = event.get(SimTrackerHit.class, "TrackerHits");
             for(SimTrackerHit simhit : simhits){
                 MCParticle simhitmcp = simhit.getMCParticle();
                 if(simhitmcp == mcp){
                     Set<RawTrackerHit> rawhits = rawtomc.allTo(simhit);
-                    for(RawTrackerHit hit : rawhits)
+                    for(RawTrackerHit hit : rawhits){
                         rawhitsMCP.add(hit);
+                    }
                 }
             }
 
@@ -2384,36 +2612,37 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                 
                 if(!rawhitMultiplicity.containsKey(track))
                     continue;
-                plots1D.get("mcp_nRawTrackerHits_per_Track").fill(rawhitMultiplicity.get(track)[0]);
-                plots2D.get("mcp_momentum_v_nRawTrackerHits_per_Track").fill(momentum,rawhitMultiplicity.get(track)[0]);
+                plots1D.get("mcp_ofInterest_nRawTrackerHits_per_track").fill(rawhitMultiplicity.get(track)[0]);
+                plots2D.get("mcp_ofInterest_momentum_v_nRawTrackerHits_per_track").fill(momentum,rawhitMultiplicity.get(track)[0]);
             }
 
             if(rawhitMultiplicity.size() == 0)
                 continue;
-
-            mcpTracksMap.put(mcp,rawhitMultiplicity);
-            plots1D.get("mcp_nTracks").fill(mcpTracksMap.get(mcp).size());
-            plots2D.get("mcp_momentum_v_nTracks").fill(momentum,mcpTracksMap.get(mcp).size());
             
             int mostHits = 0;
+            Track mostHitsTrack = null;
             for(Map.Entry<Track, int[]> entry : rawhitMultiplicity.entrySet()){
-                if(entry.getValue()[0] > mostHits)
+                if(entry.getValue()[0] > mostHits){
                     mostHits = entry.getValue()[0];
+                    mostHitsTrack = entry.getKey();
+                }
             }
 
             if(mostHits > 0)
                 plots1D.get("mcp_mostHitsTrack_nHits").fill(mostHits);
+
+            mcpTracksMap.put(mcp,rawhitMultiplicity);
+            plots1D.get("mcp_nTracks").fill(mcpTracksMap.get(mcp).size());
+            plots2D.get("mcp_momentum_v_nTracks").fill(momentum,mcpTracksMap.get(mcp).size());
         }
 
-        plots1D.get("nPrimary_mcps_per_event").fill(primaryMCPs.size());
-        plots1D.get("nPrimary_mcps_FEEs_per_event").fill(FEEs.size());
-        plots1D.get("nPrimary_mcps_radiativeFEEs_per_event").fill(radFEEs.size());
-        plots1D.get("nPrimary_mcps_per_event_noFEEs").fill(nPrimaryMCPs_noFEEs);
-        plots1D.get("nPrimary_mcps_622_per_event").fill(mcp622.size());
-        plots1D.get("nPrimary_mcps_623_per_event").fill(mcp623.size());
 
-        plots2D.get("nPrimary_mcps_per_event_v_nTracks_per_event").fill(primaryMCPs.size(),tracks.size());
-        plots2D.get("nPrimary_mcps_per_event_v_nTracks_per_event_noFEEs").fill(nPrimaryMCPs_noFEEs,tracks.size());
+        plots1D.get("nMCP_primary_FEEs_per_event").fill(FEEs.size());
+        plots1D.get("nMCP_radiative_FEEs_per_event").fill(radFEEs.size());
+        plots1D.get("nMCP_622_primary_daughters_per_event").fill(mcp622.size());
+        plots1D.get("nMCP_623_primary_daughters_per_event").fill(mcp623.size());
+        plots2D.get("nMCP_622or623_primary_daughters_v_primary_FEEs_per_event").fill(mcp622.size()+mcp623.size(),FEEs.size());
+        plots2D.get("nMCP_622and623_primary_daughters_and_primary_FEEs_v_nTracks_per_event").fill(mcp622.size()+mcp623.size()+FEEs.size(),tracks.size());
 
         //Disambiguate MCP Track matches. Tracks must be exclusively matched to
         //a MCP
@@ -2441,6 +2670,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             if(entry.getValue() == null){
                 unmatchedTracks.add(entry.getKey());
                 plots1D.get("nMCPs_on_track").fill(0);
+                plots1D.get("tracks_unmatched_to_mcp_ofInterest_momentum").fill(trackPmag);
                 continue;
             }
 
@@ -2500,6 +2730,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             int sumHitsOnTracks = 0;
             for(Map.Entry<Track, int[]> og : mcpTracksMap.get(mcp).entrySet()){
                 sumHitsOnTracks = sumHitsOnTracks + og.getValue()[0];
+                plots2D.get("mcp_nSimTrackerHits_v_sum_nHitsOnTrack").fill(getNSimTrackerHits(event,mcp),sumHitsOnTracks);
             }
 
             boolean isFEE = false;
@@ -2568,7 +2799,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
             plots2D.get("mcp_momentum_v_best_track_momentum_disam").fill(mcp.getMomentum().magnitude(),trackPmag);
             plots1D.get("mcp_momentum_best_track_momentum_ratio_disam").fill(mcp.getMomentum().magnitude()/trackPmag);
-            plots2D.get("mcp_nsimtrackerHits_v_best_track_nhits_disam").fill(getNSimTrackerHits(event,mcp),mosthits);
+            plots2D.get("mcp_nSimTrackerHits_most_nHitsOnTrack_disam").fill(getNSimTrackerHits(event,mcp),mosthits);
 
             //Get scoringplane hit and plot
             SimTrackerHit scoringplanehit = getTrackScoringPlaneHit(event, mcp, ecalScoringPlaneHitsCollectionName);
@@ -2578,7 +2809,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
         plots1D.get("mcp_FEE_wAtLeast_one_track_per_event_disamb").fill(nFEEwithTracks);
         plots1D.get("mcp_NOT_FEE_wAtLeast_one_track_per_event_disamb").fill(nNonFeeMCPwithTracks);
-
 
         //return mcpTracksMapDisamb;
     }
