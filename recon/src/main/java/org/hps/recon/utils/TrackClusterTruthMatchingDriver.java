@@ -208,7 +208,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
         plots1D.put(String.format("nEvents",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nEvents",this.trackCollectionName),10000 , 0, 10000));
 
-        plots1D.put(String.format("nMCParticles_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMCParticles_per_event",this.trackCollectionName),10000 , 0, 10000));
+        plots1D.put(String.format("nMCParticles_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nMCParticles_per_event",this.trackCollectionName),1000 , 0, 10000));
 
         plots1D.put(String.format("nClusters_per_event",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("nClusters_per_event",this.trackCollectionName),100 , 0, 100));
 
@@ -831,13 +831,13 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                 plots1D.get("mcp_w_truth_cluster_but_no_truth_tracks_nSimTrackerHits").fill(getNSimTrackerHits(event, mcp));
                 nMcp_wo_track = nMcp_wo_track + 1;
             }
-            if(mcpTracks.size() > 1 && mcpCluster == null){
+            if(mcpTracks.size() > 0 && mcpCluster == null){
                 plots1D.get("mcp_w_truth_tracks_but_no_truth_cluster_momentum").fill(mcp.getMomentum().magnitude());
                 plots1D.get("mcp_w_truth_cluster_but_no_truth_tracks_nSimCalHits").fill(getNSimCalHits(event, "EcalHits", mcp));
                 nMcp_wo_cluster = nMcp_wo_cluster + 1;
             }
 
-            if(mcpTracks.size() > 1 && mcpCluster != null){
+            if(mcpTracks.size() > 0 && mcpCluster != null){
                 Track bestTrack = getMcpBestTrack(mcp,mcpTracksMap);
                 double[] trackP = bestTrack.getTrackStates().get(bestTrack.getTrackStates().size()-1).getMomentum();
                 double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
@@ -889,7 +889,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                     nele = nele + 1;
                 }
                 if(mcp.getPDGID() == -11){
-                    nele = npos + 1;
+                    npos = npos + 1;
                 }
 
                 //If MCP does have a truth cluster, we can check to see if that
