@@ -852,7 +852,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                 truthPairsMap.put(mcp, new Pair<Track,Cluster>(bestTrack, mcpCluster));
                 int charge = -1* (int)Math.signum(bestTrack.getTrackStates().get(0).getOmega());
                 double[] trackP = bestTrack.getTrackStates().get(bestTrack.getTrackStates().size()-1).getMomentum();
-                double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
+                double trackPmag = new BasicHep3Vector(bestTrack.getTrackStates().get(0).getMomentum()).magnitude();
                 plots1D.get("mcp_w_truth_tracks_AND_truth_cluster_momentum").fill(mcp.getMomentum().magnitude());
                 plots2D.get("mcp_w_truth_track_AND_truth_cluster_track_v_cluster_momentum").fill(trackPmag,mcpCluster.getEnergy());
 
@@ -1895,7 +1895,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             Cluster cluster = entry.getValue().getSecondElement();
             int charge = -1* (int) Math.signum(track.getTrackStates().get(0).getOmega());
             double[] trackP = TrackUtils.getTrackStateAtLocation(track,TrackState.AtIP).getMomentum();
-            double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
+            double trackPmag = new BasicHep3Vector(track.getTrackStates().get(0).getMomentum()).magnitude();
             double [] params = track.getTrackParameters();
             double tanlambda = params[4];
             boolean isTop;
@@ -2101,7 +2101,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         //double[] trackP = track.getMomentum();
         //momentum is rotated coords (x->z, z->y, y->x)
         double[] trackP = TrackUtils.getTrackStateAtLocation(track,TrackState.AtIP).getMomentum();
-        double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
+        double trackPmag = new BasicHep3Vector(track.getTrackStates().get(0).getMomentum()).magnitude();
         double[] truthP = scoringplaneHit.getMomentum();
         double truthPmag = Math.sqrt(Math.pow(truthP[0],2) + Math.pow(truthP[1],2) + Math.pow(truthP[2],2));
 
@@ -3066,7 +3066,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
         int charge = -1* (int)Math.signum(track.getTrackStates().get(0).getOmega());
         double[] trackP = TrackUtils.getTrackStateAtLocation(track,TrackState.AtLastHit).getMomentum();
-        double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
+        double trackPmag = new BasicHep3Vector(track.getTrackStates().get(0).getMomentum()).magnitude();
         double truthP = particle.getMomentum().magnitude();
 
         if(charge > 0 && particle.getPDGID() == 11)
