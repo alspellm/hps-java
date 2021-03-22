@@ -49,7 +49,7 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
     protected String trackClusterCollectionName = "GBLTracks";
     protected String rootFile = String.format("%s_TrackClusterMatching.root",this.trackCollectionName);
     //Keep false. May be used in future 03.19.21
-    protected Boolean buildParamHistos = false;
+    protected Boolean buildParamHistos = true;
     /*
      * Cuts used for track+cluster residual matching 
      */
@@ -240,6 +240,10 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
 
         plots2D.put(String.format("%s_pos_track_cluster_matched_pair_p_v_E",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_track_cluster_matched_pair_p_v_E",this.trackCollectionName), 1000, 0, 5, 1000, 0, 5));
 
+        plots2D.put(String.format("%s_pos_track_cluster_matched_pair_EdivP_v_y",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_track_cluster_matched_pair_EdivP_v_y",this.trackCollectionName), 1000, 0, 5, 2000, -1000, 1000));
+
+        plots2D.put(String.format("%s_pos_track_cluster_matched_pair_EdivP_v_x",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_track_cluster_matched_pair_EdivP_v_x",this.trackCollectionName), 1000, 0, 5, 2000, -1000, 1000));
+
         
         plots1D.put(String.format("%s_ele_track_cluster_matched_pair_dx",this.trackCollectionName),histogramFactory.createHistogram1D(String.format("%s_ele_track_cluster_matched_pair_dx",this.trackCollectionName),800, -200, 200));
         
@@ -252,6 +256,10 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
         plots1D.put(String.format("%s_ele_track_cluster_matched_pair_dt",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_track_cluster_matched_pair_dt",this.trackCollectionName),  600, -150, 150));
 
         plots2D.put(String.format("%s_ele_track_cluster_matched_pair_p_v_E",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_track_cluster_matched_pair_p_v_E",this.trackCollectionName), 1000, 0, 5, 1000, 0, 5));
+
+        plots2D.put(String.format("%s_ele_track_cluster_matched_pair_EdivP_v_y",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_track_cluster_matched_pair_EdivP_v_y",this.trackCollectionName), 1000, 0, 5, 2000, -1000, 1000));
+
+        plots2D.put(String.format("%s_ele_track_cluster_matched_pair_EdivP_v_x",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_track_cluster_matched_pair_EdivP_v_x",this.trackCollectionName), 1000, 0, 5, 2000, -1000, 1000));
 
         //Unmatched Pair Plots
         plots1D.put(String.format("%s_ele_track_unmatched_momentum",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_track_unmatched_momentum",this.trackCollectionName),  1000, 0, 5));
@@ -576,6 +584,8 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
                         plots1D.get(String.format("%s_pos_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(dz);
                         plots1D.get(String.format("%s_pos_track_cluster_matched_pair_dr",this.trackCollectionName)).fill(dr);
                         plots2D.get(String.format("%s_pos_track_cluster_matched_pair_p_v_E",this.trackCollectionName)).fill(trackPmag,cluster.getEnergy());
+                        plots2D.get(String.format("%s_pos_track_cluster_matched_pair_EdivP_v_x",this.trackCollectionName)).fill(trackPmag/cluster.getEnergy(),trackx);
+                        plots2D.get(String.format("%s_pos_track_cluster_matched_pair_EdivP_v_y",this.trackCollectionName)).fill(trackPmag/cluster.getEnergy(),tracky);
                     }
                     else {
                         //Time residual plot
@@ -586,6 +596,8 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
                         plots1D.get(String.format("%s_ele_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(dz);
                         plots1D.get(String.format("%s_ele_track_cluster_matched_pair_dr",this.trackCollectionName)).fill(dr);
                         plots2D.get(String.format("%s_ele_track_cluster_matched_pair_p_v_E",this.trackCollectionName)).fill(trackPmag,cluster.getEnergy());
+                        plots2D.get(String.format("%s_ele_track_cluster_matched_pair_EdivP_v_x",this.trackCollectionName)).fill(trackPmag/cluster.getEnergy(),trackx);
+                        plots2D.get(String.format("%s_ele_track_cluster_matched_pair_EdivP_v_y",this.trackCollectionName)).fill(trackPmag/cluster.getEnergy(),tracky);
                     }
                 }
             }
