@@ -477,6 +477,8 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
                     double cluster_time = ClusterUtilities.getSeedHitTime(cluster);
                     double dt = cluster_time - cuts.getTrackClusterTimeOffset() - trackt;
 
+                    if(dt > this.maxMatchDt)
+                        continue;
                     double clusterx = cluster.getPosition()[0];
                     double clustery = cluster.getPosition()[1];
                     double clusterz = cluster.getPosition()[2];
@@ -617,25 +619,25 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
 
             if(charge < 0){
                 if(tanlambda > 0){
-                    plots2D.get(String.format("%s_ele_TOP_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,trackx-clusterx);
-                    plots2D.get(String.format("%s_ele_TOP_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,tracky-clustery);
+                    plots2D.get(String.format("%s_ele_TOP_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,dx);
+                    plots2D.get(String.format("%s_ele_TOP_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,dy);
                     plots2D.get(String.format("%s_ele_TOP_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
                 }
                 else{
-                    plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,trackx-clusterx);
-                    plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,tracky-clustery);
+                    plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,dx);
+                    plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,dy);
                     plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
                 }
             }
             else{
                 if(tanlambda > 0){
-                    plots2D.get(String.format("%s_pos_TOP_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,trackx-clusterx);
-                    plots2D.get(String.format("%s_pos_TOP_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,tracky-clustery);
+                    plots2D.get(String.format("%s_pos_TOP_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,dx);
+                    plots2D.get(String.format("%s_pos_TOP_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,dy);
                     plots2D.get(String.format("%s_pos_TOP_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
                 }
                 else{
-                    plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,trackx-clusterx);
-                    plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,tracky-clustery);
+                    plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,dx);
+                    plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,dy);
                     plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
                 }
             }
@@ -738,26 +740,26 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
 
         if(charge < 0){
             if(tanlambda > 0){
-                plots2D.get(String.format("%s_ele_TOP_track_cluster_param_dx",this.trackCollectionName)).fill(trackPmag,trackx-clusterx);
-                plots2D.get(String.format("%s_ele_TOP_track_cluster_param_dy",this.trackCollectionName)).fill(trackPmag,tracky-clustery);
-                plots2D.get(String.format("%s_ele_TOP_track_cluster_param_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
+                plots2D.get(String.format("%s_ele_TOP_track_cluster_param_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
+                plots2D.get(String.format("%s_ele_TOP_track_cluster_param_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
+                plots2D.get(String.format("%s_ele_TOP_track_cluster_param_dz",this.trackCollectionName)).fill(trackPmag,clusterz-trackz);
             }
             else{
-                plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_param_dx",this.trackCollectionName)).fill(trackPmag,trackx-clusterx);
-                plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_param_dy",this.trackCollectionName)).fill(trackPmag,tracky-clustery);
-                plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_param_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
+                plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_param_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
+                plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_param_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
+                plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_param_dz",this.trackCollectionName)).fill(trackPmag,clusterz-trackz);
             }
         }
         else{
             if(tanlambda > 0){
-                plots2D.get(String.format("%s_pos_TOP_track_cluster_param_dx",this.trackCollectionName)).fill(trackPmag,trackx-clusterx);
-                plots2D.get(String.format("%s_pos_TOP_track_cluster_param_dy",this.trackCollectionName)).fill(trackPmag,tracky-clustery);
-                plots2D.get(String.format("%s_pos_TOP_track_cluster_param_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
+                plots2D.get(String.format("%s_pos_TOP_track_cluster_param_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
+                plots2D.get(String.format("%s_pos_TOP_track_cluster_param_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
+                plots2D.get(String.format("%s_pos_TOP_track_cluster_param_dz",this.trackCollectionName)).fill(trackPmag,clusterz-trackz);
             }
             else{
-                plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_param_dx",this.trackCollectionName)).fill(trackPmag,trackx-clusterx);
-                plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_param_dy",this.trackCollectionName)).fill(trackPmag,tracky-clustery);
-                plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_param_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
+                plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_param_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
+                plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_param_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
+                plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_param_dz",this.trackCollectionName)).fill(trackPmag,clusterz-trackz);
             }
         }
     }

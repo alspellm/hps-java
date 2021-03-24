@@ -64,6 +64,8 @@ public class TrackClusterMatcherNSigma extends AbstractTrackClusterMatcher {
     protected Map<String, IHistogram1D> plots1D;
     protected Map<String, IHistogram2D> plots2D;
     protected String rootFile = "track_cluster_matching_plots.root";
+    protected double maxMatchDxOffset;
+    protected double maxMatchDyOffset;
 
     // parameterization
     private Map<String, double[]> paramMap;
@@ -313,8 +315,6 @@ public class TrackClusterMatcherNSigma extends AbstractTrackClusterMatcher {
         }
         else return Double.MAX_VALUE;
 
-
-
         // Beyond the edges of the fits in momentum, assume that the parameters are constant:
         if ((p > paramMap.get("pHigh_hasL6")[0]) && hasL6) 
             p = paramMap.get("pHigh_hasL6")[0];
@@ -340,6 +340,9 @@ public class TrackClusterMatcherNSigma extends AbstractTrackClusterMatcher {
         if(snapToEdge )
             tPos= snapper.snapToEdge(tPos,cluster);
 
+        //offsets used to plot
+        this.maxMatchDxOffset = aDxMean;
+        this.maxMatchDyOffset = aDyMean;
 
         // calculate nSigma between track and cluster:
         final double nSigmaX = (cPos.x() - tPos.x() - aDxMean) / aDxSigm;
@@ -704,14 +707,18 @@ public class TrackClusterMatcherNSigma extends AbstractTrackClusterMatcher {
                     }
                 }
                 trackClusterPairs.put(track, matchedCluster);
-                if(enablePlots)
-                    plotMatchedPairs(track, matchedCluster, TrackUtils.getTrackTime(track, hitToStrips, hitToRotated), flipSign, cuts);
+                if(enablePlots){
+                    if(matchedCluster != null){
+                        double throwaway = this.getNSigmaPosition(matchedCluster, particle);
+                        plotMatchedPairs(track, matchedCluster, TrackUtils.getTrackTime(track, hitToStrips, hitToRotated), flipSign, cuts, this.maxMatchDyOffset, this.maxMatchDyOffset);
+                    }
+                }
             }
         }
         return trackClusterPairs;
     }
 
-    private void plotMatchedPairs(Track track, Cluster cluster, double trkT, int flipSign, StandardCuts cuts){
+    private void plotMatchedPairs(Track track, Cluster cluster, double trkT, int flipSign, StandardCuts cuts, double dxOffset, double dyOffset){
 
         if(cluster == null)
             return;
@@ -743,34 +750,40 @@ public class TrackClusterMatcherNSigma extends AbstractTrackClusterMatcher {
         double clusterz = cluster.getPosition()[2];
 
         //Calculate position residuals
-        double dx = clusterx - trackx;
-        double dy = clustery - tracky;
+        double dx = clusterx - trackx - dxOffset;
+        double dy = clustery - tracky - dyOffset;
         double dz = clusterz - trackz;
         double dr = Math.sqrt(Math.pow(clusterx-trackx,2) + Math.pow(clustery-tracky,2));
         double dt = cluster_time - cuts.getTrackClusterTimeOffset() - trackt;
+        System.out.println("dxoffset: " + dxOffset);
+        System.out.println("dyoffset: " + dyOffset);
+        System.out.println("dx before offset: " + (dx + dxOffset));
+        System.out.println("dy before offset: " + (dy + dyOffset));
+        System.out.println("dx after offset: " + (dx));
+        System.out.println("dy after offset: " + (dy));
 
         if(charge < 0){
             if(tanlambda > 0){
-                plots2D.get(String.format("%s_ele_TOP_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,trackx-clusterx);
-                plots2D.get(String.format("%s_ele_TOP_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,tracky-clustery);
-                plots2D.get(String.format("%s_ele_TOP_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
+                plots2D.get(String.format("%s_ele_TOP_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,dx);
+                plots2D.get(String.format("%s_ele_TOP_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,dy);
+                plots2D.get(String.format("%s_ele_TOP_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,dz);
             }
             else{
-                plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,trackx-clusterx);
-                plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,tracky-clustery);
-                plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
+                plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,dx);
+                plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,dy);
+                plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,dz);
             }
         }
         else{
             if(tanlambda > 0){
-                plots2D.get(String.format("%s_pos_TOP_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,trackx-clusterx);
-                plots2D.get(String.format("%s_pos_TOP_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,tracky-clustery);
-                plots2D.get(String.format("%s_pos_TOP_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
+                plots2D.get(String.format("%s_pos_TOP_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,dx);
+                plots2D.get(String.format("%s_pos_TOP_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,dy);
+                plots2D.get(String.format("%s_pos_TOP_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,dz);
             }
             else{
-                plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,trackx-clusterx);
-                plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,tracky-clustery);
-                plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
+                plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(trackPmag,dx);
+                plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,dy);
+                plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,dz);
             }
         }
     }

@@ -526,7 +526,7 @@ public abstract class ReconParticleDriver extends Driver {
         // track to a cluster. Details of the matching algorithm used are
         // defined in the specfic matcher implementation
 
-        //Matcher returns a mapping of Tracks with matched Clusters.
+        //Matcher returns a mmapping of Tracks with matched Clusters.
         TrackClusterPairs = matcher.matchTracksToClusters(event, trackCollections, clusters, cuts, flipSign, useTrackPositionForClusterCorrection,isMC,ecal, beamEnergy);
 
         //Loop over matched Track Cluster pairs and reconstruct particles
