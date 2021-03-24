@@ -183,19 +183,19 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
 
 //Plots for creating track+cluster residual parameterization files
-        plots2D.put(String.format("%s_ele_TOP_track_cluster_param_dx",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_TOP_track_cluster_param_dx",this.trackCollectionName),50, 0, 5, 160,-40,40));
-        plots2D.put(String.format("%s_ele_TOP_track_cluster_param_dy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_TOP_track_cluster_param_dy",this.trackCollectionName),50, 0, 5, 160,-40,40));
-        plots2D.put(String.format("%s_ele_TOP_track_cluster_param_dz",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_TOP_track_cluster_param_dz",this.trackCollectionName),50, 0, 5, 160,-40,40));
-        plots2D.put(String.format("%s_ele_BOTTOM_track_cluster_param_dx",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_BOTTOM_track_cluster_param_dx",this.trackCollectionName),50, 0, 5, 160,-40,40));
-        plots2D.put(String.format("%s_ele_BOTTOM_track_cluster_param_dy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_BOTTOM_track_cluster_param_dy",this.trackCollectionName),50, 0, 5, 160,-40,40));
-        plots2D.put(String.format("%s_ele_BOTTOM_track_cluster_param_dz",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_BOTTOM_track_cluster_param_dz",this.trackCollectionName),50, 0, 5, 160,-40,40));
+        plots2D.put(String.format("%s_ele_TOP_track_cluster_truth_pairs_parm_dx",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_TOP_track_cluster_truth_pairs_parm_dx",this.trackCollectionName),50, 0, 5, 160,-40,40));
+        plots2D.put(String.format("%s_ele_TOP_track_cluster_truth_pairs_parm_dy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_TOP_track_cluster_truth_pairs_parm_dy",this.trackCollectionName),50, 0, 5, 160,-40,40));
+        plots2D.put(String.format("%s_ele_TOP_track_cluster_truth_pairs_parm_dz",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_TOP_track_cluster_truth_pairs_parm_dz",this.trackCollectionName),50, 0, 5, 160,-40,40));
+        plots2D.put(String.format("%s_ele_BOTTOM_track_cluster_truth_pairs_parm_dx",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_BOTTOM_track_cluster_truth_pairs_parm_dx",this.trackCollectionName),50, 0, 5, 160,-40,40));
+        plots2D.put(String.format("%s_ele_BOTTOM_track_cluster_truth_pairs_parm_dy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_BOTTOM_track_cluster_truth_pairs_parm_dy",this.trackCollectionName),50, 0, 5, 160,-40,40));
+        plots2D.put(String.format("%s_ele_BOTTOM_track_cluster_truth_pairs_parm_dz",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_BOTTOM_track_cluster_truth_pairs_parm_dz",this.trackCollectionName),50, 0, 5, 160,-40,40));
 
-        plots2D.put(String.format("%s_pos_TOP_track_cluster_param_dx",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_TOP_track_cluster_param_dx",this.trackCollectionName),50, 0, 5, 160,-40,40));
-        plots2D.put(String.format("%s_pos_TOP_track_cluster_param_dy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_TOP_track_cluster_param_dy",this.trackCollectionName),50, 0, 5, 160,-40,40));
-        plots2D.put(String.format("%s_pos_TOP_track_cluster_param_dz",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_TOP_track_cluster_param_dz",this.trackCollectionName),50, 0, 5, 160,-40,40));
-        plots2D.put(String.format("%s_pos_BOTTOM_track_cluster_param_dx",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_BOTTOM_track_cluster_param_dx",this.trackCollectionName),50, 0, 5, 160,-40,40));
-        plots2D.put(String.format("%s_pos_BOTTOM_track_cluster_param_dy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_BOTTOM_track_cluster_param_dy",this.trackCollectionName),50, 0, 5, 160,-40,40));
-        plots2D.put(String.format("%s_pos_BOTTOM_track_cluster_param_dz",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_BOTTOM_track_cluster_param_dz",this.trackCollectionName),50, 0, 5, 160,-40,40));
+        plots2D.put(String.format("%s_pos_TOP_track_cluster_truth_pairs_parm_dx",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_TOP_track_cluster_truth_pairs_parm_dx",this.trackCollectionName),50, 0, 5, 160,-40,40));
+        plots2D.put(String.format("%s_pos_TOP_track_cluster_truth_pairs_parm_dy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_TOP_track_cluster_truth_pairs_parm_dy",this.trackCollectionName),50, 0, 5, 160,-40,40));
+        plots2D.put(String.format("%s_pos_TOP_track_cluster_truth_pairs_parm_dz",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_TOP_track_cluster_truth_pairs_parm_dz",this.trackCollectionName),50, 0, 5, 160,-40,40));
+        plots2D.put(String.format("%s_pos_BOTTOM_track_cluster_truth_pairs_parm_dx",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_BOTTOM_track_cluster_truth_pairs_parm_dx",this.trackCollectionName),50, 0, 5, 160,-40,40));
+        plots2D.put(String.format("%s_pos_BOTTOM_track_cluster_truth_pairs_parm_dy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_BOTTOM_track_cluster_truth_pairs_parm_dy",this.trackCollectionName),50, 0, 5, 160,-40,40));
+        plots2D.put(String.format("%s_pos_BOTTOM_track_cluster_truth_pairs_parm_dz",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_BOTTOM_track_cluster_truth_pairs_parm_dz",this.trackCollectionName),50, 0, 5, 160,-40,40));
     
 
 
@@ -1816,26 +1816,26 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
             if(charge < 0){
                 if(tanlambda > 0){
-                    plots2D.get(String.format("%s_ele_TOP_track_cluster_param_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
-                    plots2D.get(String.format("%s_ele_TOP_track_cluster_param_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
-                    plots2D.get(String.format("%s_ele_TOP_track_cluster_param_dz",this.trackCollectionName)).fill(trackPmag,clusterz-trackz);
+                    plots2D.get(String.format("%s_ele_TOP_track_cluster_truth_pairs_parm_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
+                    plots2D.get(String.format("%s_ele_TOP_track_cluster_truth_pairs_parm_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
+                    plots2D.get(String.format("%s_ele_TOP_track_cluster_truth_pairs_parm_dz",this.trackCollectionName)).fill(trackPmag,clusterz-trackz);
                 }
                 else{
-                    plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_param_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
-                    plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_param_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
-                    plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_param_dz",this.trackCollectionName)).fill(trackPmag,clusterz-trackz);
+                    plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_truth_pairs_parm_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
+                    plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_truth_pairs_parm_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
+                    plots2D.get(String.format("%s_ele_BOTTOM_track_cluster_truth_pairs_parm_dz",this.trackCollectionName)).fill(trackPmag,clusterz-trackz);
                 }
             }
             else{
                 if(tanlambda > 0){
-                    plots2D.get(String.format("%s_pos_TOP_track_cluster_param_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
-                    plots2D.get(String.format("%s_pos_TOP_track_cluster_param_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
-                    plots2D.get(String.format("%s_pos_TOP_track_cluster_param_dz",this.trackCollectionName)).fill(trackPmag,clusterz-trackz);
+                    plots2D.get(String.format("%s_pos_TOP_track_cluster_truth_pairs_parm_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
+                    plots2D.get(String.format("%s_pos_TOP_track_cluster_truth_pairs_parm_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
+                    plots2D.get(String.format("%s_pos_TOP_track_cluster_truth_pairs_parm_dz",this.trackCollectionName)).fill(trackPmag,clusterz-trackz);
                 }
                 else{
-                    plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_param_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
-                    plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_param_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
-                    plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_param_dz",this.trackCollectionName)).fill(trackPmag,clusterz-trackz);
+                    plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_truth_pairs_parm_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
+                    plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_truth_pairs_parm_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
+                    plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_truth_pairs_parm_dz",this.trackCollectionName)).fill(trackPmag,clusterz-trackz);
                 }
 
             }
