@@ -755,12 +755,6 @@ public class TrackClusterMatcherNSigma extends AbstractTrackClusterMatcher {
         double dz = clusterz - trackz;
         double dr = Math.sqrt(Math.pow(clusterx-trackx,2) + Math.pow(clustery-tracky,2));
         double dt = cluster_time - cuts.getTrackClusterTimeOffset() - trackt;
-        System.out.println("dxoffset: " + dxOffset);
-        System.out.println("dyoffset: " + dyOffset);
-        System.out.println("dx before offset: " + (dx + dxOffset));
-        System.out.println("dy before offset: " + (dy + dyOffset));
-        System.out.println("dx after offset: " + (dx));
-        System.out.println("dy after offset: " + (dy));
 
         if(charge < 0){
             if(tanlambda > 0){
