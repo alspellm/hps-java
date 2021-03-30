@@ -449,6 +449,8 @@ public class TrackClusterMatcherNSigma extends AbstractTrackClusterMatcher {
             return false;
         }
 
+        //moved these plots to a more sensible location
+        /*
         if (enablePlots) {
             if (track.getTrackStates().get(0).getTanLambda() > 0) {
 
@@ -469,6 +471,7 @@ public class TrackClusterMatcherNSigma extends AbstractTrackClusterMatcher {
                         trackPosAtEcal.y());
             }
         }
+        */
 
         // If all cuts are pased, return true.
         return true;
@@ -566,6 +569,33 @@ public class TrackClusterMatcherNSigma extends AbstractTrackClusterMatcher {
         plots2D.put(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dy",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dy",this.trackCollectionName),50, 0, 5, 160,-40,40));
         
         plots2D.put(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dz",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dz",this.trackCollectionName),50, 0, 5, 160,-40,40));
+
+    //1D Charge separated plots
+        plots1D.put(String.format("%s_pos_track_cluster_matched_pair_dx",this.trackCollectionName),histogramFactory.createHistogram1D(String.format("%s_pos_track_cluster_matched_pair_dx",this.trackCollectionName),800, -200, 200));
+
+        plots1D.put(String.format("%s_pos_track_cluster_matched_pair_dy",this.trackCollectionName),histogramFactory.createHistogram1D(String.format( "%s_pos_track_cluster_matched_pair_dy",this.trackCollectionName),800, -200, 200));
+
+        plots1D.put(String.format("%s_pos_track_cluster_matched_pair_dz",this.trackCollectionName),histogramFactory.createHistogram1D(String.format( "%s_pos_track_cluster_matched_pair_dz",this.trackCollectionName),100, -50,50));
+
+        plots1D.put(String.format("%s_pos_track_cluster_matched_pair_dr",this.trackCollectionName),histogramFactory.createHistogram1D(String.format( "%s_pos_track_cluster_matched_pair_dr",this.trackCollectionName),100, -50, 150));
+
+        plots1D.put(String.format("%s_pos_track_cluster_matched_pair_dt",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_pos_track_cluster_matched_pair_dt",this.trackCollectionName),  600, -150, 150));
+
+        plots2D.put(String.format("%s_pos_track_cluster_matched_pair_p_v_E",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_pos_track_cluster_matched_pair_p_v_E",this.trackCollectionName), 1000, 0, 5, 1000, 0, 5));
+
+
+        plots1D.put(String.format("%s_ele_track_cluster_matched_pair_dx",this.trackCollectionName),histogramFactory.createHistogram1D(String.format("%s_ele_track_cluster_matched_pair_dx",this.trackCollectionName),800, -200, 200));
+
+        plots1D.put(String.format("%s_ele_track_cluster_matched_pair_dy",this.trackCollectionName),histogramFactory.createHistogram1D(String.format( "%s_ele_track_cluster_matched_pair_dy",this.trackCollectionName),800, -200, 200));
+
+        plots1D.put(String.format("%s_ele_track_cluster_matched_pair_dz",this.trackCollectionName),histogramFactory.createHistogram1D(String.format( "%s_ele_track_cluster_matched_pair_dz",this.trackCollectionName),100, -50,50));
+
+        plots1D.put(String.format("%s_ele_track_cluster_matched_pair_dr",this.trackCollectionName),histogramFactory.createHistogram1D(String.format( "%s_ele_track_cluster_matched_pair_dr",this.trackCollectionName),100, -50,150));
+
+        plots1D.put(String.format("%s_ele_track_cluster_matched_pair_dt",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_ele_track_cluster_matched_pair_dt",this.trackCollectionName),  600, -150, 150));
+
+        plots2D.put(String.format("%s_ele_track_cluster_matched_pair_p_v_E",this.trackCollectionName), histogramFactory.createHistogram2D(String.format("%s_ele_track_cluster_matched_pair_p_v_E",this.trackCollectionName), 1000, 0, 5, 1000, 0, 5));
+
 
     }
 
@@ -779,6 +809,44 @@ public class TrackClusterMatcherNSigma extends AbstractTrackClusterMatcher {
                 plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(trackPmag,dy);
                 plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,dz);
             }
+        }
+
+        if(charge > 0) {
+            //Time residual plot
+            plots1D.get(String.format("%s_pos_track_cluster_matched_pair_dt",this.trackCollectionName)).fill(dt);
+            //Track@Ecal Cluster Residuals
+            plots1D.get(String.format("%s_pos_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(dx);
+            plots1D.get(String.format("%s_pos_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(dy);
+            plots1D.get(String.format("%s_pos_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(dz);
+            plots1D.get(String.format("%s_pos_track_cluster_matched_pair_dr",this.trackCollectionName)).fill(dr);
+            plots2D.get(String.format("%s_pos_track_cluster_matched_pair_p_v_E",this.trackCollectionName)).fill(trackPmag,cluster.getEnergy());
+        }
+        else {
+            //Time residual plot
+            plots1D.get(String.format("%s_ele_track_cluster_matched_pair_dt",this.trackCollectionName)).fill(dt);
+            //Track@Ecal Cluster Residuals
+            plots1D.get(String.format("%s_ele_track_cluster_matched_pair_dx",this.trackCollectionName)).fill(dx);
+            plots1D.get(String.format("%s_ele_track_cluster_matched_pair_dy",this.trackCollectionName)).fill(dy);
+            plots1D.get(String.format("%s_ele_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(dz);
+            plots1D.get(String.format("%s_ele_track_cluster_matched_pair_dr",this.trackCollectionName)).fill(dr);
+            plots2D.get(String.format("%s_ele_track_cluster_matched_pair_p_v_E",this.trackCollectionName)).fill(trackPmag,cluster.getEnergy());
+        }
+
+        //plots relocated from "isMatch"
+         
+        if (track.getTrackStates().get(0).getTanLambda() > 0) {
+
+            plots1D.get("Ecal cluster x - track x @ Ecal - top - matched").fill(dx);
+            plots2D.get("Ecal cluster x v track x @ Ecal - top - matched").fill(clusterx, trackx);
+            plots1D.get("Ecal cluster y - track y @ Ecal - top - matched").fill(dy);
+            plots2D.get("Ecal cluster y v track y @ Ecal - top - matched").fill(clustery, tracky);
+
+        } else if (track.getTrackStates().get(0).getTanLambda() < 0) {
+
+            plots1D.get("Ecal cluster x - track x @ Ecal - bottom - matched").fill(dx);
+            plots2D.get("Ecal cluster x v track x @ Ecal - bottom - matched").fill(clusterx, trackx);
+            plots1D.get("Ecal cluster y - track y @ Ecal - bottom - matched").fill(dy);
+            plots2D.get("Ecal cluster y v track y @ Ecal - bottom - matched").fill(clustery, tracky);
         }
     }
 

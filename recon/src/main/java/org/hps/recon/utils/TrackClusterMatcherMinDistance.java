@@ -303,6 +303,35 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
         plots1D.put(String.format("%s_cluster_energy",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_cluster_energy",this.trackCollectionName),  1000, 0, 5));
         
         plots1D.put(String.format("%s_corrected_cluster_energy",this.trackCollectionName), histogramFactory.createHistogram1D(String.format("%s_corrected_cluster_energy",this.trackCollectionName),  1000, 0, 5));
+
+        //Adding old matcher (NSigma) plots for comparisons sake
+        //--- Matched tracks ---//
+        //----------------------//
+        //--- Top ---//
+        plots1D.put("Ecal cluster x - track x @ Ecal - top - matched",
+                histogramFactory.createHistogram1D("Ecal cluster x - track x @ Ecal - top - matched", 200, -200, 200));
+
+        plots2D.put("Ecal cluster x v track x @ Ecal - top - matched",
+                histogramFactory.createHistogram2D("Ecal cluster x v track x @ Ecal - top - matched", 200, -200, 200, 200, -200, 200));
+
+        plots1D.put("Ecal cluster y - track y @ Ecal - top - matched",
+                histogramFactory.createHistogram1D("Ecal cluster y - track y @ Ecal - top - matched", 100, -100, 100));
+
+        plots2D.put("Ecal cluster y v track y @ Ecal - top - matched",
+                histogramFactory.createHistogram2D("Ecal cluster y v track  @ Ecal - top - matched", 100, -100, 100, 100, -100, 100));
+
+        //--- Bottom ---//
+        plots1D.put("Ecal cluster x - track x @ Ecal - bottom - matched",
+                histogramFactory.createHistogram1D("Ecal cluster x - track x @ Ecal - bottom - matched", 200, -200, 200));
+
+        plots2D.put("Ecal cluster x v track x @ Ecal - bottom - matched",
+                histogramFactory.createHistogram2D("Ecal cluster x v track x @ Ecal - bottom - matched", 200, -200, 200, 200, -200, 200));
+
+        plots1D.put("Ecal cluster y - track y @ Ecal - bottom - matched",
+                histogramFactory.createHistogram1D("Ecal cluster y - track y @ Ecal - bottom - matched", 100, -100, 100));
+
+        plots2D.put("Ecal cluster y v track y @ Ecal - bottom - matched",
+                histogramFactory.createHistogram2D("Ecal cluster y v track  @ Ecal - bottom - matched", 100, -100, 100, 100, -100, 100)); 
     }
 
     private void plotClusterValues(List<Cluster> clusters, double trackClusterTimeOffset){
@@ -641,6 +670,22 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
                     plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_matched_pair_dz",this.trackCollectionName)).fill(trackPmag,trackz-clusterz);
                 }
             }
+        
+            if (track.getTrackStates().get(0).getTanLambda() > 0) {
+
+                plots1D.get("Ecal cluster x - track x @ Ecal - top - matched").fill(dx);
+                plots2D.get("Ecal cluster x v track x @ Ecal - top - matched").fill(clusterx, trackx);
+                plots1D.get("Ecal cluster y - track y @ Ecal - top - matched").fill(dy);
+                plots2D.get("Ecal cluster y v track y @ Ecal - top - matched").fill(clustery, tracky);
+
+            } else if (track.getTrackStates().get(0).getTanLambda() < 0) {
+
+                plots1D.get("Ecal cluster x - track x @ Ecal - bottom - matched").fill(dx);
+                plots2D.get("Ecal cluster x v track x @ Ecal - bottom - matched").fill(clusterx, trackx);
+                plots1D.get("Ecal cluster y - track y @ Ecal - bottom - matched").fill(dy);
+                plots2D.get("Ecal cluster y v track y @ Ecal - bottom - matched").fill(clustery, tracky);
+            }
+
         }
     }
 
