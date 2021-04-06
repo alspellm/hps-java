@@ -633,6 +633,12 @@ public class TrackClusterMatcherNSigma extends AbstractTrackClusterMatcher {
         RelationalTable hitToRotated = TrackUtils.getHitToRotatedTable(event);
         RelationalTable hitToStrips = TrackUtils.getHitToStripsTable(event);
 
+        System.out.println("Cuts are:");
+        System.out.println("dt: " + cuts.getMaxMatchDt());
+        System.out.println("dx: " + cuts.getMaxMatchDx());
+        System.out.println("offset " + cuts.getTrackClusterTimeOffset());
+
+
         // Create a list in which to store reconstructed particles.
         List<ReconstructedParticle> particles = new ArrayList<ReconstructedParticle>();
 
