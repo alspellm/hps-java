@@ -37,6 +37,8 @@ import org.lcsim.event.SimTrackerHit;
 import org.lcsim.util.Driver;
 import org.lcsim.geometry.Detector;
 import org.lcsim.event.EventHeader;
+import org.lcsim.event.RawTrackerHit;
+
 //import org.lcsim.lcio.LCIOConstants;
 
 /**
@@ -90,27 +92,29 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
 
 //Plots for checking new Track MCP matching tools
-        plots1D.put(String.format("track_max_mcp_hit_multiplicity"), histogramFactory.createHistogram1D(String.format("track_max_mcp_hit_multiplicity"), 100, 0, 100));
+        plots1D.put(String.format("n_mcps_on_track"), histogramFactory.createHistogram1D(String.format("n_mcps_on_track"), 30, 0, 30));
 
-        plots1D.put(String.format("track_most-next_mcp_hit_multiplicity"), histogramFactory.createHistogram1D(String.format("track_most-next_mcp_hit_multiplicity"), 100, 0, 100));
+        plots1D.put(String.format("n_hits"), histogramFactory.createHistogram1D(String.format("n_hits"), 13, 0, 13));
 
-        plots1D.put(String.format("track_number_of_mcps"), histogramFactory.createHistogram1D(String.format("track_number_of_mcps"), 40, 0, 40));
+        plots1D.put(String.format("n_goodhits"), histogramFactory.createHistogram1D(String.format("n_goodhits"), 13, 0, 13));
 
-        plots2D.put(String.format("track_max_mcp_vs_next_best_mcp_hits"), histogramFactory.createHistogram2D(String.format("track_max_mcp_vs_next_best_mcp_hits"), 40, 0, 40, 40, 0, 40));
+        plots1D.put(String.format("n_badhits"), histogramFactory.createHistogram1D(String.format("n_badhits"), 13, 0, 13));
 
-        plots2D.put(String.format("track_max_mcp_vs_next_best_mcp_hits_same_pdgid"), histogramFactory.createHistogram2D(String.format("track_max_mcp_vs_next_best_mcp_hits_same_pdgid"), 40, 0, 40, 40, 0, 40));
+        plots1D.put(String.format("purity"), histogramFactory.createHistogram1D(String.format("purity"), 100, 0, 1));
 
-        plots2D.put(String.format("track_max_mcp_vs_next_best_mcp_hits_different_pdgid"), histogramFactory.createHistogram2D(String.format("track_max_mcp_vs_next_best_mcp_hits_different_pdgid"), 40, 0, 40, 40, 0, 40));
+        plots1D.put(String.format("layers_hit"), histogramFactory.createHistogram1D(String.format("layers_hit"), 13, 0, 13));
 
-        plots1D.put(String.format("number_strip_hits_per_sensor_layer"), histogramFactory.createHistogram1D(String.format("number_strip_hits_per_sensor_layer"), 10, 0, 10));
+        plots1D.put(String.format("n_mcps_on_layer"), histogramFactory.createHistogram1D(String.format("n_mcps_on_layer"), 20, 0, 20));
 
-        plots1D.put(String.format("number_of_mcps_on_striphits"), histogramFactory.createHistogram1D(String.format("number_of_mcps_on_striphits"), 20, 0, 20));
+        plots1D.put(String.format("n_striphits_on_layer"), histogramFactory.createHistogram1D(String.format("n_striphits_on_layer"), 20, 0, 20));
 
-        plots1D.put(String.format("best_mcp_nStripHits_over_total_nStripHits_on_track"), histogramFactory.createHistogram1D(String.format("best_mcp_nStripHits_over_total_nStripHits_on_track"), 100, 0, 2));
+        plots1D.put(String.format("n_mcps_on_striphit"), histogramFactory.createHistogram1D(String.format("n_mcps_on_striphit"), 10, 0, 10));
 
-        plots2D.put(String.format("best_mcp_nSensorsHit_v_2nd_best_mcp_nSensorsHit"), histogramFactory.createHistogram2D(String.format("best_mcp_nSensorsHit_v_2nd_best_mcp_nSensorsHit"), 14, 0, 14, 14, 0, 14));
+        plots2D.put(String.format("n_mcps_per_layer"), histogramFactory.createHistogram2D(String.format("n_mcps_per_layer"), 20, 0, 20, 13, 0, 13));
 
-        plots2D.put(String.format("number_mcps_on_si_cluster"), histogramFactory.createHistogram2D(String.format("number_mcps_on_si_cluster"), 13, 0, 13, 10, 0, 10));
+        plots2D.put(String.format("n_striphits_per_layer"), histogramFactory.createHistogram2D(String.format("n_striphits_per_layer"), 20, 0, 20, 13, 0, 13));
+
+        plots2D.put(String.format("n_mcps_on_layer_striphits"), histogramFactory.createHistogram2D(String.format("n_mcps_on_layer_striphits"), 20, 0, 20, 13, 0, 13));
 
         plots2D.put(String.format("new_trackMCP_match_trackP_v_mcpP"), histogramFactory.createHistogram2D(String.format("new_trackMCP_match_trackP_v_mcpP"), 1000, -5, 5, 1000, -5, 5));
 
@@ -213,11 +217,11 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                     plots1D.get("layers_hit").fill(layer);
                     plots1D.get("n_mcps_on_layer").fill(tt.getMCPsOnLayer(layer).size());
                     plots2D.get("n_mcps_per_layer").fill(layer,tt.getMCPsOnLayer(layer).size());
-                    plots1D.get("n_striphits_on_layer").fill(getStripHitsOnLayer(layer).size());
-                    plots2D.get("n_striphits_per_layer").fill(layer,getStripHitsOnLayer(layer).size());
+                    plots1D.get("n_striphits_on_layer").fill(tt.getStripHitsOnLayer(layer).size());
+                    plots2D.get("n_striphits_per_layer").fill(layer,tt.getStripHitsOnLayer(layer).size());
                     for(RawTrackerHit rawhit : tt.getStripHitsOnLayer(layer)){
-                        plots1D.get("n_mcps_on_striphit").fill(tt.getMCPsOnRawTrackerHit(rawhit));
-                        plots2D.get("n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit));
+                        plots1D.get("n_mcps_on_striphit").fill(tt.getMCPsOnRawTrackerHit(rawhit).size());
+                        plots2D.get("n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit).size());
                     }
                 }
             }
