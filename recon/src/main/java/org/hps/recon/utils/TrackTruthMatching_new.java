@@ -8,15 +8,13 @@ public class TrackTruthDriver_new {
     private Map<String, IHistogram2D> plots2D;
     boolean enablePlots = false;
 
-    private MCParticle_mcp = null;
-    private _nhits;
-    private _ngoodhits;
-    private _nbadhits;
+    private MCParticle _mcp = null;
+    private int _nhits;
+    private int _ngoodhits;
+    private int _nbadhits;
     private double _purity;
     private Map<MCParticle, int[]> mcParticleStripHits = new HashMap<MCParticle, int[]>();
     private Map<MCParticle, Set<Integer>> mcParticleHitsByLayer = new HashMap<MCParticle, Set<Integer>>();
-    private MCParticle _mcp;
-
 
     protected void enablePlots(boolean input){
         enablePlots = input;
@@ -101,7 +99,7 @@ public class TrackTruthDriver_new {
     }
 
     //match track to MCP by matching to MCP that leaves hits on the most layers
-    private MCParticle matchTrackToMCP(Map<MCParticle, Set<Integer> mcParticleHitsByLayer){
+    private MCParticle matchTrackToMCP(Map<MCParticle, Set<Integer>> mcParticleHitsByLayer){
 
         MCParticle bestMCP = null;
         int bestNhits = 0;
