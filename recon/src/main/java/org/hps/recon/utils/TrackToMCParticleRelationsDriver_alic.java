@@ -1,4 +1,4 @@
-package org.hps.analysis.MC;
+package org.hps.recon.utils;
 
 import hep.aida.IAnalysisFactory;
 import hep.aida.IHistogram1D;
@@ -29,7 +29,8 @@ import org.lcsim.event.Track;
 //import org.lcsim.event.base.BaseTrack;
 //import org.lcsim.event.base.BaseTrackState;
 import org.hps.recon.tracking.TrackUtils;
-import org.hps.recon.utils.TrackTruthMatching_new;
+//import org.hps.recon.utils.TrackTruthMatching_new;
+//import org.hps.recon.utils.TrackTruthMatching;
 //import org.lcsim.fit.helicaltrack.HelicalTrackFit;
 
 import org.lcsim.event.SimTrackerHit;
@@ -70,7 +71,7 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
     }
 
     public void saveHistograms() {
-        String rootFile = String.format("%s_TrackToMCParticleRelations.root");
+        String rootFile = String.format("TrackToMCParticleRelations.root");
         RootFileStore store = new RootFileStore(rootFile);
         try {
             store.open();
@@ -203,6 +204,22 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                 else
                     mcpcharge = -1;
                 plots2D.get("new_trackMCP_match_trackP_v_mcpP").fill(charge*trackPmag,mcpcharge*mcp.getMomentum().magnitude());
+                plots1D.get("n_mcps_on_track").fill(tt.getLayerHitsForAllMCPs().size());
+                plots1D.get("n_hits").fill(tt.getNHits());
+                plots1D.get("purity").fill(tt.getPurity());
+                plots1D.get("n_goodhits").fill(tt.getNGoodHits());
+                plots1D.get("n_badhits").fill(tt.getNBadHits());
+                for(Integer layer : tt.getLayersOnTrack()){
+                    plots1D.get("layers_hit").fill(layer);
+                    plots1D.get("n_mcps_on_layer").fill(tt.getMCPsOnLayer(layer).size());
+                    plots2D.get("n_mcps_per_layer").fill(layer,tt.getMCPsOnLayer(layer).size());
+                    plots1D.get("n_striphits_on_layer").fill(getStripHitsOnLayer(layer).size());
+                    plots2D.get("n_striphits_per_layer").fill(layer,getStripHitsOnLayer(layer).size());
+                    for(RawTrackerHit rawhit : tt.getStripHitsOnLayer(layer)){
+                        plots1D.get("n_mcps_on_striphit").fill(tt.getMCPsOnRawTrackerHit(rawhit));
+                        plots2D.get("n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit));
+                    }
+                }
             }
 
             TrackTruthMatching ttm = new TrackTruthMatching(track, rawtomc, allsimhits, false);
