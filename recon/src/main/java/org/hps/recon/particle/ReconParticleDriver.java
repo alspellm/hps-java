@@ -443,9 +443,9 @@ public abstract class ReconParticleDriver extends Driver {
 
         //By default, use the original track-cluster matching class
         matcher = TrackClusterMatcherFactory.create(trackClusterMatcherAlgo);
+        matcher.setTrackCollectionName(trackCollectionName);
         matcher.initializeParameterization(clusterParamFileName);
         matcher.setBFieldMap(detector.getFieldMap());
-        matcher.setTrackCollectionName(trackCollectionName);
         matcher.enablePlots(enableTrackClusterMatchPlots);
 
         // Set the magnetic field parameters to the appropriate values.
@@ -833,6 +833,7 @@ public abstract class ReconParticleDriver extends Driver {
         if (targetConV0VerticesColName == null) {
             targetConV0VerticesColName = "TargetConstrainedV0Vertices";
         }
+
     }
 
     @Override

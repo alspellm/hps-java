@@ -37,7 +37,7 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
     protected RelationalTable hitToRotated = null;
     protected RelationalTable hitToStrips = null;
     protected RelationalTable trackToData = new BaseRelationalTable(RelationalTable.Mode.ONE_TO_ONE, RelationalTable.Weighting.UNWEIGHTED);
-    protected String trackClusterCollectionName = "GBLTracks";
+    protected String trackClusterCollectionName = "default";
     protected String rootFile = String.format("%s_TrackClusterMatching.root",this.trackCollectionName);
     //Keep false. May be used in future 03.19.21
     protected Boolean buildParamHistos = false;
@@ -61,6 +61,7 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
     @Override
     public void setTrackCollectionName(String trackCollectionName){
         this.trackCollectionName = trackCollectionName;
+        rootFile = String.format("%s_TrackClusterMatching.root",this.trackCollectionName);
     }
 
     /** 
@@ -162,8 +163,6 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
 
         plots1D = new HashMap<String, IHistogram1D>();
         plots2D = new HashMap<String, IHistogram2D>();
-
-        this.rootFile = String.format("%s_TrackClusterMatching.root",this.trackCollectionName);
 
         tree = IAnalysisFactory.create().createTreeFactory().create();
         histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
