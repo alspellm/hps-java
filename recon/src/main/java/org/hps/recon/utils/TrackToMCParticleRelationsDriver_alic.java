@@ -199,7 +199,7 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
             int mcpcharge = 1;
 
             //Check new truth matching tool
-            TrackTruthMatching_new tt = new TrackTruthMatching_new(track, rawtomc);
+            TrackTruthMatching_new tt = new TrackTruthMatching_new(track, rawtomc, 0.8);
             MCParticle mcp = tt.getMCParticle();
 
             if(mcp != null){

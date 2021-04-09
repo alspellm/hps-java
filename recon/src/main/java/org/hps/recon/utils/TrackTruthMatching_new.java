@@ -180,7 +180,6 @@ public class TrackTruthMatching_new {
 
         //Get all 1d Strip Hits on TrackerHit
         List<RawTrackerHit> rawhits = hit.getRawHits();
-        System.out.println("3d hit made of " + rawhits.size() + " RawTrackerHits");
         //GBL TrackerHits are 3d clusters of 2d hits from axial and stereo pair
         //Separate these 3d clusters into their independent layer 2d constituents
         Set<Integer> layers = new HashSet<Integer>();
@@ -213,7 +212,6 @@ public class TrackTruthMatching_new {
         Set<MCParticle> mcps = new HashSet<MCParticle>();
         List<MCParticle> mcpList = new ArrayList<MCParticle>();
         Set<SimTrackerHit> simhits = rawtomc.allFrom(rawhit);
-        System.out.println("Number of simhits on rawtrackerhit: " + simhits.size());
         //loop over simhits on rawhit
         for(SimTrackerHit simhit : simhits){
             //get mcp that left simhit

@@ -166,7 +166,7 @@
             <maxMatchDt>10</maxMatchDt>
             <useCorrectedClusterPositionsForMatching>false</useCorrectedClusterPositionsForMatching>
             <applyClusterCorrections>true</applyClusterCorrections>
-            <useTrackPositionForClusterCorrection>false</useTrackPositionForClusterCorrection>
+            <useTrackPositionForClusterCorrection>true</useTrackPositionForClusterCorrection>
             <trackClusterTimeOffset>56</trackClusterTimeOffset>
             <trackClusterMatchPlots>true</trackClusterMatchPlots>
             <trackClusterMatcherAlgo>TrackClusterMatcherMinDistance</trackClusterMatcherAlgo>

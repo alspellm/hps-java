@@ -167,7 +167,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             }
         }
 
-        System.out.println("Detector changed?");
         //By default, use the original track-cluster matching class
         matcher = TrackClusterMatcherFactory.create(trackClusterMatcherAlgo);
         //matcher.initializeParameterization(clusterParamFileName);
@@ -186,15 +185,12 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
         if (cuts == null) {
             cuts = new StandardCuts(beamEnergy);
-            System.out.println("[Truth] new StandardCuts("+beamEnergy+")");
         } else {
             cuts.changeBeamEnergy(beamEnergy);
-            System.out.println("[Truth] changing beam energy to " + beamEnergy);
         }
     }
 
     public void saveHistograms() {
-        System.out.println("[TrackClusterTruthMatchingDriver] Saving Histogram for " + this.trackCollectionName);
         String rootFile = String.format("%s_truthTrackClusterMatching.root",this.trackCollectionName);
         RootFileStore store = new RootFileStore(rootFile);
         try {
@@ -635,23 +631,18 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         //MCPs
         List<MCParticle> allmcps = event.get(MCParticle.class,"MCParticle");
         plots1D.get("nMCParticles_per_event").fill(allmcps.size());
-        System.out.println("MCPs for Event " + event.getEventNumber() + ": " + allmcps.size());
 
         //Get EcalClusters from event
         List<Cluster> clusters = event.get(Cluster.class, ecalClustersCollectionName);
         plots1D.get("nClusters_per_event").fill(clusters.size());
-        System.out.println("Clusters for Event " + event.getEventNumber() + ": " + clusters.size());
 
         // Get collection of tracks from event
         List<Track> tracks = event.get(Track.class, trackCollectionName);
         plots1D.get("nTracks_per_event").fill(tracks.size());
-        System.out.println("Tracks for Event " + event.getEventNumber() + ": " + tracks.size());
 
         plots2D.get("nTracks_v_nClusters_per_event").fill(tracks.size(),clusters.size());
 
-        System.out.println("Setting track cluster time offset to : " + this.trackClusterTimeOffset);
         cuts.setTrackClusterTimeOffset(this.trackClusterTimeOffset);
-        System.out.println("Track cluster time offset in truth driver: " + cuts.getTrackClusterTimeOffset());
 
         //Truth Match Clusters to MCParticles    
         Map<MCParticle, Cluster> mcpClustersMap = new HashMap<MCParticle, Cluster>();
@@ -846,7 +837,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         Map<Track, Cluster> matchedTrackClusterMap = new HashMap<Track,Cluster>();
         List<List<Track>> trackCollections = new ArrayList<List<Track>>();
         trackCollections.add(tracks);
-        System.out.println("Running matcher in Truth Driver");
         matchedTrackClusterMap = matcher.matchTracksToClusters(event, trackCollections, clusters, cuts, -1, false, true, ecal, beamEnergy);
         //Loop over MCParticles
         int nele = 0;
@@ -1146,7 +1136,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         }
 
         //Fill count histograms
-        System.out.println("Good matches: " + nGoodMatches);
         plots1D.get("nGoodMatches").fill(nGoodMatches);
         plots1D.get("nGoodMatches").fill(-1, nGoodMatches);
         goodMatchPlots(goodMatches);

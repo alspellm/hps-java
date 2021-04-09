@@ -119,12 +119,12 @@
             <trackClusterTimeOffset>56</trackClusterTimeOffset>
             <useCorrectedClusterPositionsForMatching>false</useCorrectedClusterPositionsForMatching>
             <applyClusterCorrections>true</applyClusterCorrections>
-            <useTrackPositionForClusterCorrection>false</useTrackPositionForClusterCorrection>
+            <useTrackPositionForClusterCorrection>true</useTrackPositionForClusterCorrection>
             <debug>false</debug>
             <makeMollerCols>false</makeMollerCols>
             <disablePID>true</disablePID>
             <trackClusterMatcherAlgo>TrackClusterMatcherMinDistance</trackClusterMatcherAlgo>
-            <trackClusterMatchPlots>true</trackClusterMatchPlots>
+            <trackClusterMatchPlots>false</trackClusterMatchPlots>
         </driver>
 
         <driver name="KalmanPatRecDriver" type="org.hps.recon.tracking.kalman.KalmanPatRecDriver">
