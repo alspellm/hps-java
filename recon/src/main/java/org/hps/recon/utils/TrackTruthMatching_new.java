@@ -41,6 +41,10 @@ public class TrackTruthMatching_new {
         doAnalysis(track, rawtomc, purityCut);
     }
 
+    public TrackTruthMatching_new(Track track, RelationalTable rawtomc, double purityCut, int nHitsRequired){
+        doAnalysis(track, rawtomc, purityCut, nHitsRequired);
+    }
+
     private void doAnalysis(Track track, RelationalTable rawtomc){
         getMCPsOnTrack(track, rawtomc);
         matchTrackToMCP(this.mcParticleHitsByLayer);
@@ -50,6 +54,13 @@ public class TrackTruthMatching_new {
         getMCPsOnTrack(track, rawtomc);
         matchTrackToMCP(this.mcParticleHitsByLayer);
         if( _purity < purityCut)
+            this._mcp = null;
+    }
+
+    private void doAnalysis(Track track, RelationalTable rawtomc, double purityCut, int nHitsRequired){
+        getMCPsOnTrack(track, rawtomc);
+        matchTrackToMCP(this.mcParticleHitsByLayer);
+        if( _purity < purityCut ||  _ngoodhits < nHitsRequired)
             this._mcp = null;
     }
 

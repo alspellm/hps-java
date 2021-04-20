@@ -19,27 +19,33 @@
         <driver name="RawTrackerHitFitterDriver" />
         <driver name="TrackerHitDriver"/>
         <driver name="HelicalTrackHitDriver"/>
-        <!-- Track finding and fitting using seed tracker. --> 
+        <!-- Track finding and fitting using seed tracker 
         <driver name="TrackReconSeed123Conf4Extd56"/>    
         <driver name="TrackReconSeed123Conf5Extd46"/>
         <driver name="TrackReconSeed567Conf4Extd123"/> 
         <driver name="TrackReconSeed456Conf3Extd127"/> 
         <driver name="TrackReconSeed356Conf7Extd124"/>  
         <driver name="TrackReconSeed235Conf6Extd147"/>  
-        <!-- <driver name="TrackReconSeed234Conf6Extd157"/> -->
-        <driver name="MergeTrackCollections"/>
-        <driver name="GBLRefitterDriver" />
+        <driver name="TrackReconSeed234Conf6Extd157"/> -->
+        <!-- <driver name="MergeTrackCollections"/> 
+        <driver name="GBLRefitterDriver" />-->
         <driver name="TrackDataDriver" />
         <driver name="KalmanPatRecDriver"/> 
-        <driver name="TrackTruthMatching_KF" />
+        <!-- <driver name="TrackTruthMatching_KF" /> -->
         <!-- <driver name="TrackTruthMatching_GBL" /> -->
         <!-- <driver name="ReconParticleDriver" /> -->
         <driver name="ReconParticleDriver_Kalman" />
-        <driver name="TrackClusterTruthMatchingDriver" />
+        <!-- -<driver name="TrackClusterTruthMatchingDriver" /> -->
+        <driver name="TrackToMCParticleRelationsDriver_alic" />
         <driver name="LCIOWriter"/>
         <driver name="CleanupDriver"/>
     </execute>    
     <drivers>
+        <driver name="TrackToMCParticleRelationsDriver_alic" type="org.hps.recon.utils.TrackToMCParticleRelationsDriver_alic">
+            <enablePlots>True</enablePlots>
+            <trackCollectionName>KalmanFullTracks</trackCollectionName>
+        </driver>
+
         <driver name="EventMarkerDriver" type="org.lcsim.job.EventMarkerDriver">
             <eventInterval>10</eventInterval>
         </driver>

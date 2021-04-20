@@ -116,9 +116,23 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
 
         plots2D.put(String.format("n_mcps_on_layer_striphits"), histogramFactory.createHistogram2D(String.format("n_mcps_on_layer_striphits"), 20, 0, 20, 13, 0, 13));
 
-        plots2D.put(String.format("new_trackMCP_match_trackP_v_mcpP"), histogramFactory.createHistogram2D(String.format("new_trackMCP_match_trackP_v_mcpP"), 1000, -5, 5, 1000, -5, 5));
+        plots2D.put(String.format("new_trackMCP_match_trackP_v_mcpP"), histogramFactory.createHistogram2D(String.format("new_trackMCP_match_trackP_v_mcpP"), 1400, -7, 7, 1400, -7, 7));
 
-        plots2D.put(String.format("existing_trackMCP_match_trackP_v_mcpP"), histogramFactory.createHistogram2D(String.format("existing_trackMCP_match_trackP_v_mcpP"), 1000, -5, 5, 1000, -5, 5));
+        plots2D.put(String.format("trackMCP_match_trackP_v_mcpP_before_purity_cut"), histogramFactory.createHistogram2D(String.format("trackMCP_match_trackP_v_mcpP_before_purity_cut"), 1400, -7, 7, 1400, -7, 7));
+
+        plots2D.put(String.format("existing_trackMCP_match_trackP_v_mcpP"), histogramFactory.createHistogram2D(String.format("existing_trackMCP_match_trackP_v_mcpP"), 1400, -7, 7, 1000, -7, 7));
+
+        plots1D.put(String.format("n_duplicate_truth_tracks_tanlambda"), histogramFactory.createHistogram1D(String.format("n_duplicate_truth_tracks_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("n_duplicate_truth_tracks_momentum"), histogramFactory.createHistogram1D(String.format("n_duplicate_truth_tracks_momentum"), 700, 0, 7));
+
+        plots1D.put(String.format("n_truth_tracks_momentum"), histogramFactory.createHistogram1D(String.format("n_truth_tracks_momentum"), 700, 0, 7));
+
+        plots1D.put(String.format("n_truth_tracks_tanlambda"), histogramFactory.createHistogram1D(String.format("n_truth_tracks_tanlambda"), 1000, -1, 1));
+
+        plots2D.put(String.format("truth_tracks_trackP_v_nHits_on_track"), histogramFactory.createHistogram2D(String.format("truth_tracks_trackP_v_nHits_on_track"), 700, 0, 700, 13, 0, 13));
+
+        plots2D.put(String.format("trackMCP_match_trackP_v_mcpP_nHits_lt_10"), histogramFactory.createHistogram2D(String.format("trackMCP_match_trackP_v_mcpP_nHits_lt_10"), 1400, -7, 7, 1400, -7, 7));
 
     }
 
@@ -192,21 +206,59 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         List<LCRelation> trackToTruthTrackRelations    =  new ArrayList<LCRelation>();
         List<Track>      truthTrackCollection          =  new ArrayList<Track>();
         
+        List<MCParticle> mcps = new ArrayList<MCParticle>();
         for (Track track : trackCollection) {
 
             int charge = -1* (int)Math.signum(track.getTrackStates().get(0).getOmega());
             double trackPmag = new BasicHep3Vector(track.getTrackStates().get(0).getMomentum()).magnitude();
+            double tanlambda = track.getTrackStates().get(0).getTanLambda();
             int mcpcharge = 1;
 
+            //Old Track->MCP code
+            TrackTruthMatching ttm = new TrackTruthMatching(track, rawtomc, allsimhits, false);
+            MCParticle mcp_matt = null;
+            if(ttm != null)
+                mcp_matt = ttm.getMCParticle();
+            if(mcp_matt != null){
+                if(mcp_matt.getPDGID() == -11)
+                    mcpcharge = 1;
+                else
+                    mcpcharge = -1;
+                plots2D.get("existing_trackMCP_match_trackP_v_mcpP").fill(charge*trackPmag,mcpcharge*mcp_matt.getMomentum().magnitude());
+            }
+
             //Check new truth matching tool
-            TrackTruthMatching_new tt = new TrackTruthMatching_new(track, rawtomc, 0.8);
+            TrackTruthMatching_new tt = new TrackTruthMatching_new(track, rawtomc, 0.0);
             MCParticle mcp = tt.getMCParticle();
 
             if(mcp != null){
+
+                double purity = tt.getPurity();
+                plots2D.get("trackMCP_match_trackP_v_mcpP_before_purity_cut").fill(charge*trackPmag,mcpcharge*mcp.getMomentum().magnitude());
+                if(purity < 0.8)
+                    continue;
+
+                double nHits = tt.getNHits();
+                plots2D.get("truth_tracks_trackP_v_nHits_on_track").fill(trackPmag, nHits);
+                if(nHits < 10){
+                    plots2D.get("trackMCP_match_trackP_v_mcpP_nHits_lt_10").fill(charge*trackPmag, mcpcharge*mcp.getMomentum().magnitude());   
+                    continue;
+                }
+
+                if(mcps.contains(mcp)){
+                    plots1D.get("n_duplicate_truth_tracks_momentum").fill(trackPmag);
+                    plots1D.get("n_duplicate_truth_tracks_tanlambda").fill(tanlambda);
+                }
+                mcps.add(mcp);
+
+                plots1D.get("n_truth_tracks_momentum").fill(trackPmag);
+                plots1D.get("n_truth_tracks_tanlambda").fill(tanlambda);
+
                 if(mcp.getPDGID() == -11)
                     mcpcharge = 1;
                 else
                     mcpcharge = -1;
+
                 plots2D.get("new_trackMCP_match_trackP_v_mcpP").fill(charge*trackPmag,mcpcharge*mcp.getMomentum().magnitude());
                 plots1D.get("n_mcps_on_track").fill(tt.getLayerHitsForAllMCPs().size());
                 plots1D.get("n_hits").fill(tt.getNHits());
@@ -224,18 +276,6 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                         plots2D.get("n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit).size());
                     }
                 }
-            }
-
-            TrackTruthMatching ttm = new TrackTruthMatching(track, rawtomc, allsimhits, false);
-            MCParticle mcp_matt = null;
-            if(ttm != null)
-                mcp_matt = ttm.getMCParticle();
-            if(mcp_matt != null){
-                if(mcp_matt.getPDGID() == -11)
-                    mcpcharge = 1;
-                else
-                    mcpcharge = -1;
-                plots2D.get("existing_trackMCP_match_trackP_v_mcpP").fill(charge*trackPmag,mcpcharge*mcp_matt.getMomentum().magnitude());
             }
 
             /*

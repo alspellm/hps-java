@@ -33,13 +33,18 @@
         <driver name="KalmanPatRecDriver"/> 
         <driver name="TrackTruthMatching_KF" />
         <!-- <driver name="TrackTruthMatching_GBL" /> -->
-        <!-- <driver name="ReconParticleDriver" /> -->
-        <driver name="ReconParticleDriver_Kalman" />
-        <driver name="TrackClusterTruthMatchingDriver" />
+        <driver name="ReconParticleDriver" /> 
+        <!-- <driver name="ReconParticleDriver_Kalman" /> -->
+        <!-- <driver name="TrackClusterTruthMatchingDriver" /> -->
+        <driver name="TrackToMCParticleRelationsDriver_alic"/>
         <driver name="LCIOWriter"/>
         <driver name="CleanupDriver"/>
     </execute>    
     <drivers>
+        <driver name="TrackToMCParticleRelationsDriver_alic" type="org.hps.recon.utils.TrackToMCParticleRelationsDriver_alic">
+            <enablePlots>True</enablePlots>
+        </driver>
+
         <driver name="EventMarkerDriver" type="org.lcsim.job.EventMarkerDriver">
             <eventInterval>10</eventInterval>
         </driver>
@@ -168,13 +173,14 @@
         <driver name="ReconParticleDriver" type="org.hps.recon.particle.HpsReconParticleDriver" > 
             <ecalClusterCollectionName>EcalClustersCorr</ecalClusterCollectionName>
             <trackCollectionNames>GBLTracks</trackCollectionNames>
+            <trackCollectionName>GBLTracks</trackCollectionName>
             <beamPositionX> 0 </beamPositionX>
             <beamSigmaX> 0.05 </beamSigmaX>
             <beamPositionY> 0 </beamPositionY>
             <beamSigmaY> 0.02 </beamSigmaY>
             <beamPositionZ> -7.5 </beamPositionZ>
             <trackClusterTimeOffset>28</trackClusterTimeOffset>
-            <maxMatchDt>1000</maxMatchDt>
+            <maxMatchDt>10</maxMatchDt>
             <useInternalVertexXYPositions>false</useInternalVertexXYPositions>
             <minVertexChisqProb> 0.0 </minVertexChisqProb>
             <maxElectronP>7.0</maxElectronP> 
