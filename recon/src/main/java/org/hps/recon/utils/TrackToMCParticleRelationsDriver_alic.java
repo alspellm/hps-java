@@ -17,6 +17,8 @@ import java.util.HashMap;
 import java.util.Map;
 //import java.util.HashSet;
 import java.io.IOException;
+import java.util.Set;
+
 
 import org.lcsim.event.LCRelation;
 import org.lcsim.event.RelationalTable;
@@ -59,6 +61,15 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
     private boolean debug = false;
     private boolean saveTruthTracks = true;
 
+    //Single MCP must leave n hits on Track to be matched to Track
+    private int nGoodHitsRequired = 8;
+    //Number of hits required on Track
+    private int nHitsRequired = 10;
+
+    //(bestMCP_Nhits/Total_Nhits) must be > purity cut    
+    //Where "hit" is counted only once per layer
+    private double purityCut = 0.8;
+
     //Define Plot tools
     private ITree tree;
     private IHistogramFactory histogramFactory;
@@ -91,49 +102,197 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         tree = IAnalysisFactory.create().createTreeFactory().create();
         histogramFactory = IAnalysisFactory.create().createHistogramFactory(tree);
 
-//Plots for checking new Track MCP matching tools
+//Plots for all Truth Matched Tracks, regradless of purity
+
+        plots1D.put(String.format("reco_track_momentum"),
+                histogramFactory.createHistogram1D(String.format("reco_track_momentum"), 700, 0, 7));
+
         plots1D.put(String.format("n_mcps_on_track"), histogramFactory.createHistogram1D(String.format("n_mcps_on_track"), 30, 0, 30));
 
-        plots1D.put(String.format("n_hits"), histogramFactory.createHistogram1D(String.format("n_hits"), 13, 0, 13));
+        plots1D.put(String.format("n_hits"), histogramFactory.createHistogram1D(String.format("n_hits"), 15, 0, 15));
 
-        plots1D.put(String.format("n_goodhits"), histogramFactory.createHistogram1D(String.format("n_goodhits"), 13, 0, 13));
+        plots1D.put(String.format("n_goodhits"), histogramFactory.createHistogram1D(String.format("n_goodhits"), 15, 0, 15));
 
-        plots1D.put(String.format("n_badhits"), histogramFactory.createHistogram1D(String.format("n_badhits"), 13, 0, 13));
+        plots1D.put(String.format("n_badhits"), histogramFactory.createHistogram1D(String.format("n_badhits"), 15, 0, 15));
 
-        plots1D.put(String.format("purity"), histogramFactory.createHistogram1D(String.format("purity"), 100, 0, 1));
+        plots1D.put(String.format("purity"), histogramFactory.createHistogram1D(String.format("purity"), 500, 0, 1));
 
-        plots1D.put(String.format("layers_hit"), histogramFactory.createHistogram1D(String.format("layers_hit"), 13, 0, 13));
+        plots1D.put(String.format("layers_hit"), histogramFactory.createHistogram1D(String.format("layers_hit"), 15, 0, 15));
 
         plots1D.put(String.format("n_mcps_on_layer"), histogramFactory.createHistogram1D(String.format("n_mcps_on_layer"), 20, 0, 20));
 
-        plots1D.put(String.format("n_striphits_on_layer"), histogramFactory.createHistogram1D(String.format("n_striphits_on_layer"), 20, 0, 20));
+        plots1D.put(String.format("n_striphits_on_layer"), 
+                histogramFactory.createHistogram1D(String.format("n_striphits_on_layer"), 20, 0, 20));
 
-        plots1D.put(String.format("n_mcps_on_striphit"), histogramFactory.createHistogram1D(String.format("n_mcps_on_striphit"), 10, 0, 10));
+        plots1D.put(String.format("n_mcps_on_striphit"), 
+                histogramFactory.createHistogram1D(String.format("n_mcps_on_striphit"), 10, 0, 10));
 
-        plots2D.put(String.format("n_mcps_per_layer"), histogramFactory.createHistogram2D(String.format("n_mcps_per_layer"), 20, 0, 20, 13, 0, 13));
+        plots2D.put(String.format("n_mcps_per_layer"), 
+                histogramFactory.createHistogram2D(String.format("n_mcps_per_layer"), 20, 0, 20, 15, 0, 15));
 
-        plots2D.put(String.format("n_striphits_per_layer"), histogramFactory.createHistogram2D(String.format("n_striphits_per_layer"), 20, 0, 20, 13, 0, 13));
+        plots2D.put(String.format("n_striphits_per_layer"),
+                histogramFactory.createHistogram2D(String.format("n_striphits_per_layer"), 20, 0, 20, 15, 0, 15));
 
-        plots2D.put(String.format("n_mcps_on_layer_striphits"), histogramFactory.createHistogram2D(String.format("n_mcps_on_layer_striphits"), 20, 0, 20, 13, 0, 13));
+        plots2D.put(String.format("n_mcps_on_layer_striphits"),
+                histogramFactory.createHistogram2D(String.format("n_mcps_on_layer_striphits"), 20, 0, 20, 15, 0, 15));
 
-        plots2D.put(String.format("new_trackMCP_match_trackP_v_mcpP"), histogramFactory.createHistogram2D(String.format("new_trackMCP_match_trackP_v_mcpP"), 1400, -7, 7, 1400, -7, 7));
+        plots2D.put(String.format("truth_track_v_matched_mcp_momentum"),
+                histogramFactory.createHistogram2D(String.format("truth_track_v_matched_mcp_momentum"), 1400, -7, 7, 1400, -7, 7));
 
-        plots2D.put(String.format("trackMCP_match_trackP_v_mcpP_before_purity_cut"), histogramFactory.createHistogram2D(String.format("trackMCP_match_trackP_v_mcpP_before_purity_cut"), 1400, -7, 7, 1400, -7, 7));
+        plots1D.put(String.format("truth_track_momentum"),
+                histogramFactory.createHistogram1D(String.format("truth_track_momentum"), 700, 0, 7));
 
-        plots2D.put(String.format("existing_trackMCP_match_trackP_v_mcpP"), histogramFactory.createHistogram2D(String.format("existing_trackMCP_match_trackP_v_mcpP"), 1400, -7, 7, 1000, -7, 7));
+        plots1D.put(String.format("truth_track_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("truth_track_tanlambda"), 1000, -1, 1));
 
-        plots1D.put(String.format("n_duplicate_truth_tracks_tanlambda"), histogramFactory.createHistogram1D(String.format("n_duplicate_truth_tracks_tanlambda"), 1000, -1, 1));
+        plots2D.put(String.format("truth_tracks_trackP_v_nHits_on_track"),
+                histogramFactory.createHistogram2D(String.format("truth_tracks_trackP_v_nHits_on_track"), 700, 0, 700, 15, 0, 15));
 
-        plots1D.put(String.format("n_duplicate_truth_tracks_momentum"), histogramFactory.createHistogram1D(String.format("n_duplicate_truth_tracks_momentum"), 700, 0, 7));
+        plots2D.put(String.format("truth_track_v_matched_mcp_momentum_nHits_lt_10"),
+                histogramFactory.createHistogram2D(String.format("truth_track_v_matched_mcp_momentum_nHits_lt_10"), 1400, -7, 7, 1400, -7, 7));
 
-        plots1D.put(String.format("n_truth_tracks_momentum"), histogramFactory.createHistogram1D(String.format("n_truth_tracks_momentum"), 700, 0, 7));
+        plots1D.put(String.format("truth_duplicate_tracks_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("truth_duplicate_tracks_tanlambda"), 1000, -1, 1));
 
-        plots1D.put(String.format("n_truth_tracks_tanlambda"), histogramFactory.createHistogram1D(String.format("n_truth_tracks_tanlambda"), 1000, -1, 1));
+        plots1D.put(String.format("truth_duplicate_tracks_momentum"),
+                histogramFactory.createHistogram1D(String.format("truth_duplicate_tracks_momentum"), 700, 0, 7));
 
-        plots2D.put(String.format("truth_tracks_trackP_v_nHits_on_track"), histogramFactory.createHistogram2D(String.format("truth_tracks_trackP_v_nHits_on_track"), 700, 0, 700, 13, 0, 13));
+//Plots for "Real" Tracks that pass purity cut
 
-        plots2D.put(String.format("trackMCP_match_trackP_v_mcpP_nHits_lt_10"), histogramFactory.createHistogram2D(String.format("trackMCP_match_trackP_v_mcpP_nHits_lt_10"), 1400, -7, 7, 1400, -7, 7));
+        plots1D.put(String.format("real_track_n_mcps_on_track"),
+                histogramFactory.createHistogram1D(String.format("real_track_n_mcps_on_track"), 30, 0, 30));
 
+        plots1D.put(String.format("real_track_n_hits"),
+                histogramFactory.createHistogram1D(String.format("real_track_n_hits"), 15, 0, 15));
+
+        plots1D.put(String.format("real_track_n_goodhits"),
+                histogramFactory.createHistogram1D(String.format("real_track_n_goodhits"), 15, 0, 15));
+
+        plots1D.put(String.format("real_track_n_badhits"),
+                histogramFactory.createHistogram1D(String.format("real_track_n_badhits"), 15, 0, 15));
+
+        plots1D.put(String.format("real_track_purity"),
+                histogramFactory.createHistogram1D(String.format("real_track_purity"), 500, 0, 1));
+
+        plots1D.put(String.format("real_track_layers_hit"),
+                histogramFactory.createHistogram1D(String.format("real_track_layers_hit"), 15, 0, 15));
+
+        plots1D.put(String.format("real_track_n_mcps_on_layer"),
+                histogramFactory.createHistogram1D(String.format("real_track_n_mcps_on_layer"), 20, 0, 20));
+
+        plots1D.put(String.format("real_track_n_striphits_on_layer"), 
+                histogramFactory.createHistogram1D(String.format("real_track_n_striphits_on_layer"), 20, 0, 20));
+
+        plots1D.put(String.format("real_track_n_mcps_on_striphit"), 
+                histogramFactory.createHistogram1D(String.format("real_track_n_mcps_on_striphit"), 10, 0, 10));
+
+        plots2D.put(String.format("real_track_n_mcps_per_layer"), 
+                histogramFactory.createHistogram2D(String.format("real_track_n_mcps_per_layer"), 20, 0, 20, 15, 0, 15));
+
+        plots2D.put(String.format("real_track_n_striphits_per_layer"),
+                histogramFactory.createHistogram2D(String.format("real_track_n_striphits_per_layer"), 20, 0, 20, 15, 0, 15));
+
+        plots2D.put(String.format("real_track_n_mcps_on_layer_striphits"),
+                histogramFactory.createHistogram2D(String.format("real_track_n_mcps_on_layer_striphits"), 20, 0, 20, 15, 0, 15));
+
+        plots2D.put(String.format("real_track_v_matched_mcp_momentum"),
+                histogramFactory.createHistogram2D(String.format("real_track_v_matched_mcp_momentum"), 1400, -7, 7, 1400, -7, 7));
+
+        plots1D.put(String.format("real_track_momentum"),
+                histogramFactory.createHistogram1D(String.format("real_track_momentum"), 700, 0, 7));
+
+        plots1D.put(String.format("real_track_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("real_track_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("real_duplicate_tracks_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("real_duplicate_tracks_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("real_duplicate_tracks_momentum"),
+                histogramFactory.createHistogram1D(String.format("real_duplicate_tracks_momentum"), 700, 0, 7));
+
+//Plots for "Fake" Tracks that fail purity cut
+
+        plots1D.put(String.format("fake_track_n_mcps_on_track"),
+                histogramFactory.createHistogram1D(String.format("fake_track_n_mcps_on_track"), 30, 0, 30));
+
+        plots1D.put(String.format("fake_track_n_hits"),
+                histogramFactory.createHistogram1D(String.format("fake_track_n_hits"), 15, 0, 15));
+
+        plots1D.put(String.format("fake_track_n_goodhits"),
+                histogramFactory.createHistogram1D(String.format("fake_track_n_goodhits"), 15, 0, 15));
+
+        plots1D.put(String.format("fake_track_n_badhits"),
+                histogramFactory.createHistogram1D(String.format("fake_track_n_badhits"), 15, 0, 15));
+
+        plots1D.put(String.format("fake_track_purity"),
+                histogramFactory.createHistogram1D(String.format("fake_track_purity"), 500, 0, 1));
+
+        plots1D.put(String.format("fake_track_layers_hit"),
+                histogramFactory.createHistogram1D(String.format("fake_track_layers_hit"), 15, 0, 15));
+
+        plots1D.put(String.format("fake_track_n_mcps_on_layer"),
+                histogramFactory.createHistogram1D(String.format("fake_track_n_mcps_on_layer"), 20, 0, 20));
+
+        plots1D.put(String.format("fake_track_n_striphits_on_layer"), 
+                histogramFactory.createHistogram1D(String.format("fake_track_n_striphits_on_layer"), 20, 0, 20));
+
+        plots1D.put(String.format("fake_track_n_mcps_on_striphit"), 
+                histogramFactory.createHistogram1D(String.format("fake_track_n_mcps_on_striphit"), 10, 0, 10));
+
+        plots2D.put(String.format("fake_track_n_mcps_per_layer"), 
+                histogramFactory.createHistogram2D(String.format("fake_track_n_mcps_per_layer"), 20, 0, 20, 15, 0, 15));
+
+        plots2D.put(String.format("fake_track_n_striphits_per_layer"),
+                histogramFactory.createHistogram2D(String.format("fake_track_n_striphits_per_layer"), 20, 0, 20, 15, 0, 15));
+
+        plots2D.put(String.format("fake_track_n_mcps_on_layer_striphits"),
+                histogramFactory.createHistogram2D(String.format("fake_track_n_mcps_on_layer_striphits"), 20, 0, 20, 15, 0, 15));
+
+        plots2D.put(String.format("fake_track_v_matched_mcp_momentum"),
+                histogramFactory.createHistogram2D(String.format("fake_track_v_matched_mcp_momentum"), 1400, -7, 7, 1400, -7, 7));
+
+        plots1D.put(String.format("fake_track_momentum"),
+                histogramFactory.createHistogram1D(String.format("fake_track_momentum"), 700, 0, 7));
+
+        plots1D.put(String.format("fake_track_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("fake_track_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("fake_duplicate_tracks_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("fake_duplicate_tracks_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("fake_duplicate_tracks_momentum"),
+                histogramFactory.createHistogram1D(String.format("fake_duplicate_tracks_momentum"), 700, 0, 7));
+
+//
+        plots2D.put(String.format("old_truth_track_v_matched_mcp_momentum"),
+                histogramFactory.createHistogram2D(String.format("old_truth_track_v_matched_mcp_momentum"), 1400, -7, 7, 1000, -7, 7));
+
+
+
+        //Trackable MCP Plots
+        plots1D.put(String.format("mcp_px"), histogramFactory.createHistogram1D(String.format("mcp_px"), 1000, -10, 10));
+
+        plots1D.put(String.format("mcp_py"), histogramFactory.createHistogram1D(String.format("mcp_py"), 1000, -10, 10));
+        
+        plots1D.put(String.format("mcp_pz"), histogramFactory.createHistogram1D(String.format("mcp_pz"), 1000, -10, 10));
+
+        plots2D.put(String.format("mcp_momentum_v_px"),
+                histogramFactory.createHistogram2D(String.format("mcp_momentum_v_px"), 700, 0, 7, 1000, -10, 10));
+        
+        plots2D.put(String.format("mcp_momentum_v_py"),
+                histogramFactory.createHistogram2D(String.format("mcp_momentum_v_py"), 700, 0, 7, 1000, -10, 10));
+        
+        plots2D.put(String.format("mcp_momentum_v_pz"),
+                histogramFactory.createHistogram2D(String.format("mcp_momentum_v_pz"), 700, 0, 7, 1000, -10, 10));
+
+        plots1D.put(String.format("trackable_mcp_nSimTrackerHits"),
+                histogramFactory.createHistogram1D(String.format("trackable_mcp_nSimTrackerHits"), 15, 0, 15));
+        
+        plots2D.put(String.format("trackable_mcp_momentum_v_nSimTrackerHits"),
+                histogramFactory.createHistogram2D(String.format("trackable_mcp_momentum_v_nSimTrackerHits"), 700, 0, 7, 15, 0, 15));
+
+        plots1D.put(String.format("trackable_mcp_momentum"),
+                histogramFactory.createHistogram1D(String.format("trackable_mcp_momentum"), 700, 0, 7));
     }
 
     public void endOfData() {
@@ -197,9 +356,13 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         String MCHitInputCollectionName = "TrackerHits";
         List<SimTrackerHit> allsimhits = event.get(SimTrackerHit.class, MCHitInputCollectionName);
 
+        //Retrieve all MCPs
+        List<MCParticle> allmcps = event.get(MCParticle.class, "MCParticle");
+        //Check for Trackable MCPs
+        Map<MCParticle, Map<Integer, List<SimTrackerHit>>> trackableMCPMap = getTrackableMCPs(allmcps, allsimhits, rawtomc,this.nGoodHitsRequired);
+
 
         //MCParticleRelations
-        
         List<LCRelation> trackToMCParticleRelations    =  new ArrayList<LCRelation>();
         
         //Truth Tracks and Relations
@@ -209,57 +372,52 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         List<MCParticle> mcps = new ArrayList<MCParticle>();
         for (Track track : trackCollection) {
 
+            boolean realTrack = true;
             int charge = -1* (int)Math.signum(track.getTrackStates().get(0).getOmega());
             double trackPmag = new BasicHep3Vector(track.getTrackStates().get(0).getMomentum()).magnitude();
             double tanlambda = track.getTrackStates().get(0).getTanLambda();
-            int mcpcharge = 1;
 
-            //Old Track->MCP code
+            //Fill plot with all Reco Tracks momentum
+            plots1D.get("reco_track_momentum").fill(trackPmag);
+
+            //Check match quality of old Track->MCP matching
             TrackTruthMatching ttm = new TrackTruthMatching(track, rawtomc, allsimhits, false);
             MCParticle mcp_matt = null;
             if(ttm != null)
                 mcp_matt = ttm.getMCParticle();
             if(mcp_matt != null){
-                if(mcp_matt.getPDGID() == -11)
-                    mcpcharge = 1;
-                else
-                    mcpcharge = -1;
-                plots2D.get("existing_trackMCP_match_trackP_v_mcpP").fill(charge*trackPmag,mcpcharge*mcp_matt.getMomentum().magnitude());
+                plots2D.get("old_truth_track_v_matched_mcp_momentum").fill(charge*trackPmag,((int)mcp_matt.getCharge())*mcp_matt.getMomentum().magnitude());
             }
 
-            //Check new truth matching tool
-            TrackTruthMatching_new tt = new TrackTruthMatching_new(track, rawtomc, 0.0);
+            //Use New TrackTruthMatching tool to match Track -> MCP
+            TrackTruthMatching_new tt = new TrackTruthMatching_new(track, rawtomc, 0.0, 0);
             MCParticle mcp = tt.getMCParticle();
 
+            //If Track is matched to a MCP, continue analysis
             if(mcp != null){
-
+                //Get purity and nGoodHits to check Track quality
                 double purity = tt.getPurity();
-                plots2D.get("trackMCP_match_trackP_v_mcpP_before_purity_cut").fill(charge*trackPmag,mcpcharge*mcp.getMomentum().magnitude());
-                if(purity < 0.8)
-                    continue;
-
                 double nHits = tt.getNHits();
+                double nGoodHits = tt.getNGoodHits();
+
+                //First fill plots for all cases where a Track is matched to a
+                //MCP, regardless of match purity.
+                //*There is a minimum good hit requirement imposed in the
+                //matching tool constructor
                 plots2D.get("truth_tracks_trackP_v_nHits_on_track").fill(trackPmag, nHits);
                 if(nHits < 10){
-                    plots2D.get("trackMCP_match_trackP_v_mcpP_nHits_lt_10").fill(charge*trackPmag, mcpcharge*mcp.getMomentum().magnitude());   
+                    plots2D.get("truth_track_v_matched_mcp_momentum_nHits_lt_10").fill(charge*trackPmag, ((int)mcp.getCharge())*mcp.getMomentum().magnitude());   
                     continue;
                 }
 
+                plots1D.get("truth_track_momentum").fill(trackPmag);
+                plots1D.get("truth_track_tanlambda").fill(tanlambda);
                 if(mcps.contains(mcp)){
-                    plots1D.get("n_duplicate_truth_tracks_momentum").fill(trackPmag);
-                    plots1D.get("n_duplicate_truth_tracks_tanlambda").fill(tanlambda);
+                    plots1D.get("truth_duplicate_tracks_momentum").fill(trackPmag);
+                    plots1D.get("truth_duplicate_tracks_tanlambda").fill(tanlambda);
                 }
-                mcps.add(mcp);
 
-                plots1D.get("n_truth_tracks_momentum").fill(trackPmag);
-                plots1D.get("n_truth_tracks_tanlambda").fill(tanlambda);
-
-                if(mcp.getPDGID() == -11)
-                    mcpcharge = 1;
-                else
-                    mcpcharge = -1;
-
-                plots2D.get("new_trackMCP_match_trackP_v_mcpP").fill(charge*trackPmag,mcpcharge*mcp.getMomentum().magnitude());
+                plots2D.get("truth_track_v_matched_mcp_momentum").fill(charge*trackPmag,((int)mcp.getCharge())*mcp.getMomentum().magnitude());
                 plots1D.get("n_mcps_on_track").fill(tt.getLayerHitsForAllMCPs().size());
                 plots1D.get("n_hits").fill(tt.getNHits());
                 plots1D.get("purity").fill(tt.getPurity());
@@ -276,6 +434,74 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                         plots2D.get("n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit).size());
                     }
                 }
+
+                //If Track passes purity cut, identify Track as real
+                if(purity < this.purityCut || nHits < this.nHitsRequired)
+                    realTrack = false;
+
+                //If Track fails purity cut, identify Track as fake
+                if(!realTrack){
+
+                    plots1D.get("fake_track_momentum").fill(trackPmag);
+                    plots1D.get("fake_track_tanlambda").fill(tanlambda);
+                    if(mcps.contains(mcp)){
+                        plots1D.get("fake_duplicate_tracks_momentum").fill(trackPmag);
+                        plots1D.get("fake_duplicate_tracks_tanlambda").fill(tanlambda);
+                    }
+                    plots2D.get("fake_track_v_matched_mcp_momentum").fill(charge*trackPmag,((int)mcp.getCharge())*mcp.getMomentum().magnitude());
+                    plots1D.get("fake_track_n_mcps_on_track").fill(tt.getLayerHitsForAllMCPs().size());
+                    plots1D.get("fake_track_n_hits").fill(tt.getNHits());
+                    plots1D.get("fake_track_purity").fill(tt.getPurity());
+                    plots1D.get("fake_track_n_goodhits").fill(tt.getNGoodHits());
+                    plots1D.get("fake_track_n_badhits").fill(tt.getNBadHits());
+                    for(Integer layer : tt.getLayersOnTrack()){
+                        plots1D.get("fake_track_layers_hit").fill(layer);
+                        plots1D.get("fake_track_n_mcps_on_layer").fill(tt.getMCPsOnLayer(layer).size());
+                        plots2D.get("fake_track_n_mcps_per_layer").fill(layer,tt.getMCPsOnLayer(layer).size());
+                        plots1D.get("fake_track_n_striphits_on_layer").fill(tt.getStripHitsOnLayer(layer).size());
+                        plots2D.get("fake_track_n_striphits_per_layer").fill(layer,tt.getStripHitsOnLayer(layer).size());
+                        for(RawTrackerHit rawhit : tt.getStripHitsOnLayer(layer)){
+                            plots1D.get("fake_track_n_mcps_on_striphit").fill(tt.getMCPsOnRawTrackerHit(rawhit).size());
+                            plots2D.get("fake_track_n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit).size());
+                        }
+                    }
+                }
+
+                //If Track is real
+                if(realTrack){
+
+                    plots1D.get("real_track_momentum").fill(trackPmag);
+                    plots1D.get("real_track_tanlambda").fill(tanlambda);
+                    if(mcps.contains(mcp)){
+                        plots1D.get("real_duplicate_tracks_momentum").fill(trackPmag);
+                        plots1D.get("real_duplicate_tracks_tanlambda").fill(tanlambda);
+                    }
+                    plots2D.get("real_track_v_matched_mcp_momentum").fill(charge*trackPmag,((int)mcp.getCharge())*mcp.getMomentum().magnitude());
+                    plots1D.get("real_track_n_mcps_on_track").fill(tt.getLayerHitsForAllMCPs().size());
+                    plots1D.get("real_track_n_hits").fill(tt.getNHits());
+                    plots1D.get("real_track_purity").fill(tt.getPurity());
+                    plots1D.get("real_track_n_goodhits").fill(tt.getNGoodHits());
+                    plots1D.get("real_track_n_badhits").fill(tt.getNBadHits());
+                    for(Integer layer : tt.getLayersOnTrack()){
+                        plots1D.get("real_track_layers_hit").fill(layer);
+                        plots1D.get("real_track_n_mcps_on_layer").fill(tt.getMCPsOnLayer(layer).size());
+                        plots2D.get("real_track_n_mcps_per_layer").fill(layer,tt.getMCPsOnLayer(layer).size());
+                        plots1D.get("real_track_n_striphits_on_layer").fill(tt.getStripHitsOnLayer(layer).size());
+                        plots2D.get("real_track_n_striphits_per_layer").fill(layer,tt.getStripHitsOnLayer(layer).size());
+                        for(RawTrackerHit rawhit : tt.getStripHitsOnLayer(layer)){
+                            plots1D.get("real_track_n_mcps_on_striphit").fill(tt.getMCPsOnRawTrackerHit(rawhit).size());
+                            plots2D.get("real_track_n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit).size());
+                        }
+                    }
+                }
+
+                //Add this MCP to a list to check for duplicate Track->MCP
+                //matches 
+                mcps.add(mcp);
+            }
+            else{
+                plots1D.get("fake_track_momentum").fill(trackPmag);
+                plots1D.get("fake_track_tanlambda").fill(tanlambda);
             }
 
             /*
@@ -348,4 +574,53 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         //event.put(trackCollectionName+"ToTruthTrackRelations", trackToTruthTrackRelations, LCRelation.class, 0);
         //event.put(trackCollectionName+"ToMCParticleRelations", trackToMCParticleRelations, LCRelation.class, 0);
     }//closes process
+
+    public Map<MCParticle, Map<Integer, List<SimTrackerHit>>> getTrackableMCPs(List<MCParticle> mcparticles, List<SimTrackerHit> simhits, RelationalTable rawtomc, int NhitsRequired){
+        Map<MCParticle, Map<Integer, List<SimTrackerHit>>> trackableMCPs = new HashMap<MCParticle, Map<Integer, List<SimTrackerHit>>>();
+
+        for(MCParticle particle : mcparticles){
+            double P = particle.getMomentum().magnitude();
+            if(Math.abs(particle.getPDGID()) != 11)
+                continue;
+            //if(!particle.getParents().contains(622) && !particle.getParents().contains(623) && P < fee) 
+                //continue;
+            double px = particle.getPX();
+            double py = particle.getPY();
+            double pz = particle.getPZ();
+            plots1D.get("mcp_px").fill(px);
+            plots1D.get("mcp_py").fill(py);
+            plots1D.get("mcp_pz").fill(pz);
+            plots2D.get("mcp_momentum_v_px").fill(P, px);
+            plots2D.get("mcp_momentum_v_py").fill(P, py);
+            plots2D.get("mcp_momentum_v_pz").fill(P, pz);
+
+            Map<Integer, List<SimTrackerHit>> layerhitsMap = new HashMap<Integer, List<SimTrackerHit>>();
+            for(SimTrackerHit simhit : simhits){
+                MCParticle simhitmcp = simhit.getMCParticle();
+                if(simhitmcp == particle){
+                    int layer = simhit.getLayer();
+                    Set<RawTrackerHit> rawhits = rawtomc.allTo(simhit);
+                    System.out.println("Nrawhits on simhit is " + rawhits.size());
+                    if(!layerhitsMap.containsKey(layer)){
+                        List<SimTrackerHit> tmp = new ArrayList<SimTrackerHit>();
+                        tmp.add(simhit);
+                        layerhitsMap.put(layer, tmp); 
+                    }
+                    else{
+                        List<SimTrackerHit> tmp = layerhitsMap.get(layer);
+                        tmp.add(simhit);
+                        layerhitsMap.put(layer, tmp);
+                    }
+                }
+            }
+            if(layerhitsMap.size() < NhitsRequired)
+                continue;
+            plots1D.get("trackable_mcp_nSimTrackerHits").fill(layerhitsMap.size());
+            plots2D.get("trackable_mcp_momentum_v_nSimTrackerHits").fill(particle.getMomentum().magnitude(), layerhitsMap.size());
+            plots1D.get("trackable_mcp_momentum").fill(particle.getMomentum().magnitude());
+
+            trackableMCPs.put(particle, layerhitsMap);
+        }
+        return trackableMCPs;
+    }
 }

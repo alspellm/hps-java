@@ -34,7 +34,6 @@ import org.lcsim.event.MCParticle;
 import org.lcsim.event.SimTrackerHit;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.Track;
-import org.lcsim.event.TrackerHit;
 import org.lcsim.event.RawTrackerHit;
 import org.lcsim.event.RelationalTable;
 import org.lcsim.event.base.BaseRelationalTable;
@@ -570,190 +569,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         saveHistograms();
     }
 
-
-    private void drawEcalFace(List<Cluster> clusters){
-        //Define line that draws the beam gap Ecal crystal edge
-        int nx = 46;
-        int ny = 5;
-        double crystalface = 13.0; //mm
-        
-        for(Cluster cluster : clusters){
-
-            double clusterx = cluster.getPosition()[0];
-            double clustery = cluster.getPosition()[1];
-            double clusterz = cluster.getPosition()[2];
-            
-            double leftx = clusterx - (crystalface/2);
-            double rightx = clusterx + (crystalface/2);
-            double upy = clustery + (crystalface/2);
-            double downy = clustery - (crystalface/2);
-
-            plots2D.get("ecal_crystal_acceptance_xy").fill(clusterx,clustery);
-            plots2D.get("ecal_crystal_acceptance_xy").fill(leftx,clustery);
-            plots2D.get("ecal_crystal_acceptance_xy").fill(rightx,clustery);
-            plots2D.get("ecal_crystal_acceptance_xy").fill(clusterx,upy);
-            plots2D.get("ecal_crystal_acceptance_xy").fill(clusterx,downy);
-
-            plots2D.get("ecal_crystal_acceptance_xy").fill(rightx,upy);
-            plots2D.get("ecal_crystal_acceptance_xy").fill(rightx,downy);
-            plots2D.get("ecal_crystal_acceptance_xy").fill(leftx,downy);
-            plots2D.get("ecal_crystal_acceptance_xy").fill(leftx,upy);
-        }
-    }
-
-    public List<MCParticle> getPossibleTrackMCPs(EventHeader event, int minHitsOnTrack){
-        //Loop over all simhits in the LCIO file and check how many Tracks
-        //could possibly be reconstructed...where a possible track is counted
-        //a MC particle leaves minHitsOnTrack hits
-        List<SimTrackerHit> simhits =  event.get(SimTrackerHit.class, "TrackerHits");
-        Map<MCParticle, int[]> nMCPhits = new HashMap<MCParticle, int[]>();
-        for(SimTrackerHit simhit : simhits){
-            MCParticle mcp = simhit.getMCParticle();
-            if(!nMCPhits.containsKey(mcp)){
-                nMCPhits.put(mcp, new int[1]);
-                nMCPhits.get(mcp)[0] = 0;
-            }
-            nMCPhits.get(mcp)[0]++;
-        }
-
-        List<MCParticle> possibleTracks = new ArrayList<MCParticle>();
-        for(Map.Entry<MCParticle, int[]> entry : nMCPhits.entrySet()){
-            if(entry.getValue()[0] > minHitsOnTrack ){
-                possibleTracks.add(entry.getKey());
-            }
-        }
-
-        return possibleTracks;
-    }
-
-    public void disambiguateTruthTracks(Map<MCParticle, Map<Track, Integer>> mcpTrackMap, Map<MCParticle, Map<Track, Integer>> mcpTrackMapDisamb , Map<Track, Map<MCParticle, Integer>> trackMCPMap, Map<Track, MCParticle> trackMCPMapDisamb){ 
-
-        for(Map.Entry<Track, Map<MCParticle, Integer>> entry : trackMCPMap.entrySet()){
-
-            if(entry.getValue() == null){
-                continue;
-            }
-
-            Track track = entry.getKey();
-            double trackPmag = new BasicHep3Vector(track.getTrackStates().get(0).getMomentum()).magnitude();
-            int mosthits = 0;
-            MCParticle bestMCP = null;
-            double bestMCPmomentum = 0.0;
-            Map<MCParticle, Integer> bMap = entry.getValue();
-
-            for(Map.Entry<MCParticle, Integer> subentry : bMap.entrySet()){
-                //If Track is tied with two MCPs, match to Track with momentum
-                //nearest MCP
-                if(subentry.getValue() == mosthits){
-                    if(Math.abs((1-(subentry.getKey().getMomentum().magnitude()/trackPmag))) <= 
-                            Math.abs((1-(bestMCPmomentum/trackPmag)))){
-                        bestMCP = subentry.getKey();
-                        bestMCPmomentum = subentry.getKey().getMomentum().magnitude();
-                        mosthits = subentry.getValue();
-                    }
-                }
-                //Match Track to MCP that leaves most hits on Track
-                if(subentry.getValue() > mosthits){
-                    mosthits = subentry.getValue();
-                    bestMCP = subentry.getKey();
-                    bestMCPmomentum = subentry.getKey().getMomentum().magnitude();
-                }
-            }
-
-            //Add track and best MCP to map
-            //trackMCPMapDisamb.put(entry.getKey(),bestMCP);
-            trackMCPMapDisamb.put(track, bestMCP);
-
-            //Fill disambiguated map
-            if(!mcpTrackMapDisamb.containsKey(bestMCP)){
-                Map<Track, Integer> tmpMap = new HashMap<Track,Integer>();
-                tmpMap.put(entry.getKey(),mosthits);
-                mcpTrackMapDisamb.put(bestMCP,tmpMap);
-            }
-            else{
-                Map<Track, Integer> tmpMap = mcpTrackMapDisamb.get(bestMCP);
-                tmpMap.put(entry.getKey(),mosthits);
-                mcpTrackMapDisamb.put(bestMCP,tmpMap);
-            }
-        }
-    }
-
-    public void buildTrackTruthMaps(List<Track> tracks, RelationalTable rawtomc, Map<MCParticle, 
-            Map<Track, Integer>> mcpTrackMapDisamb, Map<Track, MCParticle> trackMCPMapDisamb){
-
-        //Track truth matching
-        Map<MCParticle, Map<Track, Integer>> mcpTrackMap = new HashMap<MCParticle, Map<Track, Integer>>();
-        Map<Track, Map<MCParticle, Integer>> trackMCPMap = new HashMap<Track, Map<MCParticle, Integer>>();
-        for(Track track : tracks){
-            double trackPmag = new BasicHep3Vector(track.getTrackStates().get(0).getMomentum()).magnitude();
-            int charge = -1* (int)Math.signum(track.getTrackStates().get(0).getOmega());
-
-            //run Track to MCP truth matching
-            TrackTruthMatching_new truthMatcher = new TrackTruthMatching_new(track, rawtomc, 0, 6);
-            
-            //Get all MCPs that leave hits on this Track
-            Map<MCParticle, Set<Integer>> mcpsOnTrack = truthMatcher.getLayerHitsForAllMCPs();
-
-            if(mcpsOnTrack == null)
-                continue;
-
-            for(Map.Entry<MCParticle, Set<Integer>> entry : mcpsOnTrack.entrySet()){
-                MCParticle mcp = entry.getKey();
-                int mcp_charge = (int) mcp.getCharge();
-                int nhits = entry.getValue().size();
-
-                //Only match a track to a MCP if it has > 6 MCP hits
-                if(nhits < 6)
-                    continue;
-
-                plots2D.get("track_matched_to_mcps_p_v_p").fill(trackPmag*charge,mcp.getMomentum().magnitude()*mcp_charge); 
-
-                //Fill Track to MCP Map
-                if(!trackMCPMap.containsKey(track)){
-                    Map<MCParticle, Integer> mcpMap = new HashMap<MCParticle, Integer>();
-                    mcpMap.put(mcp, nhits);
-                    trackMCPMap.put(track, mcpMap);
-                }
-                else{
-                    Map<MCParticle, Integer> mcpMap = trackMCPMap.get(track);
-                    mcpMap.put(mcp, nhits);
-                    trackMCPMap.put(track, mcpMap);
-                }
-
-                //Fill MCP to Track Map
-                if(!mcpTrackMap.containsKey(mcp)){
-                    Map<Track, Integer> trackMap = new HashMap<Track, Integer>();
-                    trackMap.put(track, nhits);
-                    mcpTrackMap.put(mcp, trackMap);
-                }
-
-                else{
-                    Map<Track, Integer> trackMap = mcpTrackMap.get(mcp);
-                    trackMap.put(track, nhits);
-                    mcpTrackMap.put(mcp, trackMap);
-                }
-            }
-
-            MCParticle bestmcp = truthMatcher.getMCParticle();
-            int mcp_charge = (int) bestmcp.getCharge();
-            int bestNhits = truthMatcher.getNGoodHits();
-            if(truthMatcher.getMCParticle() != null){
-                plots2D.get("track_matched_to_best_mcp_p_v_p").fill(trackPmag*charge,bestmcp.getMomentum().magnitude()*mcp_charge); 
-                plots1D.get("track_matched_to_best_mcp_nHits").fill(bestNhits); 
-            }
-
-            plots1D.get("track_matched_to_n_mcps").fill(trackMCPMap.get(track).size());
-        }
-
-        System.out.println("Number of MCPs matched to track new: " + mcpTrackMap.size());
-        //Ensure that a track is only matched to a unique MCParticle by
-        //disambiguating matches
-        //Map<MCParticle, Map<Track, Integer>> mcpTrackMapDisamb = new HashMap<MCParticle, Map<Track, Integer>>();
-        //Map<Track, MCParticle> trackMCPMapDisamb = new HashMap<Track, MCParticle>();
-        disambiguateTruthTracks(mcpTrackMap, mcpTrackMapDisamb, trackMCPMap, trackMCPMapDisamb);
-        System.out.println("Number of MCPs matched to track new after disamb" + mcpTrackMapDisamb.size());
-    }
-
     protected void process(EventHeader event) {
 
         //count objects event by event
@@ -795,6 +610,8 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             plots2D.get(String.format("cluster_truthpositions_xy_plane")).fill(clusterx,clustery);
             truthClusters.add(entry.getKey());
         }
+
+        /*
         drawEcalFace(truthClusters);
 
         //Get Kalman Track Data
@@ -1267,7 +1084,167 @@ public class TrackClusterTruthMatchingDriver extends Driver {
 
         plots1D.get("nMCParticlesEvaluated").fill(nMCParticlesEvaluated);
         plots1D.get("nMCParticlesEvaluated").fill(-1, nMCParticlesEvaluated);
+        */
     }
+
+    private void drawEcalFace(List<Cluster> clusters){
+        //Define line that draws the beam gap Ecal crystal edge
+        int nx = 46;
+        int ny = 5;
+        double crystalface = 13.0; //mm
+        
+        for(Cluster cluster : clusters){
+
+            double clusterx = cluster.getPosition()[0];
+            double clustery = cluster.getPosition()[1];
+            double clusterz = cluster.getPosition()[2];
+            
+            double leftx = clusterx - (crystalface/2);
+            double rightx = clusterx + (crystalface/2);
+            double upy = clustery + (crystalface/2);
+            double downy = clustery - (crystalface/2);
+
+            plots2D.get("ecal_crystal_acceptance_xy").fill(clusterx,clustery);
+            plots2D.get("ecal_crystal_acceptance_xy").fill(leftx,clustery);
+            plots2D.get("ecal_crystal_acceptance_xy").fill(rightx,clustery);
+            plots2D.get("ecal_crystal_acceptance_xy").fill(clusterx,upy);
+            plots2D.get("ecal_crystal_acceptance_xy").fill(clusterx,downy);
+
+            plots2D.get("ecal_crystal_acceptance_xy").fill(rightx,upy);
+            plots2D.get("ecal_crystal_acceptance_xy").fill(rightx,downy);
+            plots2D.get("ecal_crystal_acceptance_xy").fill(leftx,downy);
+            plots2D.get("ecal_crystal_acceptance_xy").fill(leftx,upy);
+        }
+    }
+
+    private void disambiguateTruthTracks(Map<MCParticle, Map<Track, Integer>> mcpTrackMap, Map<MCParticle, Map<Track, Integer>> mcpTrackMapDisamb , Map<Track, Map<MCParticle, Integer>> trackMCPMap, Map<Track, MCParticle> trackMCPMapDisamb){ 
+
+        for(Map.Entry<Track, Map<MCParticle, Integer>> entry : trackMCPMap.entrySet()){
+
+            if(entry.getValue() == null){
+                continue;
+            }
+
+            Track track = entry.getKey();
+            double trackPmag = new BasicHep3Vector(track.getTrackStates().get(0).getMomentum()).magnitude();
+            int mosthits = 0;
+            MCParticle bestMCP = null;
+            double bestMCPmomentum = 0.0;
+            Map<MCParticle, Integer> bMap = entry.getValue();
+
+            for(Map.Entry<MCParticle, Integer> subentry : bMap.entrySet()){
+                //If Track is tied with two MCPs, match to Track with momentum
+                //nearest MCP
+                if(subentry.getValue() == mosthits){
+                    if(Math.abs((1-(subentry.getKey().getMomentum().magnitude()/trackPmag))) <= 
+                            Math.abs((1-(bestMCPmomentum/trackPmag)))){
+                        bestMCP = subentry.getKey();
+                        bestMCPmomentum = subentry.getKey().getMomentum().magnitude();
+                        mosthits = subentry.getValue();
+                    }
+                }
+                //Match Track to MCP that leaves most hits on Track
+                if(subentry.getValue() > mosthits){
+                    mosthits = subentry.getValue();
+                    bestMCP = subentry.getKey();
+                    bestMCPmomentum = subentry.getKey().getMomentum().magnitude();
+                }
+            }
+
+            //Add track and best MCP to map
+            //trackMCPMapDisamb.put(entry.getKey(),bestMCP);
+            trackMCPMapDisamb.put(track, bestMCP);
+
+            //Fill disambiguated map
+            if(!mcpTrackMapDisamb.containsKey(bestMCP)){
+                Map<Track, Integer> tmpMap = new HashMap<Track,Integer>();
+                tmpMap.put(entry.getKey(),mosthits);
+                mcpTrackMapDisamb.put(bestMCP,tmpMap);
+            }
+            else{
+                Map<Track, Integer> tmpMap = mcpTrackMapDisamb.get(bestMCP);
+                tmpMap.put(entry.getKey(),mosthits);
+                mcpTrackMapDisamb.put(bestMCP,tmpMap);
+            }
+        }
+    }
+
+    private void buildTrackTruthMaps(List<Track> tracks, RelationalTable rawtomc, Map<MCParticle, 
+            Map<Track, Integer>> mcpTrackMapDisamb, Map<Track, MCParticle> trackMCPMapDisamb){
+
+        //Track truth matching
+        Map<MCParticle, Map<Track, Integer>> mcpTrackMap = new HashMap<MCParticle, Map<Track, Integer>>();
+        Map<Track, Map<MCParticle, Integer>> trackMCPMap = new HashMap<Track, Map<MCParticle, Integer>>();
+        for(Track track : tracks){
+            double trackPmag = new BasicHep3Vector(track.getTrackStates().get(0).getMomentum()).magnitude();
+            int charge = -1* (int)Math.signum(track.getTrackStates().get(0).getOmega());
+
+            //run Track to MCP truth matching
+            TrackTruthMatching_new truthMatcher = new TrackTruthMatching_new(track, rawtomc, 0, 6);
+            
+            //Get all MCPs that leave hits on this Track
+            Map<MCParticle, Set<Integer>> mcpsOnTrack = truthMatcher.getLayerHitsForAllMCPs();
+
+            if(mcpsOnTrack == null)
+                continue;
+
+            for(Map.Entry<MCParticle, Set<Integer>> entry : mcpsOnTrack.entrySet()){
+                MCParticle mcp = entry.getKey();
+                int mcp_charge = (int) mcp.getCharge();
+                int nhits = entry.getValue().size();
+
+                //Only match a track to a MCP if it has > 6 MCP hits
+                if(nhits < 6)
+                    continue;
+
+                plots2D.get("track_matched_to_mcps_p_v_p").fill(trackPmag*charge,mcp.getMomentum().magnitude()*mcp_charge); 
+
+                //Fill Track to MCP Map
+                if(!trackMCPMap.containsKey(track)){
+                    Map<MCParticle, Integer> mcpMap = new HashMap<MCParticle, Integer>();
+                    mcpMap.put(mcp, nhits);
+                    trackMCPMap.put(track, mcpMap);
+                }
+                else{
+                    Map<MCParticle, Integer> mcpMap = trackMCPMap.get(track);
+                    mcpMap.put(mcp, nhits);
+                    trackMCPMap.put(track, mcpMap);
+                }
+
+                //Fill MCP to Track Map
+                if(!mcpTrackMap.containsKey(mcp)){
+                    Map<Track, Integer> trackMap = new HashMap<Track, Integer>();
+                    trackMap.put(track, nhits);
+                    mcpTrackMap.put(mcp, trackMap);
+                }
+
+                else{
+                    Map<Track, Integer> trackMap = mcpTrackMap.get(mcp);
+                    trackMap.put(track, nhits);
+                    mcpTrackMap.put(mcp, trackMap);
+                }
+            }
+
+            MCParticle bestmcp = truthMatcher.getMCParticle();
+            int mcp_charge = (int) bestmcp.getCharge();
+            int bestNhits = truthMatcher.getNGoodHits();
+            if(truthMatcher.getMCParticle() != null){
+                plots2D.get("track_matched_to_best_mcp_p_v_p").fill(trackPmag*charge,bestmcp.getMomentum().magnitude()*mcp_charge); 
+                plots1D.get("track_matched_to_best_mcp_nHits").fill(bestNhits); 
+            }
+
+            plots1D.get("track_matched_to_n_mcps").fill(trackMCPMap.get(track).size());
+        }
+
+        System.out.println("Number of MCPs matched to track new: " + mcpTrackMap.size());
+        //Ensure that a track is only matched to a unique MCParticle by
+        //disambiguating matches
+        //Map<MCParticle, Map<Track, Integer>> mcpTrackMapDisamb = new HashMap<MCParticle, Map<Track, Integer>>();
+        //Map<Track, MCParticle> trackMCPMapDisamb = new HashMap<Track, MCParticle>();
+        disambiguateTruthTracks(mcpTrackMap, mcpTrackMapDisamb, trackMCPMap, trackMCPMapDisamb);
+        System.out.println("Number of MCPs matched to track new after disamb" + mcpTrackMapDisamb.size());
+    }
+
 
     private void trackClusterResidualParameterization(Map<MCParticle,Pair<Track, Cluster>> mcpTrackClusterPairs){
 
@@ -1367,13 +1344,9 @@ public class TrackClusterTruthMatchingDriver extends Driver {
                     plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_good_matches_dx",this.trackCollectionName)).fill(trackPmag,clusterx-trackx);
                     plots2D.get(String.format("%s_pos_BOTTOM_track_cluster_good_matches_dy",this.trackCollectionName)).fill(trackPmag,clustery-tracky);
                 }
-
             }
-
         }
-
     }
-
 
     public boolean isTrackInEcal(double trackx, double tracky){
 
@@ -1438,6 +1411,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
     }
     
 
+    //Has bug, doesnt work
     public double[] getExtrapolatedTrackScoringPlaneHit(EventHeader event, Track track, SimTrackerHit scoringplaneHit){
     
         double truthxpos;
@@ -1479,7 +1453,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         double[] truthpos = {truthxpos, truthypos, truthzpos};
 
         return truthpos;
-
     }
 
 
@@ -1632,74 +1605,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         trackxyz.add(tracky);
         trackxyz.add(trackz);
         return trackxyz;
-        
-
-    }
-
-
-    public List<Double> extrapTrackToCrystalCenter(Track track){
-
-        List<Double> trackpos = getTrackPositionAtEcal(track);
-        double trackx = trackpos.get(0);
-        double tracky = trackpos.get(1);
-        double trackz = trackpos.get(2);
-        double[] trackP = TrackUtils.getTrackStateAtLocation(track,TrackState.AtIP).getMomentum();
-        double px = trackP[0];
-        double py = trackP[1];
-        double pz = trackP[2];
-        double crystalDepth = 80.0/1000;
-
-        double deltax;
-        double deltay;
-        for(int i = 0; i < crystalDepth; i++){
-            double iter = (double) i;
-            deltax = (px/pz)*iter;
-            deltay = (py/pz)*iter;
-            trackx = trackx + deltax*1000;
-            tracky = tracky + deltay*1000;
-            trackz = trackz + iter;
-        }
-
-        List<Double> newTrackPos = new ArrayList<Double>();
-        newTrackPos.add(trackx);
-        newTrackPos.add(tracky);
-        newTrackPos.add(trackz);
-
-        return newTrackPos;
-    }
-
-/**
-     * Get the MC particle associated with a track.
-     * 
-     * @param track : Track to get the MC particle for
-     * @return The MC particle associated with the track
-     */
-
-    public void printMCPtree(EventHeader event){
-        List<MCParticle> mcps = event.get(MCParticle.class,"MCParticle");
-
-        for(int i = 0; i < mcps.size(); i++){
-            MCParticle mcp = mcps.get(i);
-            System.out.println("MCParticle " + i + " PDGID: " + mcp.getPDGID());
-            System.out.println("MCParticle " + i + " Energy: " + mcp.getEnergy());
-            System.out.println("MCParticle " + i + " Momentum: " + mcp.getPX() + "," + mcp.getPY() + "," + mcp.getPZ());
-            System.out.println("MCParticle " + i + " Origin: " + mcp.getOriginX() + "," + mcp.getOriginY() + "," + mcp.getOriginZ());
-            //if(mcp.getEndPoint())
-            try{
-                System.out.println("MCParticle " + i + " Endpoint: " + mcp.getEndPoint().x() + "," + mcp.getEndPoint().y() + "," + mcp.getEndPoint().z());
-            }
-            catch (Throwable t){
-                System.out.println("No endpoint available");
-            }
-            if(mcp.getParents().size() != 0){   
-                System.out.println("MCParticle " + i + " Parent PDGID: " + mcp.getParents().get(0).getPDGID());
-                System.out.println("MCParticle " + i + " Parent Energy: " + mcp.getParents().get(0).getEnergy());
-                System.out.println("MCParticle " + i + " Parent Momentum: " + mcp.getParents().get(0).getPX() + "," + mcp.getParents().get(0).getPY() + "," + mcp.getParents().get(0).getPZ());
-            }
-            else
-                System.out.println("No parents of this MCP");
-        }
-
     }
 
     private List<MCParticle> getMCParticlesFromLCIO(EventHeader event){
@@ -1946,175 +1851,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         //return mcpClusterMapFinal;
     }
 
-    private MCParticle getClusterMCP(Cluster cluster, EventHeader event, boolean verbose) {
-
-        List<MCParticle> mcparticles = getMCParticlesFromLCIO(event);
-
-        List <RawTrackerHit> ecalReadoutHits = event.get(RawTrackerHit.class,ecalReadoutHitsCollectionName);
-        Map <MCParticle, int[]>mcParticleMultiplicity = new HashMap<MCParticle, int[]>();
-        RelationalTable rawtomc = new BaseRelationalTable(RelationalTable.Mode.MANY_TO_MANY, RelationalTable.Weighting.UNWEIGHTED);
-        if (event.hasCollection(LCRelation.class, ecalTruthRelationsName )) {
-            List<LCRelation> trueHitRelations = event.get(LCRelation.class, ecalTruthRelationsName);
-            for (LCRelation relation : trueHitRelations)
-                if (relation != null && relation.getFrom() != null && relation.getTo() != null){
-                    rawtomc.add(relation.getFrom(), relation.getTo());
-                }
-                else System.out.println("failed to build cluster mc relation");
-        }
-
-        //Match Cluster->CalorimeterHit(s) to corresponding EcalReadoutHits via
-        //CellID match
-        List<CalorimeterHit> calorimeterhits = cluster.getCalorimeterHits();
-        CalorimeterHit seedhit = ClusterUtilities.findSeedHit(cluster);
-
-        RawTrackerHit readoutMatchHit = null;
-        long cellID = seedhit.getCellID();
-        for(RawTrackerHit ecalReadoutHit : ecalReadoutHits) {
-            long recellID = ecalReadoutHit.getCellID();
-            if(cellID == recellID) {
-                readoutMatchHit = ecalReadoutHit;
-            }
-        }
-        if(verbose){
-            System.out.println("Checking Cluster with Energy: " + cluster.getEnergy());
-            System.out.println("Cluster X: " + cluster.getPosition()[0]);
-            System.out.println("Cluster Y: " + cluster.getPosition()[1]);
-            System.out.println("Cluster seedhit cellID: " + cellID);
-            System.out.println("Cluster seedhit Energy: " + seedhit.getRawEnergy());
-        }
-        if(readoutMatchHit == null)
-            return null;
-        if(verbose){
-            System.out.println("Matching Readout Hit Found: " + readoutMatchHit.getCellID());
-            System.out.println("Readout Hit position: x= " + readoutMatchHit.getPosition()[0] + "; y= " + readoutMatchHit.getPosition()[1] + "; z= " + readoutMatchHit.getPosition()[2]);
-        }
-
-        Set<SimCalorimeterHit> simcalhits = rawtomc.allFrom(readoutMatchHit);
-        double simcalhit_largestEnergy = 0.0;
-        SimCalorimeterHit largest_simcalhit = null;
-        double maxMCPEnergy = 0.0;
-        for(SimCalorimeterHit simcalhit : simcalhits) {
-            if(verbose){
-                System.out.println("Simcalhit energy: " + simcalhit.getRawEnergy());
-            }
-            if(simcalhit.getRawEnergy() > simcalhit_largestEnergy){
-                simcalhit_largestEnergy = simcalhit.getRawEnergy();
-                largest_simcalhit = simcalhit;
-            }
-        }
-        if(verbose && largest_simcalhit != null){
-            System.out.println("Simcalhit with energy: " + largest_simcalhit.getRawEnergy() + " selected");
-            System.out.println("Simcalhit cellID: " + largest_simcalhit.getCellID());
-            System.out.println("Simcalhit position: x= " + largest_simcalhit.getPosition()[0] + "; y= " + largest_simcalhit.getPosition()[1] + "; z= " + largest_simcalhit.getPosition()[2]);
-        }
-        double bestMCPEnergyContr = 0.0;
-        MCParticle bestMCP = null;
-        double bestMCPContrE = 0.0;
-        if(largest_simcalhit == null)
-            return null;
-        for(int i=0; i < largest_simcalhit.getMCParticleCount(); i++){
-            MCParticle mcp = largest_simcalhit.getMCParticle(i);
-            double originZ = largest_simcalhit.getMCParticle(i).getOriginZ();
-            int PDGID = largest_simcalhit.getMCParticle(i).getPDGID();
-            double MCPEnergyFrac = largest_simcalhit.getContributedEnergy(i)/cluster.getEnergy();
-            if(verbose){
-            
-                System.out.println("Looping over MCParticles for Simcalhit");
-                System.out.println("MCP energy: " + mcp.getEnergy());
-                System.out.println("MCP energy contribution to simcalhit: " + largest_simcalhit.getContributedEnergy(i));
-                System.out.println("mcp PDGID from mcp = " + mcp.getPDGID());
-                // doesnt work System.out.println("mcp PDGID from simcalhit.getPDG(i) = " + largest_simcalhit.getPDG(i));
-                System.out.println("mcp OriginZ: " + mcp.getOriginZ());
-                System.out.println("mcp EndpointX: " + mcp.getEndPoint().x());
-                System.out.println("mcp EndpointY: " + mcp.getEndPoint().y());
-                System.out.println("mcp EndpointZ: " + mcp.getEndPoint().z());
-                if(mcparticles.contains(mcp)){
-                    System.out.println("mcp from simcalhit found in LCIO MCParticle collection");
-                }
-                else
-                    System.out.println("mcp from simcalhit NOT FOUND in LCIO MCPartice collection");
-                double distance = Math.sqrt( Math.pow(largest_simcalhit.getPosition()[0] - mcp.getEndPoint().x(),2) + Math.pow(largest_simcalhit.getPosition()[1] - mcp.getEndPoint().y(),2));
-            }
-
-            if(largest_simcalhit.getContributedEnergy(i) > bestMCPEnergyContr){
-                bestMCPEnergyContr = largest_simcalhit.getContributedEnergy(i);
-                bestMCP = largest_simcalhit.getMCParticle(i);
-                bestMCPContrE = largest_simcalhit.getContributedEnergy(i);
-            }
-        }
-
-        if(bestMCP == null)
-            return null;
-
-        double ecalFacePosZ = 1330.0; //mm
-        if(bestMCP.getOriginZ() > ecalFacePosZ)
-            return null;
-
-        double distance = Math.sqrt( Math.pow(largest_simcalhit.getPosition()[0] - bestMCP.getEndPoint().x(),2) + Math.pow(largest_simcalhit.getPosition()[1] - bestMCP.getEndPoint().y(),2));
-
-        double energyRatio = cluster.getEnergy()/bestMCP.getEnergy();
-        plots1D.get(String.format("cluster_truthMCP_energy_ratio",this.trackCollectionName)).fill(energyRatio);
-
-        return bestMCP;
-    }
-
-    private SimTrackerHit getBestSimHit(RawTrackerHit rawhit, RelationalTable rawtomc){
-
-        if(rawhit == null)
-            return null;
-        Set<SimTrackerHit> simhits = rawtomc.allFrom(rawhit);
-        SimTrackerHit rawhitSimhit = null;
-        double simhitMaxE = 0.0;
-        for(SimTrackerHit simhit : simhits){
-            if (simhit != null && simhit.getMCParticle() != null) {
-                double simhitEnergy = simhit.getdEdx();
-                if(simhitEnergy > simhitMaxE){
-                    simhitMaxE = simhitEnergy;
-                    rawhitSimhit = simhit;
-                }
-            }
-        }
-        return rawhitSimhit;
-     
-    }
-
-    private Set<RawTrackerHit> getRawHitsFromTrackerHit(TrackerHit hit, RelationalTable rawtomc){
-
-        Map<RawTrackerHit, SimTrackerHit> largestHitOnLayerMap = new HashMap<RawTrackerHit, SimTrackerHit>();
-        Map<RawTrackerHit, Integer> layerMap = new HashMap<RawTrackerHit, Integer>(); 
-        Set<RawTrackerHit> rawhitsPerLayer = new HashSet<RawTrackerHit>();
-        Set<Integer> layers = new HashSet<Integer>();
-        for(RawTrackerHit rawhit : (List<RawTrackerHit>) hit.getRawHits()){
-            int layer = rawhit.getLayerNumber(); 
-            layerMap.put(rawhit, layer);
-            layers.add(layer);
-        }
-
-        for(int layer : layers){
-            List<RawTrackerHit> rawhitsonLayer = new ArrayList<RawTrackerHit>();
-            for(Map.Entry<RawTrackerHit,Integer> entry : layerMap.entrySet()){
-                if(entry.getValue().equals(layer)){
-                    rawhitsonLayer.add(entry.getKey());
-                }
-            
-            }   
-            double simhitMaxE = 0.0;
-            RawTrackerHit bestRawhit = null;
-            for(RawTrackerHit rawhit : rawhitsonLayer){
-                SimTrackerHit simhit = this.getBestSimHit(rawhit, rawtomc);
-                if (simhit != null && simhit.getMCParticle() != null) {
-                    double simhitEnergy = simhit.getdEdx();
-                    if(simhitEnergy > simhitMaxE){
-                        simhitMaxE = simhitEnergy;
-                        bestRawhit = rawhit;
-                    }
-                }
-            }
-            rawhitsPerLayer.add(bestRawhit);
-        }
-        return rawhitsPerLayer;
-    }   
-        
     public int getNSimTrackerHits(EventHeader event, MCParticle mcp){
         //Check how many hits this MCP left in the tracker
         int nmcpHits = 0;
@@ -2143,730 +1879,6 @@ public class TrackClusterTruthMatchingDriver extends Driver {
         }
         return mcpBestTrack;
     }
-
-    public void getMCPTracks(EventHeader event, List<Track> tracks, Map<MCParticle,Map<Track,Integer>> mcpTrackMapIn, Map<Track, MCParticle> trackMCPMapDisambIn){
-
-        //Retrieve rawhits to mc
-        RelationalTable rawtomc = new BaseRelationalTable(RelationalTable.Mode.MANY_TO_MANY, RelationalTable.Weighting.UNWEIGHTED);
-        if (event.hasCollection(LCRelation.class, "SVTTrueHitRelations")) {
-            List<LCRelation> trueHitRelations = event.get(LCRelation.class, "SVTTrueHitRelations");
-            for (LCRelation relation : trueHitRelations)
-                if (relation != null && relation.getFrom() != null && relation.getTo() != null)
-                    rawtomc.add(relation.getFrom(), relation.getTo());
-        }
-
-        List<MCParticle> allmcps = event.get(MCParticle.class,"MCParticle");
-        Map<MCParticle,Map<Track, int[]>> mcpTrackMap = new HashMap<MCParticle,Map<Track, int[]>>();
-        List<MCParticle> radFEEs = new ArrayList<MCParticle>();
-        List<MCParticle> FEEs = new ArrayList<MCParticle>();
-        List<MCParticle> primaryFEEs = new ArrayList<MCParticle>();
-        List<MCParticle> mcp622 = new ArrayList<MCParticle>();
-        List<MCParticle> mcp623 = new ArrayList<MCParticle>();
-
-        double fee = 2.25;
-
-        int nMCPs = allmcps.size();
-
-        for(MCParticle mcp : allmcps){
-            boolean skip = false;
-
-            int nmcpHits = getNSimTrackerHits(event, mcp);
-            plots1D.get("mcp_nHits_in_Tracker").fill(nmcpHits);
-            Set<RawTrackerHit> rawhitsMCP = new HashSet<RawTrackerHit>();
-            Map <Track, int[]> rawhitMultiplicity = new HashMap<Track, int[]>();
-
-            int pdgid = mcp.getPDGID();
-            List<Integer> parent_ids = new ArrayList<Integer>();
-            List<MCParticle> parents = mcp.getParents();
-
-            //ignore all photons
-            if(Math.abs(pdgid) != 11)
-                continue;
-            double momentum = mcp.getMomentum().magnitude();
-
-
-            boolean isRadiative = false;
-
-            if(momentum > fee){
-                parents = mcp.getParents();
-                if(parents == null)
-                    primaryFEEs.add(mcp);
-                else{
-                    for(MCParticle parent : parents){
-                        if(parent.getMomentum().magnitude() > fee){
-                            radFEEs.add(mcp);
-                            break;
-                        }
-                    }
-                }
-            }
-
-
-            else{
-                if(parents == null)
-                    continue;
-                for(MCParticle parent : parents){
-                    parent_ids.add(parent.getPDGID());
-                }
-            }
-
-            //Skip mcp unless it is daughter of interesting event, or is FEE
-            if((!parent_ids.contains(622) && !parent_ids.contains(623) && momentum < fee) || radFEEs.contains(mcp)){
-                continue;
-            }
-
-            if(parent_ids.contains(622))
-                mcp622.add(mcp);
-            if(parent_ids.contains(623))
-                mcp623.add(mcp);
-            if(momentum > fee)
-                FEEs.add(mcp);
-
-            List<SimTrackerHit> simhits = event.get(SimTrackerHit.class, "TrackerHits");
-            for(SimTrackerHit simhit : simhits){
-                MCParticle simhitmcp = simhit.getMCParticle();
-                if(simhitmcp == mcp){
-                    Set<RawTrackerHit> rawhits = rawtomc.allTo(simhit);
-                    for(RawTrackerHit hit : rawhits){
-                        rawhitsMCP.add(hit);
-                    }
-                }
-            }
-
-            for(Track track : tracks){
-                List<TrackerHit> trackerhits = track.getTrackerHits();
-                for(TrackerHit trackerhit : trackerhits){
-                    List<RawTrackerHit> trackerRawhits = trackerhit.getRawHits();
-                    Set<Integer> layers = new HashSet<Integer>();
-                    for(RawTrackerHit trackerRawhit : trackerRawhits){
-                        int layer = trackerRawhit.getLayerNumber();
-                        if(layers.contains(layer))
-                            continue;
-                        short [] adcs = trackerRawhit.getADCValues();
-                        if(rawhitsMCP.contains(trackerRawhit)){
-                            layers.add(layer);
-                            if(!rawhitMultiplicity.containsKey(track)){
-                                rawhitMultiplicity.put(track, new int[1]);
-                                rawhitMultiplicity.get(track)[0] = 0;
-                            }
-                            rawhitMultiplicity.get(track)[0]++;
-                        }
-                    }
-                }
-                
-                if(!rawhitMultiplicity.containsKey(track))
-                    continue;
-                plots1D.get("mcp_ofInterest_nRawTrackerHits_per_track").fill(rawhitMultiplicity.get(track)[0]);
-                plots2D.get("mcp_ofInterest_momentum_v_nRawTrackerHits_per_track").fill(momentum,rawhitMultiplicity.get(track)[0]);
-            }
-
-            if(rawhitMultiplicity.size() == 0)
-                continue;
-            
-            int mostHits = 0;
-            Track mostHitsTrack = null;
-            for(Map.Entry<Track, int[]> entry : rawhitMultiplicity.entrySet()){
-                if(entry.getValue()[0] > mostHits){
-                    mostHits = entry.getValue()[0];
-                    mostHitsTrack = entry.getKey();
-                }
-            }
-
-            if(mostHits > 0)
-                plots1D.get("mcp_mostHitsTrack_nHits").fill(mostHits);
-
-            mcpTrackMap.put(mcp,rawhitMultiplicity);
-            plots1D.get("mcp_nTracks").fill(mcpTrackMap.get(mcp).size());
-            plots2D.get("mcp_momentum_v_nTracks").fill(momentum,mcpTrackMap.get(mcp).size());
-        }
-
-        plots1D.get("nMCP_primary_FEEs_per_event").fill(FEEs.size());
-        plots1D.get("nMCP_radiative_FEEs_per_event").fill(radFEEs.size());
-        plots1D.get("nMCP_622_primary_daughters_per_event").fill(mcp622.size());
-        plots1D.get("nMCP_623_primary_daughters_per_event").fill(mcp623.size());
-        plots2D.get("nMCP_622or623_primary_daughters_v_primary_FEEs_per_event").fill(mcp622.size()+mcp623.size(),FEEs.size());
-        plots2D.get("nMCP_622and623_primary_daughters_and_primary_FEEs_v_nTracks_per_event").fill(mcp622.size()+mcp623.size()+FEEs.size(),tracks.size());
-
-        //Disambiguate MCP Track matches. Tracks must be exclusively matched to
-        //a MCP
-        Map<Track, Map<MCParticle,Integer>> trackMap = new HashMap<Track, Map<MCParticle, Integer>>();
-        for(Track track : tracks){
-            Map<MCParticle, Integer> bMap = new HashMap<MCParticle, Integer>();
-            for(Map.Entry<MCParticle, Map<Track, int[]>> entry : mcpTrackMap.entrySet()){
-                if(entry.getValue().containsKey(track)){
-                    if(entry.getValue().get(track)[0] > 5)
-                        bMap.put(entry.getKey(),entry.getValue().get(track)[0]);
-                }
-            }
-            if(bMap.size() > 0)
-                trackMap.put(track, bMap);
-            else
-                trackMap.put(track, null);
-        }
-
-        List<Track> unmatchedTracks = new ArrayList<Track>();
-        Map<MCParticle, Map<Track, Integer>> mcpTrackMapDisamb = new HashMap<MCParticle, Map<Track, Integer>>();
-
-        for(Map.Entry<Track, Map<MCParticle,Integer>> entry : trackMap.entrySet()){
-
-            double[] trackP = TrackUtils.getTrackStateAtLocation(entry.getKey(),TrackState.AtIP).getMomentum();
-            double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
-            if(entry.getValue() == null){
-                unmatchedTracks.add(entry.getKey());
-                plots1D.get("nMCPs_on_track").fill(0);
-                plots1D.get("tracks_unmatched_to_mcp_ofInterest_momentum").fill(trackPmag);
-                continue;
-            }
-
-            int mosthits = 0;
-            MCParticle bestMCP = null;
-            double bestMCPmomentum = 0.0;
-            Map<MCParticle, Integer> bMap = entry.getValue();
-            plots1D.get("nMCPs_on_track").fill(bMap.size());
-
-            for(Map.Entry<MCParticle, Integer> subentry : bMap.entrySet()){
-                if(subentry.getValue() == mosthits){
-                    if(Math.abs((1-(subentry.getKey().getMomentum().magnitude()/trackPmag))) <= 
-                            Math.abs((1-(bestMCPmomentum/trackPmag)))){
-                        bestMCP = subentry.getKey();
-                        bestMCPmomentum = subentry.getKey().getMomentum().magnitude();
-                        mosthits = subentry.getValue();
-                    }
-                }
-                if(subentry.getValue() > mosthits){
-                    mosthits = subentry.getValue();
-                    bestMCP = subentry.getKey();
-                    bestMCPmomentum = subentry.getKey().getMomentum().magnitude();
-                }
-            }
-
-            //Add track and best MCP to map
-            trackMCPMapDisambIn.put(entry.getKey(),bestMCP);
-
-            //Build map of MCP with list of best Tracks
-            if(!mcpTrackMapDisamb.containsKey(bestMCP)){
-                Map<Track, Integer> tmpMap = new HashMap<Track,Integer>();
-                tmpMap.put(entry.getKey(),mosthits);
-                mcpTrackMapDisamb.put(bestMCP,tmpMap);
-                mcpTrackMapIn.put(bestMCP, tmpMap);
-            }
-            else{
-                Map<Track, Integer> gammaMap = mcpTrackMapDisamb.get(bestMCP);
-                gammaMap.put(entry.getKey(),mosthits);
-                mcpTrackMapDisamb.put(bestMCP,gammaMap);
-                mcpTrackMapIn.put(bestMCP, gammaMap);
-            }
-        }
-
-        Set<Track> checkTracks = new HashSet<Track>();
-        int nNonFeeMCPwithTracks=0;
-        int nFEEwithTracks = 0;
-        int nMCPwithTracks = 0;
-        for(Map.Entry<MCParticle, Map<Track, Integer>> entry : mcpTrackMapDisamb.entrySet()){
-            MCParticle mcp = entry.getKey();
-            Map<Track, Integer> tmpMap = entry.getValue();
-
-            int sumHitsOnTracks = 0;
-            for(Map.Entry<Track, int[]> og : mcpTrackMap.get(mcp).entrySet()){
-                sumHitsOnTracks = sumHitsOnTracks + og.getValue()[0];
-                plots2D.get("mcp_nSimTrackerHits_v_sum_nHitsOnTrack").fill(getNSimTrackerHits(event,mcp),sumHitsOnTracks);
-            }
-
-            boolean isFEE = false;
-            if(mcp.getMomentum().magnitude() > fee){
-                isFEE = true;
-                plots1D.get("mcp_FEE_nTracks_disambiguated").fill(tmpMap.size());
-                if(tmpMap.size() > 0)
-                    nFEEwithTracks = nFEEwithTracks + 1;
-            }
-            else{
-                plots1D.get("mcp_nonFEE_nTracks_disambiguated").fill(tmpMap.size());
-                if(tmpMap.size() > 0){
-                    nNonFeeMCPwithTracks = nNonFeeMCPwithTracks + 1;
-                }
-            }
-
-            if(tmpMap.size() > 0){
-                nMCPwithTracks = nMCPwithTracks + 1;
-            }
-            
-            plots1D.get("mcp_nTracks_disambiguated").fill(entry.getValue().size());
-            plots2D.get("mcp_momentum_v_nTracks_disambiguated").fill(mcp.getMomentum().magnitude(),tmpMap.size());
-
-            int mosthits = 0;
-            Track mosthitsTrack = null;
-            for(Map.Entry<Track, Integer> subentry : tmpMap.entrySet()){
-                Track track = subentry.getKey();
-                int nhits = subentry.getValue();
-                plots1D.get("mcp_nhits_on_track_disambiguated").fill(nhits);
-                if(nhits > mosthits){
-                    mosthits = nhits;
-                    mosthitsTrack = track;
-                }
-                if(checkTracks.contains(track))
-                    System.out.println("FAILURE! TRACKS NOT DISAMBIGUATED");
-                checkTracks.add(track);
-            }
-            plots1D.get("mcp_most_hits_on_track_disambiguated").fill(mosthits);
-
-            double[] trackP = TrackUtils.getTrackStateAtLocation(mosthitsTrack,TrackState.AtIP).getMomentum();
-            double trackPmag = Math.sqrt(Math.pow(trackP[0],2) + Math.pow(trackP[1],2) + Math.pow(trackP[2],2));
-            double [] params = mosthitsTrack.getTrackParameters();
-
-            if(isFEE)
-                plots1D.get("mcp_FEEs_most_hits_on_track_disambiguated").fill(mosthits);
-            else
-                plots1D.get("mcp_NOT_FEEs_most_hits_on_track_disambiguated").fill(mosthits);
-
-            if(mosthits == 1){
-                Map<MCParticle, Integer> map = trackMap.get(mosthitsTrack);
-            }
-
-            plots2D.get("mcp_momentum_v_best_track_momentum_disam").fill(mcp.getMomentum().magnitude(),trackPmag);
-            plots1D.get("mcp_momentum_best_track_momentum_ratio_disam").fill(mcp.getMomentum().magnitude()/trackPmag);
-            plots2D.get("mcp_nSimTrackerHits_most_nHitsOnTrack_disam").fill(getNSimTrackerHits(event,mcp),mosthits);
-
-            //Get scoringplane hit and plot
-            SimTrackerHit scoringplanehit = getTrackScoringPlaneHit(event, mcp, ecalScoringPlaneHitsCollectionName);
-            if(scoringplanehit != null)
-                trackScoringPlanePlots(event, mosthitsTrack, scoringplanehit);
-        }
-
-        plots1D.get("mcp_FEE_wAtLeast_one_track_per_event_disamb").fill(nFEEwithTracks);
-        plots1D.get("mcp_NOT_FEE_wAtLeast_one_track_per_event_disamb").fill(nNonFeeMCPwithTracks);
-
-        //return mcpTrackMapDisamb;
-    }
-
-    /*
-    public Map<MCParticle, List<SimTrackerHit>> getRawHitMCPs(RawTrackerHit rawhit, RelationalTable rawtomc){
-
-        Map<MCParticle, List<SimTrackerHit>> rawHitMCPMap = new HashMap<MCParticle, List<SimTrackerHit>>();
-        Set<SimTrackerHit> simhits = rawtomc.allFrom(rawhit);
-        for(SimTrackerHit simhit : simhits){
-            List<SimTrackerHit> simtrackerhits = new ArrayList<SimTrackerHit>();
-            simtrackerhits.add(simhit);
-            MCParticle particle = simhit.getMCParticle();
-            if(!rawHitMCPMap.containsKey(particle))
-                rawHitMCPMap.put(particle, simtrackerhits);
-            else{
-                List<SimTrackerHit> tmp = rawHitMCPMap.get(particle); 
-                tmp.add(simhit);
-                rawHitMCPMap.put(particle, tmp);
-            }
-        }
-        System.out.println("NMCPs on rawTrackerHit: " + rawHitMCPMap.size());
-
-        return rawHitMCPMap;
-    }
-    */
-
-    public List<MCParticle> getRawHitMCPs(RawTrackerHit rawhit, RelationalTable rawtomc){
-
-        Set<MCParticle> mcps = new HashSet<MCParticle>();
-        List<MCParticle> mcpList = new ArrayList<MCParticle>();
-        Set<SimTrackerHit> simhits = rawtomc.allFrom(rawhit);
-        System.out.println("Number of simhits on rawtrackerhit: " + simhits.size());
-        for(SimTrackerHit simhit : simhits){
-            MCParticle particle = simhit.getMCParticle();
-            int pdgid = particle.getPDGID();
-            if(Math.abs(pdgid) != 11)
-                continue;
-            if(particle.getOriginZ() > 0)
-                continue;
-            System.out.println("Found MCP PDGID " + pdgid + " with energy " + particle.getEnergy() + " on RawTrackerHit");
-            //List<MCParticle> parents = particle.getParents();
-            //System.out.println("MCP has " + parents.size() + " parents" );
-            //for(MCParticle p : parents){
-            //    System.out.println("Parent pdgid: " + p.getPDGID());
-            // }
-            mcps.add(particle);
-        }
-
-        mcpList.addAll(mcps);
-        System.out.println("N MCPs on RawTrackerHit: " + mcps.size());
-        plots1D.get("number_of_mcps_on_striphits").fill(mcps.size());
-
-        return mcpList;
-    }
-
-    public void plotTrackMCPMultiplicity(Map<MCParticle, int[]> mcParticleMultiplicity){
-        
-
-        // Look for the MC particle that occurs the most of the track
-        int maxValue = 0;
-        MCParticle maxMCP = null;
-        for(Map.Entry<MCParticle, int[]> entry : mcParticleMultiplicity.entrySet()){
-            if(maxValue < entry.getValue()[0]){
-                maxMCP = entry.getKey();
-                maxValue = entry.getValue()[0];
-            }
-        }
-
-        int secondValue = 0;
-        MCParticle secondMCP = null;
-        for(Map.Entry<MCParticle, int[]> entry : mcParticleMultiplicity.entrySet()){
-            if(entry.getKey() == maxMCP)
-                continue;
-            if(secondValue < entry.getValue()[0]){
-                secondMCP = entry.getKey();
-                secondValue = entry.getValue()[0];
-            }
-        }
-
-        plots1D.get("track_max_mcp_hit_multiplicity").fill(maxValue);
-        plots1D.get("track_most-next_mcp_hit_multiplicity").fill(maxValue - secondValue);
-        plots1D.get("track_number_of_mcps").fill(mcParticleMultiplicity.size());
-        plots2D.get("track_max_mcp_vs_next_best_mcp_hits").fill(maxValue, secondValue);
-
-        if(secondMCP != null && maxMCP != null){
-            if(maxMCP.getPDGID() == secondMCP.getPDGID())
-                plots2D.get("track_max_mcp_vs_next_best_mcp_hits_same_pdgid").fill(maxValue, secondValue);
-            else{ 
-                plots2D.get("track_max_mcp_vs_next_best_mcp_hits_different_pdgid").fill(maxValue, secondValue);
-                if(secondValue/maxValue > 0.6){
-                    double secondP = secondMCP.getMomentum().magnitude();
-                    double firstP = maxMCP.getMomentum().magnitude();
-                    System.out.println("Best MCP pdgid: " + maxMCP.getPDGID());
-                    System.out.println("Best MCP momentum: " + firstP);
-                    System.out.println("Second Best MCP pdgid: " + secondMCP.getPDGID());
-                    System.out.println("Second Best MCP momentum: " + secondP);
-                }
-            }
-        }
-
-    }
-
-    //public void getBestMCP(Map<MCParticle, int[] mcParticleMultiplicity>{
-        
-    //}
-
-    public MCParticle matchTrackToMCP(Track track, RelationalTable rawtomc, boolean isKalman){
-    
-        //Map <MCParticle, int[]>mcParticleMultiplicity = new HashMap<MCParticle, int[]>();
-        double trackPmag = new BasicHep3Vector(track.getTrackStates().get(0).getMomentum()).magnitude();
-        System.out.println("Track Momentum: " + trackPmag); 
-        int _nhits = track.getTrackerHits().size();
-        System.out.println("N 3d hits on Track: " + _nhits);
-
-        if(!isKalman)
-            _nhits = _nhits*2;
-
-        Map<MCParticle, int[]> mcParticleMultiplicity = new HashMap<MCParticle, int[]>();
-        Map<MCParticle, Set<Integer>> mcpHitsOnLayer = new HashMap<MCParticle, Set<Integer>>();
-        //Map<MCParticle, int[]> mcp2DHitCount = new HashMap<MCParticle, int[]>();
-
-        //Map<MCParticle, Pair<int[], Set<Integer>>> mcParticleMultiplicity = new HashMap<MCParticle, Pair<int[], Set<Integer>>>();
-
-        for (TrackerHit hit: track.getTrackerHits()) {
-            Map<Integer, Map<RawTrackerHit, List<MCParticle>>> hitTruth = getMCParticlesOnTrackerHit(hit, rawtomc);
-            for(Map.Entry<Integer, Map<RawTrackerHit, List<MCParticle>>> entry : hitTruth.entrySet()){
-                for(Map.Entry<RawTrackerHit, List<MCParticle>> subentry : entry.getValue().entrySet()){
-                    for(MCParticle particle : subentry.getValue()){
-                        Set<Integer> hitsOnLayer = new HashSet<Integer>();
-                        hitsOnLayer.add(entry.getKey());
-                        if(!mcpHitsOnLayer.containsKey(particle)){
-                            mcpHitsOnLayer.put(particle, hitsOnLayer);
-                        }
-                        else{
-                            Set<Integer> tmp = mcpHitsOnLayer.get(particle);
-                            tmp.add(entry.getKey());
-                            mcpHitsOnLayer.put(particle, tmp);
-                        }
-                        if(!mcParticleMultiplicity.containsKey(particle)){
-                            mcParticleMultiplicity.put(particle, new int[1]);
-                            mcParticleMultiplicity.get(particle)[0] = 0;
-                        }
-                        mcParticleMultiplicity.get(particle)[0]++;
-                    }
-                }
-            }
-        }
-
-        System.out.println("N MCPs on Track with momentum " + trackPmag + " is " + mcParticleMultiplicity.size());
-        MCParticle bestMCP = null;
-        int maxHits = 0;
-        int totalHits = 0;
-        for(Map.Entry<MCParticle, int[]> entry : mcParticleMultiplicity.entrySet()){
-            totalHits = totalHits + entry.getValue()[0];
-            if(entry.getValue()[0] > maxHits){
-                bestMCP = entry.getKey();
-                maxHits = entry.getValue()[0];
-            }
-            System.out.println("MCP pdgid " + entry.getKey().getPDGID() + " and momentum " + entry.getKey().getMomentum().magnitude() + " leaves "  + entry.getValue()[0] + " strip hits on Track: ");
-            System.out.println(" and it hits " + mcpHitsOnLayer.get(entry.getKey()).size() + " different sensors");
-        }
-
-        int secondValue = 0;
-        MCParticle secondMCP = null;
-        for(Map.Entry<MCParticle, int[]> entry : mcParticleMultiplicity.entrySet()){
-            if(entry.getKey() == bestMCP)
-                continue;
-            if(secondValue < entry.getValue()[0]){
-                secondMCP = entry.getKey();
-                secondValue = entry.getValue()[0];
-            }
-        }
-
-        plots1D.get("best_mcp_nStripHits_over_total_nStripHits_on_track").fill((double)maxHits/(double)totalHits);
-        if(secondMCP != null)
-            plots2D.get("best_mcp_nSensorsHit_v_2nd_best_mcp_nSensorsHit").fill(mcpHitsOnLayer.get(bestMCP).size(),mcpHitsOnLayer.get(secondMCP).size());
-        else
-            plots2D.get("best_mcp_nSensorsHit_v_2nd_best_mcp_nSensorsHit").fill(mcpHitsOnLayer.get(bestMCP).size(),0);
-
-        //plot track mcp multiplicity results for striphits
-        plotTrackMCPMultiplicity(mcParticleMultiplicity);
-
-
-        MCParticle chosenMCP = null;
-        int bestNhits = 0;
-        for(Map.Entry<MCParticle, Set<Integer>> entry : mcpHitsOnLayer.entrySet()){
-            int nhits = entry.getValue().size();
-            if(nhits > bestNhits){
-                bestNhits = nhits;
-                chosenMCP = entry.getKey();
-            }
-        }
-
-        return chosenMCP;
-    }
-
-    public Map<Integer, Map<RawTrackerHit, List<MCParticle>>> getMCParticlesOnTrackerHit(TrackerHit hit, RelationalTable rawtomc){
-
-        List<RawTrackerHit> rawhits = hit.getRawHits();
-        System.out.println("3d hit made of " + rawhits.size() + " RawTrackerHits");
-        Set<Integer> layers = new HashSet<Integer>();
-        for(RawTrackerHit rawhit : rawhits){
-            int layer = rawhit.getLayerNumber();
-            layers.add(layer);
-        }
-
-        Map<Integer, Map<RawTrackerHit, List<MCParticle>>> layerRawHitsMap = new HashMap<Integer,Map<RawTrackerHit, List<MCParticle>>>();
-
-        for(Integer layer : layers){
-            Map<RawTrackerHit, List<MCParticle>> rawHitsMCPMap = new HashMap<RawTrackerHit, List<MCParticle>>();
-            System.out.println("Checking RawTrackerHits on layer " + layer);
-            int nlayerRawHits = 0;
-            int nlayerMCPs = 0;
-            for(RawTrackerHit rawhit : rawhits){
-                if(rawhit.getLayerNumber() != layer)
-                    continue;
-                nlayerRawHits = nlayerRawHits + 1;
-                List<MCParticle> rawhitMCPs = getRawHitMCPs(rawhit, rawtomc);    
-                nlayerMCPs = nlayerMCPs + rawhitMCPs.size();
-                rawHitsMCPMap.put(rawhit,rawhitMCPs);
-            }
-            System.out.println("Total N RawTrackerHits on layer " + layer + " is " +  rawHitsMCPMap.size());
-            System.out.println("Total N unique MCPs on layer " + layer + " is " + nlayerMCPs); 
-            plots1D.get("number_strip_hits_per_sensor_layer").fill(nlayerRawHits);
-
-            layerRawHitsMap.put(layer, rawHitsMCPMap);
-            plots2D.get("number_mcps_on_si_cluster").fill(layer,nlayerMCPs);
-        }
-
-        return layerRawHitsMap;
-    }
-
-    public MCParticle newgetTrackMCP(EventHeader event, Track track, String trackCollectionName, Boolean hitRequirement){
-
-        Map <MCParticle, int[]>mcParticleMultiplicity = new HashMap<MCParticle, int[]>();
-
-        //Retrieve rawhits to mc
-        RelationalTable rawtomc = new BaseRelationalTable(RelationalTable.Mode.MANY_TO_MANY, RelationalTable.Weighting.UNWEIGHTED);
-        if (event.hasCollection(LCRelation.class, "SVTTrueHitRelations")) {
-            List<LCRelation> trueHitRelations = event.get(LCRelation.class, "SVTTrueHitRelations");
-            for (LCRelation relation : trueHitRelations)
-                if (relation != null && relation.getFrom() != null && relation.getTo() != null)
-                    rawtomc.add(relation.getFrom(), relation.getTo());
-        }
-
-        MCParticle particle;
-        for(TrackerHit hit : track.getTrackerHits()){
-            Set<RawTrackerHit> rawhits = getRawHitsFromTrackerHit(hit, rawtomc);
-            for(RawTrackerHit rawhit : rawhits){
-                SimTrackerHit simhit = getBestSimHit(rawhit, rawtomc);
-                if(simhit != null && simhit.getMCParticle() != null){
-                    particle = simhit.getMCParticle();
-                    if(!mcParticleMultiplicity.containsKey(particle)){
-                        mcParticleMultiplicity.put(particle, new int[1]);
-                        mcParticleMultiplicity.get(particle)[0] = 0;
-                    }
-
-                    mcParticleMultiplicity.get(particle)[0]++;
-                }
-            }
-        }
-
-        // Look for the MC particle that occurs the most of the track
-        int maxValue = 0;
-        particle = null;
-        for(Map.Entry<MCParticle, int[]> entry : mcParticleMultiplicity.entrySet()){
-            if(maxValue < entry.getValue()[0]){
-                particle = entry.getKey();
-                maxValue = entry.getValue()[0];
-            }
-        }
-
-        int charge = -1* (int)Math.signum(track.getTrackStates().get(0).getOmega());
-        double[] trackP = TrackUtils.getTrackStateAtLocation(track,TrackState.AtLastHit).getMomentum();
-        double trackPmag = new BasicHep3Vector(track.getTrackStates().get(0).getMomentum()).magnitude();
-        double truthP = particle.getMomentum().magnitude();
-
-        if(charge > 0 && particle.getPDGID() == 11)
-            return null;
-
-        if(charge < 0 && particle.getPDGID() == -11)
-            return null;
-
-        if(charge < 0){
-            plots1D.get(String.format("%s_ele_track_maxMCPmultiplicity",this.trackCollectionName)).fill(maxValue);
-            plots2D.get(String.format("%s_ele_track_p_v_maxMCPmultiplicity",this.trackCollectionName)).fill(trackPmag,maxValue);
-            plots2D.get(String.format("%s_ele_track_p_v_mcp_p",this.trackCollectionName)).fill(trackPmag,truthP);
-        }
-        else{
-            plots1D.get(String.format("%s_pos_track_maxMCPmultiplicity",this.trackCollectionName)).fill(maxValue);
-            plots2D.get(String.format("%s_pos_track_p_v_maxMCPmultiplicity",this.trackCollectionName)).fill(trackPmag,maxValue);
-            plots2D.get(String.format("%s_pos_track_p_v_mcp_p",this.trackCollectionName)).fill(trackPmag,truthP);
-        }
-
-        if(hitRequirement == true){
-
-            if(trackCollectionName.contains("GBLTracks")){
-                if(maxValue > 9)
-                    return particle;
-                else
-                    return null;
-            }
-            else if(trackCollectionName.contains("KalmanFullTracks")){
-                if(maxValue > 9)
-                    return particle;
-                else
-                    return null;
-            }
-            else
-                return null;
-        }
-        else
-            return particle;
-    }
-
-    private MCParticle getTrackMCP(Track track, EventHeader event){
-        
-        Map <MCParticle, int[]>mcParticleMultiplicity = new HashMap<MCParticle, int[]>();
-
-        //Retrieve rawhits to mc
-        RelationalTable rawtomc = new BaseRelationalTable(RelationalTable.Mode.MANY_TO_MANY, RelationalTable.Weighting.UNWEIGHTED);
-        if (event.hasCollection(LCRelation.class, "SVTTrueHitRelations")) {
-            List<LCRelation> trueHitRelations = event.get(LCRelation.class, "SVTTrueHitRelations");
-            for (LCRelation relation : trueHitRelations)
-                if (relation != null && relation.getFrom() != null && relation.getTo() != null)
-                    rawtomc.add(relation.getFrom(), relation.getTo());
-        }
-
-        //Retrieve all simulated hits
-        String MCHitInputCollectionName = "TrackerHits";
-        List<SimTrackerHit> allsimhits = event.get(SimTrackerHit.class, MCHitInputCollectionName);
-
-        MCParticle particle;
-        for(TrackerHit hit : track.getTrackerHits()){
-            List<RawTrackerHit> rawhits = hit.getRawHits();
-            Set<RawTrackerHit> EmaxRawHitPerLayer = new HashSet<RawTrackerHit>();
-            Map<RawTrackerHit,SimTrackerHit> rawToSimMap = new HashMap<RawTrackerHit, SimTrackerHit>();
-
-            for(RawTrackerHit rawhit : rawhits){
-                if(rawhit == null)
-                    continue;
-                Set<SimTrackerHit> simhits = rawtomc.allFrom(rawhit);
-                SimTrackerHit rawhitSimhit = null;
-                double simhitMaxE = 0.0;
-                for(SimTrackerHit simhit : simhits){
-                    if (simhit != null && simhit.getMCParticle() != null) {
-                        double simhitEnergy = simhit.getdEdx();
-                        if(simhitEnergy > simhitMaxE){
-                            simhitMaxE = simhitEnergy;
-                            rawhitSimhit = simhit;
-                        }
-                    }
-                }
-                if(rawhitSimhit != null)
-                    rawToSimMap.put(rawhit, rawhitSimhit);
-            }
-
-            Map<RawTrackerHit, Integer> layerMap = new HashMap<RawTrackerHit, Integer>(); 
-            Set<Integer> layers = new HashSet<Integer>();
-            for(RawTrackerHit rawhit : rawToSimMap.keySet()){
-                int layer = rawToSimMap.get(rawhit).getLayer(); 
-                layerMap.put(rawhit, layer);
-                layers.add(layer);
-            }
-
-            for(int layer : layers){
-                List<RawTrackerHit> rawhitsonLayer = new ArrayList<RawTrackerHit>();
-                for(Map.Entry<RawTrackerHit,Integer> entry : layerMap.entrySet()){
-                    if(entry.getValue().equals(layer)){
-                        rawhitsonLayer.add(entry.getKey());
-                    }
-                
-                }   
-                double simhitMaxE = 0.0;
-                SimTrackerHit bestSimhit = null;
-                for(RawTrackerHit rawhit : rawhitsonLayer){
-                    SimTrackerHit simhit = rawToSimMap.get(rawhit);
-                    if (simhit != null && simhit.getMCParticle() != null) {
-                        double simhitEnergy = simhit.getdEdx();
-                        if(simhitEnergy > simhitMaxE){
-                            simhitMaxE = simhitEnergy;
-                            bestSimhit = simhit;
-                        }
-                    }
-                }
-
-                if(bestSimhit != null && bestSimhit.getMCParticle() != null){
-                    particle = bestSimhit.getMCParticle();
-                    if(!mcParticleMultiplicity.containsKey(particle)){
-                        mcParticleMultiplicity.put(particle, new int[1]);
-                        mcParticleMultiplicity.get(particle)[0] = 0;
-                    }
-
-                    mcParticleMultiplicity.get(particle)[0]++;
-                }
-            }
-        }
-
-        // Look for the MC particle that occurs the most of the track
-        int maxValue = 0;
-        int minhits = 9;
-        particle = null;
-        for(Map.Entry<MCParticle, int[]> entry : mcParticleMultiplicity.entrySet()){
-            if(maxValue < entry.getValue()[0]){
-                particle = entry.getKey();
-                maxValue = entry.getValue()[0];
-            }
-        }
-
-        int charge = -1* (int)Math.signum(track.getTrackStates().get(0).getOmega());
-        if(charge < 0){
-            plots1D.get(String.format("%s_ele_track_maxMCPmultiplicity",this.trackCollectionName)).fill(maxValue);
-        }
-        else{
-            plots1D.get(String.format("%s_pos_track_maxMCPmultiplicity",this.trackCollectionName)).fill(maxValue);
-        }
-        if(this.trackCollectionName.contains("GBLTracks")){
-            if(maxValue > minhits)
-                return particle;
-            else
-                return null;
-        }
-        else if(this.trackCollectionName.contains("KalmanFullTracks")){
-            if(maxValue > minhits)
-                return particle;
-            else
-                return null;
-        }
-        else
-            return null;
-    }
-
 }
 
 

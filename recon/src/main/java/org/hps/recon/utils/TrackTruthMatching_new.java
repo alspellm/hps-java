@@ -231,8 +231,10 @@ public class TrackTruthMatching_new {
             //only add electron or positron mcps
             if(Math.abs(pdgid) != 11)
                 continue;
+            /*
             if(particle.getOriginZ() > 0)
                 continue;
+                */
             mcps.add(particle);
         }
 
