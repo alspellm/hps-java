@@ -16,10 +16,6 @@ import org.lcsim.lcio.LCIOConstants;
 import org.lcsim.recon.cat.util.Const;
 import org.lcsim.util.Driver;
 
-/**
- *
- * @author Matt Graham
- */
 // TODO: Add class documentation.
 public class RawTrackerHitFitterDriver extends Driver {
 
@@ -43,6 +39,7 @@ public class RawTrackerHitFitterDriver extends Driver {
     private boolean correctChanT0 = true;
     private boolean subtractRFTime = false;
     private Boolean syncGood = true;
+    private Boolean isMC = false;
 
     private double trigTimeScale = 43.0;//  the mean time of the trigger...changes with run period!!!  43.0 is for 2015 Eng. Run
 
@@ -101,6 +98,10 @@ public class RawTrackerHitFitterDriver extends Driver {
 
     public void setTrigTimeOffset(double offset) {
         this.trigTimeOffset = offset;
+    }
+
+    public void setIsMC(boolean isMc) {
+        this.isMC = isMc;
     }
 
     public void setFitAlgorithm(String fitAlgorithm) {
@@ -202,6 +203,9 @@ public class RawTrackerHitFitterDriver extends Driver {
                     double tt = (((event.getTimeStamp() - 4 * timingConstants.getOffsetPhase()) % 24) - trigTimeOffset);
                     if (!syncGood) tt = tt - 8;
                     if (!syncGood && (((event.getTimeStamp() - 4 * timingConstants.getOffsetPhase()) % 24)/8 < 1)) {
+                        tt = tt + 24;
+                    }
+                    if (isMC && (((event.getTimeStamp() - 4 * timingConstants.getOffsetPhase()) % 24)/8 == 1)) {
                         tt = tt + 24;
                     }
                     if (debug) {

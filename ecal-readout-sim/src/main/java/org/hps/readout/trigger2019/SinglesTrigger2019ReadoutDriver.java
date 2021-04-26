@@ -29,13 +29,16 @@ import hep.aida.IHistogram2D;
  * {@link HodoscopePatternReadoutDriver}, and perform the necessary trigger
  * logic on them. If a trigger is detected, it is sent to the readout data
  * manager so that a triggered readout event may be written.
- * 
- * @author Tongtong Cao <caot@jlab.org>
  */
 public class SinglesTrigger2019ReadoutDriver extends TriggerDriver {     
     // ==============================================================
     // ==== LCIO Collections ========================================
     // ==============================================================
+    /**
+     * Indicates singles trigger type. Corresponding DAQ configuration is accessed by DAQ
+     * configuration system, and applied into readout.
+     */
+    private String triggerType = "singles3";
     
     /**
      * Indicates the name of the calorimeter geometry object. This is
@@ -87,6 +90,7 @@ public class SinglesTrigger2019ReadoutDriver extends TriggerDriver {
      */
     private boolean geometryMatchingRequired = false;
     
+    
     // ==============================================================
     // ==== AIDA Plots ==============================================
     // ==============================================================
@@ -116,7 +120,10 @@ public class SinglesTrigger2019ReadoutDriver extends TriggerDriver {
                 public void actionPerformed(ActionEvent e) {
                     // Get the DAQ configuration.
                     DAQConfig2019 daq = ConfigurationManager2019.getInstance();  
-                    triggerModule.loadDAQConfiguration(daq.getVTPConfig().getSingles3Config());                   
+                    if(triggerType.contentEquals("singles3")) triggerModule.loadDAQConfiguration(daq.getVTPConfig().getSingles3Config());
+                    else if(triggerType.equals("singles2")) triggerModule.loadDAQConfiguration(daq.getVTPConfig().getSingles2Config());
+                    else if(triggerType.equals("singles1")) triggerModule.loadDAQConfiguration(daq.getVTPConfig().getSingles1Config());
+                    else if(triggerType.equals("singles0")) triggerModule.loadDAQConfiguration(daq.getVTPConfig().getSingles0Config());                    
                 }
             });
         }
@@ -276,6 +283,10 @@ public class SinglesTrigger2019ReadoutDriver extends TriggerDriver {
     
     public void setInputCollectionNameHodo(String collection) {
         inputCollectionNameHodo = collection;
+    }
+    
+    public void setTriggerType(String trigger) {
+        triggerType = trigger;
     }
     
     /**
