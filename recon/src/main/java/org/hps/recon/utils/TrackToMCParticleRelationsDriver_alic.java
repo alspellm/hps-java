@@ -9,7 +9,7 @@ import hep.aida.ref.rootwriter.RootFileStore;
 
 import hep.physics.vec.Hep3Vector;
 import hep.physics.vec.BasicHep3Vector;
-//import hep.physics.matrix.SymmetricMatrix;
+import hep.physics.matrix.SymmetricMatrix;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -27,13 +27,13 @@ import org.lcsim.event.base.BaseRelationalTable;
 
 import org.lcsim.event.MCParticle;
 import org.lcsim.event.Track;
-//import org.lcsim.event.TrackState;
-//import org.lcsim.event.base.BaseTrack;
-//import org.lcsim.event.base.BaseTrackState;
+import org.lcsim.event.TrackState;
+import org.lcsim.event.base.BaseTrack;
+import org.lcsim.event.base.BaseTrackState;
 import org.hps.recon.tracking.TrackUtils;
 //import org.hps.recon.utils.TrackTruthMatching_new;
 //import org.hps.recon.utils.TrackTruthMatching;
-//import org.lcsim.fit.helicaltrack.HelicalTrackFit;
+import org.lcsim.fit.helicaltrack.HelicalTrackFit;
 
 import org.lcsim.event.SimTrackerHit;
 import org.lcsim.util.Driver;
@@ -104,9 +104,25 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
 
 //Plots for all Truth Matched Tracks, regradless of purity
 
+        //Reco Tracks
         //ele
         plots1D.put(String.format("ele_reco_track_momentum"),
                 histogramFactory.createHistogram1D(String.format("ele_reco_track_momentum"), 800, 0, 8));
+
+        plots1D.put(String.format("ele_reco_track_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("ele_reco_track_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_reco_track_d0"),
+                histogramFactory.createHistogram1D(String.format("ele_reco_track_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_reco_track_z0"),
+                histogramFactory.createHistogram1D(String.format("ele_reco_track_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_reco_track_phi0"),
+                histogramFactory.createHistogram1D(String.format("ele_reco_track_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_reco_track_C"),
+                histogramFactory.createHistogram1D(String.format("ele_reco_track_C"), 2000, -10, 10));
 
         plots2D.put(String.format("ele_reco_track_momentum_v_nhits"),
                 histogramFactory.createHistogram2D(String.format("ele_reco_track_momentum_v_nhits"), 800, 0, 8, 15, 0, 15));
@@ -114,10 +130,71 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         plots1D.put(String.format("pos_reco_track_momentum"),
                 histogramFactory.createHistogram1D(String.format("pos_reco_track_momentum"), 800, 0, 8));
 
+        plots1D.put(String.format("pos_reco_track_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("pos_reco_track_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_reco_track_d0"),
+                histogramFactory.createHistogram1D(String.format("pos_reco_track_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_reco_track_z0"),
+                histogramFactory.createHistogram1D(String.format("pos_reco_track_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_reco_track_phi0"),
+                histogramFactory.createHistogram1D(String.format("pos_reco_track_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_reco_track_C"),
+                histogramFactory.createHistogram1D(String.format("pos_reco_track_C"), 2000, -10, 10));
+
         plots2D.put(String.format("pos_reco_track_momentum_v_nhits"),
                 histogramFactory.createHistogram2D(String.format("pos_reco_track_momentum_v_nhits"), 800, 0, 8, 15, 0, 15));
 
+        //Truth Tracks
+        
         //ele
+        plots2D.put(String.format("ele_truth_track_v_matched_mcp_momentum"),
+                histogramFactory.createHistogram2D(String.format("ele_truth_track_v_matched_mcp_momentum"), 1600, -8, 8, 1600, -8, 8));
+
+        plots1D.put(String.format("ele_truth_track_momentum"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_momentum"), 800, 0, 8));
+
+        plots1D.put(String.format("ele_truth_track_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_truth_track_phi0"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_truth_track_d0"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_truth_track_z0"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_truth_track_C"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_C"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_truth_track_mcp_momentum"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_mcp_momentum"), 800, 0, 8));
+
+        plots2D.put(String.format("ele_truth_tracks_trackP_v_nHits_on_track"),
+                histogramFactory.createHistogram2D(String.format("ele_truth_tracks_trackP_v_nHits_on_track"), 800, 0, 800, 15, 0, 15));
+
+        plots2D.put(String.format("ele_truth_track_momentum_v_probability"),
+                histogramFactory.createHistogram2D(String.format("ele_truth_track_momentum_v_probability"), 800, 0, 8, 40, 0, 2));
+
+        plots2D.put(String.format("ele_truth_track_tanlambda_v_probability"),
+                histogramFactory.createHistogram2D(String.format("ele_truth_track_tanlambda_v_probability"), 1000, -1, 1, 40, 0, 2));
+
+        plots2D.put(String.format("ele_truth_track_phi0_v_probability"),
+                histogramFactory.createHistogram2D(String.format("ele_truth_track_phi0_v_probability"), 1000, -1, 1, 40, 0, 2));
+
+        plots2D.put(String.format("ele_truth_track_z0_v_probability"),
+                histogramFactory.createHistogram2D(String.format("ele_truth_track_z0_v_probability"), 2000, -10, 10, 40, 0, 2));
+
+        plots2D.put(String.format("ele_truth_track_d0_v_probability"),
+                histogramFactory.createHistogram2D(String.format("ele_truth_track_d0_v_probability"), 2000, -10, 10, 40, 0, 2));
+
+        plots2D.put(String.format("ele_truth_track_C_v_probability"),
+                histogramFactory.createHistogram2D(String.format("ele_truth_track_C_v_probability"), 2000, -10, 10, 40, 0, 2));
 
         plots1D.put(String.format("ele_multi_mcp_truth_prob"),
                 histogramFactory.createHistogram1D(String.format("ele_multi_mcp_truth_prob"), 40, 0, 2));
@@ -156,27 +233,44 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         plots2D.put(String.format("ele_n_mcps_on_layer_striphits"),
                 histogramFactory.createHistogram2D(String.format("ele_n_mcps_on_layer_striphits"), 20, 0, 20, 15, 0, 15));
 
-        plots2D.put(String.format("ele_truth_track_v_matched_mcp_momentum"),
-                histogramFactory.createHistogram2D(String.format("ele_truth_track_v_matched_mcp_momentum"), 1600, -8, 8, 1600, -8, 8));
 
-        plots1D.put(String.format("ele_truth_track_momentum"),
-                histogramFactory.createHistogram1D(String.format("ele_truth_track_momentum"), 800, 0, 8));
-
-        plots1D.put(String.format("ele_truth_track_mcp_momentum"),
-                histogramFactory.createHistogram1D(String.format("ele_truth_track_mcp_momentum"), 800, 0, 8));
-
-        plots1D.put(String.format("ele_truth_track_tanlambda"),
-                histogramFactory.createHistogram1D(String.format("ele_truth_track_tanlambda"), 1000, -1, 1));
-
-        plots2D.put(String.format("ele_truth_tracks_trackP_v_nHits_on_track"),
-                histogramFactory.createHistogram2D(String.format("ele_truth_tracks_trackP_v_nHits_on_track"), 800, 0, 800, 15, 0, 15));
-
-        plots1D.put(String.format("ele_truth_duplicate_tracks_tanlambda"),
-                histogramFactory.createHistogram1D(String.format("ele_truth_duplicate_tracks_tanlambda"), 1000, -1, 1));
-
-        plots1D.put(String.format("ele_truth_duplicate_tracks_momentum"),
-                histogramFactory.createHistogram1D(String.format("ele_truth_duplicate_tracks_momentum"), 800, 0, 8));
         //pos
+        plots1D.put(String.format("pos_truth_track_momentum"),
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_momentum"), 800, 0, 8));
+
+        plots1D.put(String.format("pos_truth_track_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_truth_track_phi0"),
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_truth_track_d0"),
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_truth_track_z0"),
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_truth_track_C"),
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_C"), 2000, -10, 10));
+
+        plots2D.put(String.format("pos_truth_track_momentum_v_probability"),
+                histogramFactory.createHistogram2D(String.format("pos_truth_track_momentum_v_probability"), 800, 0, 8, 40, 0, 2));
+
+        plots2D.put(String.format("pos_truth_track_tanlambda_v_probability"),
+                histogramFactory.createHistogram2D(String.format("pos_truth_track_tanlambda_v_probability"), 1000, -1, 1, 40, 0, 2));
+
+        plots2D.put(String.format("pos_truth_track_phi0_v_probability"),
+                histogramFactory.createHistogram2D(String.format("pos_truth_track_phi0_v_probability"), 1000, -1, 1, 40, 0, 2));
+
+        plots2D.put(String.format("pos_truth_track_z0_v_probability"),
+                histogramFactory.createHistogram2D(String.format("pos_truth_track_z0_v_probability"), 2000, -10, 10, 40, 0, 2));
+
+        plots2D.put(String.format("pos_truth_track_d0_v_probability"),
+                histogramFactory.createHistogram2D(String.format("pos_truth_track_d0_v_probability"), 2000, -10, 10, 40, 0, 2));
+
+        plots2D.put(String.format("pos_truth_track_C_v_probability"),
+                histogramFactory.createHistogram2D(String.format("pos_truth_track_C_v_probability"), 2000, -10, 10, 40, 0, 2));
+
         plots1D.put(String.format("pos_multi_mcp_truth_prob"),
                 histogramFactory.createHistogram1D(String.format("pos_multi_mcp_truth_prob"), 40, 0, 2));
 
@@ -217,24 +311,60 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         plots2D.put(String.format("pos_truth_track_v_matched_mcp_momentum"),
                 histogramFactory.createHistogram2D(String.format("pos_truth_track_v_matched_mcp_momentum"), 1600, -8, 8, 1600, -8, 8));
 
-        plots1D.put(String.format("pos_truth_track_momentum"),
-                histogramFactory.createHistogram1D(String.format("pos_truth_track_momentum"), 800, 0, 8));
 
         plots1D.put(String.format("pos_truth_track_mcp_momentum"),
                 histogramFactory.createHistogram1D(String.format("pos_truth_track_mcp_momentum"), 800, 0, 8));
 
-        plots1D.put(String.format("pos_truth_track_tanlambda"),
-                histogramFactory.createHistogram1D(String.format("pos_truth_track_tanlambda"), 1000, -1, 1));
 
         plots2D.put(String.format("pos_truth_tracks_trackP_v_nHits_on_track"),
                 histogramFactory.createHistogram2D(String.format("pos_truth_tracks_trackP_v_nHits_on_track"), 800, 0, 800, 15, 0, 15));
 
-        plots1D.put(String.format("pos_truth_duplicate_tracks_tanlambda"),
-                histogramFactory.createHistogram1D(String.format("pos_truth_duplicate_tracks_tanlambda"), 1000, -1, 1));
+//Purity = 1 Plots
 
-        plots1D.put(String.format("pos_truth_duplicate_tracks_momentum"),
-                histogramFactory.createHistogram1D(String.format("pos_truth_duplicate_tracks_momentum"), 800, 0, 8));
+        //ele
+        plots1D.put(String.format("ele_truth_track_purity_eq_1_momentum"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_purity_eq_1_momentum"), 800, 0, 8));
 
+        plots1D.put(String.format("ele_truth_track_purity_eq_1_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_purity_eq_1_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_truth_track_purity_eq_1_phi0"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_purity_eq_1_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_truth_track_purity_eq_1_d0"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_purity_eq_1_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_truth_track_purity_eq_1_z0"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_purity_eq_1_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_truth_track_purity_eq_1_C"),
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_purity_eq_1_C"), 2000, -10, 10));
+
+        plots2D.put(String.format("ele_truth_track_purity_eq_1_v_matched_mcp_momentum"),
+                histogramFactory.createHistogram2D(String.format("ele_truth_track_purity_eq_1_v_matched_mcp_momentum"), 1600, -8, 8, 1600, -8, 8));
+
+        //pos
+        plots1D.put(String.format("pos_truth_track_purity_eq_1_momentum"),
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_purity_eq_1_momentum"), 800, 0, 8));
+
+        plots1D.put(String.format("pos_truth_track_purity_eq_1_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_purity_eq_1_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_truth_track_purity_eq_1_phi0"),
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_purity_eq_1_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_truth_track_purity_eq_1_d0"),
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_purity_eq_1_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_truth_track_purity_eq_1_z0"),
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_purity_eq_1_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_truth_track_purity_eq_1_C"),
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_purity_eq_1_C"), 2000, -10, 10));
+
+        plots2D.put(String.format("pos_truth_track_purity_eq_1_v_matched_mcp_momentum"),
+                histogramFactory.createHistogram2D(String.format("pos_truth_track_purity_eq_1_v_matched_mcp_momentum"), 1600, -8, 8, 1600, -8, 8));
+        
 //Plots for "Real" Tracks that pass purity cut
 
         plots1D.put(String.format("ele_real_track_n_mcps_on_track"),
@@ -279,23 +409,59 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         plots1D.put(String.format("ele_real_track_momentum"),
                 histogramFactory.createHistogram1D(String.format("ele_real_track_momentum"), 800, 0, 8));
 
+        plots1D.put(String.format("ele_real_track_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("ele_real_track_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_real_track_phi0"),
+                histogramFactory.createHistogram1D(String.format("ele_real_track_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_real_track_d0"),
+                histogramFactory.createHistogram1D(String.format("ele_real_track_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_real_track_z0"),
+                histogramFactory.createHistogram1D(String.format("ele_real_track_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_real_track_C"),
+                histogramFactory.createHistogram1D(String.format("ele_real_track_C"), 2000, -10, 10));
+
         plots1D.put(String.format("ele_real_track_mcp_momentum"),
                 histogramFactory.createHistogram1D(String.format("ele_real_track_mcp_momentum"), 800, 0, 8));
+
+        plots1D.put(String.format("ele_real_track_mcp_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("ele_real_track_mcp_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_real_track_mcp_phi0"),
+                histogramFactory.createHistogram1D(String.format("ele_real_track_mcp_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_real_track_mcp_d0"),
+                histogramFactory.createHistogram1D(String.format("ele_real_track_mcp_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_real_track_mcp_z0"),
+                histogramFactory.createHistogram1D(String.format("ele_real_track_mcp_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_real_track_mcp_C"),
+                histogramFactory.createHistogram1D(String.format("ele_real_track_mcp_C"), 2000, -10, 10));
 
         plots1D.put(String.format("ele_real_track_nhits_gteq_12_mcp_momentum"),
                 histogramFactory.createHistogram1D(String.format("ele_real_track_nhits_gteq_12_mcp_momentum"), 800, 0, 8));
 
-        plots1D.put(String.format("ele_real_track_tanlambda"),
-                histogramFactory.createHistogram1D(String.format("ele_real_track_tanlambda"), 1000, -1, 1));
-
-        plots1D.put(String.format("ele_real_duplicate_tracks_tanlambda"),
-                histogramFactory.createHistogram1D(String.format("ele_real_duplicate_tracks_tanlambda"), 1000, -1, 1));
-
-        plots1D.put(String.format("ele_real_duplicate_tracks_momentum"),
-                histogramFactory.createHistogram1D(String.format("ele_real_duplicate_tracks_momentum"), 800, 0, 8));
-
         plots1D.put(String.format("ele_real_duplicate_tracks_mcp_momentum"),
                 histogramFactory.createHistogram1D(String.format("ele_real_duplicate_tracks_mcp_momentum"), 800, 0, 8));
+
+        plots1D.put(String.format("ele_real_duplicate_tracks_mcp_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("ele_real_duplicate_tracks_mcp_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_real_duplicate_tracks_mcp_phi0"),
+                histogramFactory.createHistogram1D(String.format("ele_real_duplicate_tracks_mcp_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_real_duplicate_tracks_mcp_d0"),
+                histogramFactory.createHistogram1D(String.format("ele_real_duplicate_tracks_mcp_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_real_duplicate_tracks_mcp_z0"),
+                histogramFactory.createHistogram1D(String.format("ele_real_duplicate_tracks_mcp_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_real_duplicate_tracks_mcp_C"),
+                histogramFactory.createHistogram1D(String.format("ele_real_duplicate_tracks_mcp_C"), 2000, -10, 10));
         //pos
 
         plots1D.put(String.format("pos_real_track_n_mcps_on_track"),
@@ -340,23 +506,59 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         plots1D.put(String.format("pos_real_track_momentum"),
                 histogramFactory.createHistogram1D(String.format("pos_real_track_momentum"), 800, 0, 8));
 
+        plots1D.put(String.format("pos_real_track_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("pos_real_track_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_real_track_phi0"),
+                histogramFactory.createHistogram1D(String.format("pos_real_track_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_real_track_d0"),
+                histogramFactory.createHistogram1D(String.format("pos_real_track_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_real_track_z0"),
+                histogramFactory.createHistogram1D(String.format("pos_real_track_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_real_track_C"),
+                histogramFactory.createHistogram1D(String.format("pos_real_track_C"), 2000, -10, 10));
+
         plots1D.put(String.format("pos_real_track_mcp_momentum"),
                 histogramFactory.createHistogram1D(String.format("pos_real_track_mcp_momentum"), 800, 0, 8));
+
+        plots1D.put(String.format("pos_real_track_mcp_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("pos_real_track_mcp_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_real_track_mcp_phi0"),
+                histogramFactory.createHistogram1D(String.format("pos_real_track_mcp_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_real_track_mcp_d0"),
+                histogramFactory.createHistogram1D(String.format("pos_real_track_mcp_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_real_track_mcp_z0"),
+                histogramFactory.createHistogram1D(String.format("pos_real_track_mcp_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_real_track_mcp_C"),
+                histogramFactory.createHistogram1D(String.format("pos_real_track_mcp_C"), 2000, -10, 10));
 
         plots1D.put(String.format("pos_real_track_nhits_gteq_12_mcp_momentum"),
                 histogramFactory.createHistogram1D(String.format("pos_real_track_nhits_gteq_12_mcp_momentum"), 800, 0, 8));
 
-        plots1D.put(String.format("pos_real_track_tanlambda"),
-                histogramFactory.createHistogram1D(String.format("pos_real_track_tanlambda"), 1000, -1, 1));
-
-        plots1D.put(String.format("pos_real_duplicate_tracks_tanlambda"),
-                histogramFactory.createHistogram1D(String.format("pos_real_duplicate_tracks_tanlambda"), 1000, -1, 1));
-
-        plots1D.put(String.format("pos_real_duplicate_tracks_momentum"),
-                histogramFactory.createHistogram1D(String.format("pos_real_duplicate_tracks_momentum"), 800, 0, 8));
-
         plots1D.put(String.format("pos_real_duplicate_tracks_mcp_momentum"),
                 histogramFactory.createHistogram1D(String.format("pos_real_duplicate_tracks_mcp_momentum"), 800, 0, 8));
+
+        plots1D.put(String.format("ele_real_duplicate_tracks_mcp_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("ele_real_duplicate_tracks_mcp_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_real_duplicate_tracks_mcp_phi0"),
+                histogramFactory.createHistogram1D(String.format("pos_real_duplicate_tracks_mcp_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_real_duplicate_tracks_mcp_d0"),
+                histogramFactory.createHistogram1D(String.format("pos_real_duplicate_tracks_mcp_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_real_duplicate_tracks_mcp_z0"),
+                histogramFactory.createHistogram1D(String.format("pos_real_duplicate_tracks_mcp_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_real_duplicate_tracks_mcp_C"),
+                histogramFactory.createHistogram1D(String.format("pos_real_duplicate_tracks_mcp_C"), 2000, -10, 10));
 
 //Plots for "Fake" Tracks that fail purity cut
 
@@ -403,20 +605,23 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         plots1D.put(String.format("ele_fake_track_momentum"),
                 histogramFactory.createHistogram1D(String.format("ele_fake_track_momentum"), 800, 0, 8));
 
-        plots1D.put(String.format("ele_fake_track_mcp_momentum"),
-                histogramFactory.createHistogram1D(String.format("ele_fake_track_mcp_momentum"), 800, 0, 8));
-
         plots1D.put(String.format("ele_fake_track_tanlambda"),
                 histogramFactory.createHistogram1D(String.format("ele_fake_track_tanlambda"), 1000, -1, 1));
 
-        plots1D.put(String.format("ele_fake_duplicate_tracks_tanlambda"),
-                histogramFactory.createHistogram1D(String.format("ele_fake_duplicate_tracks_tanlambda"), 1000, -1, 1));
+        plots1D.put(String.format("ele_fake_track_phi0"),
+                histogramFactory.createHistogram1D(String.format("ele_fake_track_phi0"), 1000, -1, 1));
 
-        plots1D.put(String.format("ele_fake_duplicate_tracks_momentum"),
-                histogramFactory.createHistogram1D(String.format("ele_fake_duplicate_tracks_momentum"), 800, 0, 8));
+        plots1D.put(String.format("ele_fake_track_d0"),
+                histogramFactory.createHistogram1D(String.format("ele_fake_track_d0"), 2000, -10, 10));
 
-        plots1D.put(String.format("ele_fake_duplicate_tracks_mcp_momentum"),
-                histogramFactory.createHistogram1D(String.format("ele_fake_duplicate_tracks_mcp_momentum"), 800, 0, 8));
+        plots1D.put(String.format("ele_fake_track_z0"),
+                histogramFactory.createHistogram1D(String.format("ele_fake_track_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_fake_track_C"),
+                histogramFactory.createHistogram1D(String.format("ele_fake_track_C"), 2000, -10, 10));
+
+        //plots1D.put(String.format("ele_fake_duplicate_tracks_mcp_momentum"),
+        //        histogramFactory.createHistogram1D(String.format("ele_fake_duplicate_tracks_mcp_momentum"), 800, 0, 8));
         //pos
         plots1D.put(String.format("pos_fake_track_n_mcps_on_track"),
                 histogramFactory.createHistogram1D(String.format("pos_fake_track_n_mcps_on_track"), 30, 0, 30));
@@ -460,24 +665,97 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         plots1D.put(String.format("pos_fake_track_momentum"),
                 histogramFactory.createHistogram1D(String.format("pos_fake_track_momentum"), 800, 0, 8));
 
-        plots1D.put(String.format("pos_fake_track_mcp_momentum"),
-                histogramFactory.createHistogram1D(String.format("pos_fake_track_mcp_momentum"), 800, 0, 8));
-
         plots1D.put(String.format("pos_fake_track_tanlambda"),
                 histogramFactory.createHistogram1D(String.format("pos_fake_track_tanlambda"), 1000, -1, 1));
 
-        plots1D.put(String.format("pos_fake_duplicate_tracks_tanlambda"),
-                histogramFactory.createHistogram1D(String.format("pos_fake_duplicate_tracks_tanlambda"), 1000, -1, 1));
+        plots1D.put(String.format("pos_fake_track_phi0"),
+                histogramFactory.createHistogram1D(String.format("pos_fake_track_phi0"), 1000, -1, 1));
 
-        plots1D.put(String.format("pos_fake_duplicate_tracks_momentum"),
-                histogramFactory.createHistogram1D(String.format("pos_fake_duplicate_tracks_momentum"), 800, 0, 8));
+        plots1D.put(String.format("pos_fake_track_d0"),
+                histogramFactory.createHistogram1D(String.format("pos_fake_track_d0"), 2000, -10, 10));
 
-        plots1D.put(String.format("pos_fake_duplicate_tracks_mcp_momentum"),
-                histogramFactory.createHistogram1D(String.format("pos_fake_duplicate_tracks_mcp_momentum"), 800, 0, 8));
+        plots1D.put(String.format("pos_fake_track_z0"),
+                histogramFactory.createHistogram1D(String.format("pos_fake_track_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_fake_track_C"),
+                histogramFactory.createHistogram1D(String.format("pos_fake_track_C"), 2000, -10, 10));
+
+        //plots1D.put(String.format("pos_fake_duplicate_tracks_mcp_momentum"),
+        //        histogramFactory.createHistogram1D(String.format("pos_fake_duplicate_tracks_mcp_momentum"), 800, 0, 8));
 
 //
         plots2D.put(String.format("old_truth_track_v_matched_mcp_momentum"),
                 histogramFactory.createHistogram2D(String.format("old_truth_track_v_matched_mcp_momentum"), 1600, -8, 8, 1600, -8, 8));
+
+        //MCParticle plots
+        
+        //ele
+        plots1D.put(String.format("ele_mcp_momentum"),
+                histogramFactory.createHistogram1D(String.format("ele_mcp_momentum"), 800, 0, 8));
+
+        plots1D.put(String.format("ele_mcp_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("ele_mcp_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_mcp_phi0"),
+                histogramFactory.createHistogram1D(String.format("ele_mcp_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_mcp_d0"),
+                histogramFactory.createHistogram1D(String.format("ele_mcp_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_mcp_z0"),
+                histogramFactory.createHistogram1D(String.format("ele_mcp_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_mcp_C"),
+                histogramFactory.createHistogram1D(String.format("ele_mcp_C"), 2000, -10, 10));
+
+        plots2D.put(String.format("ele_mcp_momentum_v_tanlambda"),
+                histogramFactory.createHistogram2D(String.format("ele_mcp_momentum_v_tanlambda"), 800, 0, 8, 1000, -1, 1));
+
+        plots2D.put(String.format("ele_mcp_momentum_v_phi0"),
+                histogramFactory.createHistogram2D(String.format("ele_mcp_momentum_v_phi0"), 800, 0, 8, 1000, -1, 1));
+
+        plots2D.put(String.format("ele_mcp_momentum_v_d0"),
+                histogramFactory.createHistogram2D(String.format("ele_mcp_momentum_v_d0"), 800, 0, 8, 2000, -10, 10));
+
+        plots2D.put(String.format("ele_mcp_momentum_v_z0"),
+                histogramFactory.createHistogram2D(String.format("ele_mcp_momentum_v_z0"), 800, 0, 8, 2000, -10, 10));
+
+        plots2D.put(String.format("ele_mcp_momentum_v_C"),
+                histogramFactory.createHistogram2D(String.format("ele_mcp_momentum_v_C"), 800, 0, 8, 2000, -10, 10));
+        //pos
+
+        plots1D.put(String.format("pos_mcp_momentum"),
+                histogramFactory.createHistogram1D(String.format("pos_mcp_momentum"), 800, 0, 8));
+
+        plots1D.put(String.format("pos_mcp_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("pos_mcp_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_mcp_phi0"),
+                histogramFactory.createHistogram1D(String.format("pos_mcp_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_mcp_d0"),
+                histogramFactory.createHistogram1D(String.format("pos_mcp_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_mcp_z0"),
+                histogramFactory.createHistogram1D(String.format("pos_mcp_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_mcp_C"),
+                histogramFactory.createHistogram1D(String.format("pos_mcp_C"), 2000, -10, 10));
+
+        plots2D.put(String.format("pos_mcp_momentum_v_tanlambda"),
+                histogramFactory.createHistogram2D(String.format("pos_mcp_momentum_v_tanlambda"), 800, 0, 8, 1000, -1, 1));
+
+        plots2D.put(String.format("pos_mcp_momentum_v_phi0"),
+                histogramFactory.createHistogram2D(String.format("pos_mcp_momentum_v_phi0"), 800, 0, 8, 1000, -1, 1));
+
+        plots2D.put(String.format("pos_mcp_momentum_v_d0"),
+                histogramFactory.createHistogram2D(String.format("pos_mcp_momentum_v_d0"), 800, 0, 8, 2000, -10, 10));
+
+        plots2D.put(String.format("pos_mcp_momentum_v_z0"),
+                histogramFactory.createHistogram2D(String.format("pos_mcp_momentum_v_z0"), 800, 0, 8, 2000, -10, 10));
+
+        plots2D.put(String.format("pos_mcp_momentum_v_C"),
+                histogramFactory.createHistogram2D(String.format("pos_mcp_momentum_v_C"), 800, 0, 8, 2000, -10, 10));
 
         //Trackable MCP Plots
         plots1D.put(String.format("mcp_tanlambda"), histogramFactory.createHistogram1D(String.format("mcp_tanlambda"), 1000, -1, 1));
@@ -497,6 +775,21 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
 
         plots1D.put(String.format("ele_trackable_mcp_momentum"),
                 histogramFactory.createHistogram1D(String.format("ele_trackable_mcp_momentum"), 800, 0, 8));
+
+        plots1D.put(String.format("ele_trackable_mcp_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("ele_trackable_mcp_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_trackable_mcp_phi0"),
+                histogramFactory.createHistogram1D(String.format("ele_trackable_mcp_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("ele_trackable_mcp_d0"),
+                histogramFactory.createHistogram1D(String.format("ele_trackable_mcp_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_trackable_mcp_z0"),
+                histogramFactory.createHistogram1D(String.format("ele_trackable_mcp_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("ele_trackable_mcp_C"),
+                histogramFactory.createHistogram1D(String.format("ele_trackable_mcp_C"), 2000, -10, 10));
         //pos
         plots2D.put(String.format("pos_mcp_momentum_v_nLayersHit"),
                 histogramFactory.createHistogram2D(String.format("pos_mcp_momentum_v_nLayersHit"), 800, 0, 8, 15, 0, 15));
@@ -509,6 +802,21 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
 
         plots1D.put(String.format("pos_trackable_mcp_momentum"),
                 histogramFactory.createHistogram1D(String.format("pos_trackable_mcp_momentum"), 800, 0, 8));
+
+        plots1D.put(String.format("pos_trackable_mcp_tanlambda"),
+                histogramFactory.createHistogram1D(String.format("pos_trackable_mcp_tanlambda"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_trackable_mcp_phi0"),
+                histogramFactory.createHistogram1D(String.format("pos_trackable_mcp_phi0"), 1000, -1, 1));
+
+        plots1D.put(String.format("pos_trackable_mcp_d0"),
+                histogramFactory.createHistogram1D(String.format("pos_trackable_mcp_d0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_trackable_mcp_z0"),
+                histogramFactory.createHistogram1D(String.format("pos_trackable_mcp_z0"), 2000, -10, 10));
+
+        plots1D.put(String.format("pos_trackable_mcp_C"),
+                histogramFactory.createHistogram1D(String.format("pos_trackable_mcp_C"), 2000, -10, 10));
     }
 
     public void endOfData() {
@@ -591,6 +899,10 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
             int charge = -1* (int)Math.signum(track.getTrackStates().get(0).getOmega());
             double trackPmag = new BasicHep3Vector(track.getTrackStates().get(0).getMomentum()).magnitude();
             double tanlambda = track.getTrackStates().get(0).getTanLambda();
+            double track_d0    = track.getTrackStates().get(0).getD0();
+            double track_z0    = track.getTrackStates().get(0).getZ0();
+            double track_C     = track.getTrackStates().get(0).getOmega();
+            double track_phi   = track.getTrackStates().get(0).getPhi();
 
             /*
             //Check match quality of old Track->MCP matching
@@ -615,10 +927,20 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
             //Fill plot with all Reco Tracks momentum
             if(charge < 0){
                 plots1D.get("ele_reco_track_momentum").fill(trackPmag);
+                plots1D.get("ele_reco_track_tanlambda").fill(tanlambda);
+                plots1D.get("ele_reco_track_d0").fill(track_d0);
+                plots1D.get("ele_reco_track_z0").fill(track_z0);
+                plots1D.get("ele_reco_track_C").fill(track_C);
+                plots1D.get("ele_reco_track_phi0").fill(track_phi);
                 plots2D.get("ele_reco_track_momentum_v_nhits").fill(trackPmag, nHits);
             }
             else{
                 plots1D.get("pos_reco_track_momentum").fill(trackPmag);
+                plots1D.get("pos_reco_track_tanlambda").fill(tanlambda);
+                plots1D.get("pos_reco_track_d0").fill(track_d0);
+                plots1D.get("pos_reco_track_z0").fill(track_z0);
+                plots1D.get("pos_reco_track_C").fill(track_C);
+                plots1D.get("pos_reco_track_phi0").fill(track_phi);
                 plots2D.get("pos_reco_track_momentum_v_nhits").fill(trackPmag, nHits);
             }
 
@@ -627,9 +949,19 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
 
             //If Track is matched to a MCP, continue analysis
             if(mcp != null){
+
+                //Fit MCP to helical track to get params
+                double[] mcpParams = getMCPTrackParameters(mcp, bfield);
+                double mcp_d0 = mcpParams[0];
+                double mcp_z0 = mcpParams[1];
+                double mcp_C = mcpParams[2];
+                double mcp_phi = mcpParams[3];
+                double mcp_slope = mcpParams[4];
+
                 //Get purity and nGoodHits to check Track quality
                 double purity = tt.getPurity();
                 double nGoodHits = tt.getNGoodHits();
+
 
                 //First fill plots for all cases where a Track is matched to a
                 //MCP, regardless of match purity.
@@ -637,12 +969,19 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                     plots2D.get("ele_truth_tracks_trackP_v_nHits_on_track").fill(trackPmag, nHits);
                     plots1D.get("ele_truth_track_momentum").fill(trackPmag);
                     plots1D.get("ele_truth_track_tanlambda").fill(tanlambda);
-                    if(mcps.contains(mcp)){
-                        plots1D.get("ele_truth_duplicate_tracks_momentum").fill(trackPmag);
-                        plots1D.get("ele_truth_duplicate_tracks_tanlambda").fill(tanlambda);
-                    }
+                    plots1D.get("ele_truth_track_phi0").fill(track_phi);
+                    plots1D.get("ele_truth_track_d0").fill(track_d0);
+                    plots1D.get("ele_truth_track_z0").fill(track_z0);
+                    plots1D.get("ele_truth_track_C").fill(track_C);
                     plots2D.get("ele_truth_track_v_matched_mcp_momentum").fill(charge*trackPmag,((int)mcp.getCharge())*mcp.getMomentum().magnitude());
-                    //truth probability for tracks with NMCP > 1
+                    //truth probability for tracks
+                    plots2D.get("ele_truth_track_momentum_v_probability").fill(trackPmag, tt.getPurity());
+                    plots2D.get("ele_truth_track_tanlambda_v_probability").fill(tanlambda, tt.getPurity());
+                    plots2D.get("ele_truth_track_d0_v_probability").fill(track_d0, tt.getPurity());
+                    plots2D.get("ele_truth_track_z0_v_probability").fill(track_z0, tt.getPurity());
+                    plots2D.get("ele_truth_track_phi0_v_probability").fill(track_phi, tt.getPurity());
+                    plots2D.get("ele_truth_track_C_v_probability").fill(track_C, tt.getPurity());
+
                     if(tt.getLayerHitsForAllMCPs().size() > 1){
                         plots1D.get("ele_multi_mcp_truth_prob").fill(tt.getPurity());
                     }
@@ -673,11 +1012,18 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                     plots2D.get("pos_truth_tracks_trackP_v_nHits_on_track").fill(trackPmag, nHits);
                     plots1D.get("pos_truth_track_momentum").fill(trackPmag);
                     plots1D.get("pos_truth_track_tanlambda").fill(tanlambda);
-                    if(mcps.contains(mcp)){
-                        plots1D.get("pos_truth_duplicate_tracks_momentum").fill(trackPmag);
-                        plots1D.get("pos_truth_duplicate_tracks_tanlambda").fill(tanlambda);
-                    }
+                    plots1D.get("pos_truth_track_phi0").fill(track_phi);
+                    plots1D.get("pos_truth_track_d0").fill(track_d0);
+                    plots1D.get("pos_truth_track_z0").fill(track_z0);
+                    plots1D.get("pos_truth_track_C").fill(track_C);
                     plots2D.get("pos_truth_track_v_matched_mcp_momentum").fill(charge*trackPmag,((int)mcp.getCharge())*mcp.getMomentum().magnitude());
+                    //Truth Tracks Probability
+                    plots2D.get("pos_truth_track_momentum_v_probability").fill(trackPmag, tt.getPurity());
+                    plots2D.get("pos_truth_track_tanlambda_v_probability").fill(tanlambda, tt.getPurity());
+                    plots2D.get("pos_truth_track_d0_v_probability").fill(track_d0, tt.getPurity());
+                    plots2D.get("pos_truth_track_z0_v_probability").fill(track_z0, tt.getPurity());
+                    plots2D.get("pos_truth_track_phi0_v_probability").fill(track_phi, tt.getPurity());
+                    plots2D.get("pos_truth_track_C_v_probability").fill(track_C, tt.getPurity());
                     if(tt.getLayerHitsForAllMCPs().size() > 1){
                         plots1D.get("pos_multi_mcp_truth_prob").fill(tt.getPurity());
                     }
@@ -702,20 +1048,47 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                     }
                 }
 
+                //Plots for Track->MCP purity = 100%
+                if(purity == 1){
+
+                    if(charge < 0){
+                        plots1D.get("ele_truth_track_purity_eq_1_momentum").fill(trackPmag);
+                        plots1D.get("ele_truth_track_purity_eq_1_tanlambda").fill(tanlambda);
+                        plots1D.get("ele_truth_track_purity_eq_1_phi0").fill(track_phi);
+                        plots1D.get("ele_truth_track_purity_eq_1_d0").fill(track_d0);
+                        plots1D.get("ele_truth_track_purity_eq_1_z0").fill(track_z0);
+                        plots1D.get("ele_truth_track_purity_eq_1_C").fill(track_C);
+                        plots2D.get("ele_truth_track_purity_eq_1_v_matched_mcp_momentum").fill(charge*trackPmag,((int)mcp.getCharge())*mcp.getMomentum().magnitude());
+                    }
+
+                    else{
+                        plots2D.get("pos_truth_track_purity_eq_1s_trackP_v_nHits_on_track").fill(trackPmag, nHits);
+                        plots1D.get("pos_truth_track_purity_eq_1_momentum").fill(trackPmag);
+                        plots1D.get("pos_truth_track_purity_eq_1_tanlambda").fill(tanlambda);
+                        plots1D.get("pos_truth_track_purity_eq_1_phi0").fill(track_phi);
+                        plots1D.get("pos_truth_track_purity_eq_1_d0").fill(track_d0);
+                        plots1D.get("pos_truth_track_purity_eq_1_z0").fill(track_z0);
+                        plots1D.get("pos_truth_track_purity_eq_1_C").fill(track_C);
+                        plots2D.get("pos_truth_track_purity_eq_1_v_matched_mcp_momentum").fill(charge*trackPmag,((int)mcp.getCharge())*mcp.getMomentum().magnitude());
+                    }
+
+                }
+
+
                 //If Track passes purity cut, identify Track as real
                 if(purity < this.purityCut)
                     realTrack = false;
 
                 //If Track fails purity cut, identify Track as fake
                 if(!realTrack){
-
                     if(charge < 0){
                         plots1D.get("ele_fake_track_momentum").fill(trackPmag);
                         plots1D.get("ele_fake_track_tanlambda").fill(tanlambda);
-                        if(mcps.contains(mcp)){
-                            plots1D.get("ele_fake_duplicate_tracks_momentum").fill(trackPmag);
-                            plots1D.get("ele_fake_duplicate_tracks_tanlambda").fill(tanlambda);
-                        }
+                        plots1D.get("ele_fake_track_phi0").fill(track_phi);
+                        plots1D.get("ele_fake_track_d0").fill(track_d0);
+                        plots1D.get("ele_fake_track_z0").fill(track_z0);
+                        plots1D.get("ele_fake_track_C").fill(track_C);
+
                         plots2D.get("ele_fake_track_v_matched_mcp_momentum").fill(charge*trackPmag,((int)mcp.getCharge())*mcp.getMomentum().magnitude());
                         plots1D.get("ele_fake_track_n_mcps_on_track").fill(tt.getLayerHitsForAllMCPs().size());
                         plots1D.get("ele_fake_track_n_hits").fill(tt.getNHits());
@@ -738,10 +1111,11 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                     else{
                         plots1D.get("pos_fake_track_momentum").fill(trackPmag);
                         plots1D.get("pos_fake_track_tanlambda").fill(tanlambda);
-                        if(mcps.contains(mcp)){
-                            plots1D.get("pos_fake_duplicate_tracks_momentum").fill(trackPmag);
-                            plots1D.get("pos_fake_duplicate_tracks_tanlambda").fill(tanlambda);
-                        }
+                        plots1D.get("pos_fake_track_phi0").fill(track_phi);
+                        plots1D.get("pos_fake_track_d0").fill(track_d0);
+                        plots1D.get("pos_fake_track_z0").fill(track_z0);
+                        plots1D.get("pos_fake_track_C").fill(track_C);
+
                         plots2D.get("pos_fake_track_v_matched_mcp_momentum").fill(charge*trackPmag,((int)mcp.getCharge())*mcp.getMomentum().magnitude());
                         plots1D.get("pos_fake_track_n_mcps_on_track").fill(tt.getLayerHitsForAllMCPs().size());
                         plots1D.get("pos_fake_track_n_hits").fill(tt.getNHits());
@@ -760,20 +1134,6 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                             }
                         }
                     }
-
-                    //MCP based plots
-                    if(mcp.getCharge() < 0){
-                        plots1D.get("ele_fake_track_mcp_momentum").fill(mcp.getMomentum().magnitude());
-                        if(mcps.contains(mcp)){
-                            plots1D.get("ele_fake_duplicate_tracks_mcp_momentum").fill(mcp.getMomentum().magnitude());
-                        }
-                    }
-                    else{
-                        plots1D.get("pos_fake_track_mcp_momentum").fill(mcp.getMomentum().magnitude());
-                        if(mcps.contains(mcp)){
-                            plots1D.get("pos_fake_duplicate_tracks_mcp_momentum").fill(mcp.getMomentum().magnitude());
-                        }
-                    }
                 }
 
                 //If Track is real
@@ -782,10 +1142,20 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                     if(charge < 0){
                         plots1D.get("ele_real_track_momentum").fill(trackPmag);
                         plots1D.get("ele_real_track_tanlambda").fill(tanlambda);
+                        plots1D.get("ele_real_track_phi0").fill(track_phi);
+                        plots1D.get("ele_real_track_d0").fill(track_d0);
+                        plots1D.get("ele_real_track_z0").fill(track_z0);
+                        plots1D.get("ele_real_track_C").fill(track_C);
+                        /*
                         if(mcps.contains(mcp)){
                             plots1D.get("ele_real_duplicate_tracks_momentum").fill(trackPmag);
                             plots1D.get("ele_real_duplicate_tracks_tanlambda").fill(tanlambda);
+                            plots1D.get("ele_real_duplicate_track_phi0").fill(track_phi);
+                            plots1D.get("ele_real_duplicate_track_d0").fill(track_d0);
+                            plots1D.get("ele_real_duplicate_track_z0").fill(track_z0);
+                            plots1D.get("ele_real_duplicate_track_curvature").fill(track_C);
                         }
+                        */
                         plots2D.get("ele_real_track_v_matched_mcp_momentum").fill(charge*trackPmag,((int)mcp.getCharge())*mcp.getMomentum().magnitude());
                         plots1D.get("ele_real_track_n_mcps_on_track").fill(tt.getLayerHitsForAllMCPs().size());
                         plots1D.get("ele_real_track_n_hits").fill(tt.getNHits());
@@ -808,10 +1178,20 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                     else{
                         plots1D.get("pos_real_track_momentum").fill(trackPmag);
                         plots1D.get("pos_real_track_tanlambda").fill(tanlambda);
+                        plots1D.get("pos_real_track_phi0").fill(track_phi);
+                        plots1D.get("pos_real_track_d0").fill(track_d0);
+                        plots1D.get("pos_real_track_z0").fill(track_z0);
+                        plots1D.get("pos_real_track_C").fill(track_C);
+                        /*
                         if(mcps.contains(mcp)){
                             plots1D.get("pos_real_duplicate_tracks_momentum").fill(trackPmag);
                             plots1D.get("pos_real_duplicate_tracks_tanlambda").fill(tanlambda);
+                            plots1D.get("pos_real_duplicate_track_phi0").fill(track_phi);
+                            plots1D.get("pos_real_duplicate_track_d0").fill(track_d0);
+                            plots1D.get("pos_real_duplicate_track_z0").fill(track_z0);
+                            plots1D.get("pos_real_duplicate_track_curvature").fill(track_C);
                         }
+                        */
                         plots2D.get("pos_real_track_v_matched_mcp_momentum").fill(charge*trackPmag,((int)mcp.getCharge())*mcp.getMomentum().magnitude());
                         plots1D.get("pos_real_track_n_mcps_on_track").fill(tt.getLayerHitsForAllMCPs().size());
                         plots1D.get("pos_real_track_n_hits").fill(tt.getNHits());
@@ -838,19 +1218,39 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                     if(trackableMCPMap.containsKey(mcp)){
                         if(mcp.getCharge() < 0){
                             plots1D.get("ele_real_track_mcp_momentum").fill(mcp.getMomentum().magnitude());
+                            plots1D.get("ele_real_track_mcp_tanlambda").fill(mcp_slope);
+                            plots1D.get("ele_real_track_mcp_phi0").fill(mcp_phi);
+                            plots1D.get("ele_real_track_mcp_d0").fill(mcp_d0);
+                            plots1D.get("ele_real_track_mcp_z0").fill(mcp_z0);
+                            plots1D.get("ele_real_track_mcp_C").fill(mcp_C);
                             if(nHits >= 12)
                                 plots1D.get("ele_real_track_nhits_gteq_12_mcp_momentum").fill(mcp.getMomentum().magnitude());
 
                             if(mcps.contains(mcp)){
                                 plots1D.get("ele_real_duplicate_tracks_mcp_momentum").fill(mcp.getMomentum().magnitude());
+                                plots1D.get("ele_real_duplicate_tracks_mcp_tanlambda").fill(mcp_slope);
+                                plots1D.get("ele_real_duplicate_tracks_mcp_phi0").fill(mcp_phi);
+                                plots1D.get("ele_real_duplicate_tracks_mcp_d0").fill(mcp_d0);
+                                plots1D.get("ele_real_duplicate_tracks_mcp_z0").fill(mcp_z0);
+                                plots1D.get("ele_real_duplicate_tracks_mcp_C").fill(mcp_C);
                             }
                         }
                         else{
                             if(nHits >= 12)
                                 plots1D.get("pos_real_track_nhits_gteq_12_mcp_momentum").fill(mcp.getMomentum().magnitude());
                             plots1D.get("pos_real_track_mcp_momentum").fill(mcp.getMomentum().magnitude());
+                            plots1D.get("pos_real_track_mcp_tanlambda").fill(mcp_slope);
+                            plots1D.get("pos_real_track_mcp_phi0").fill(mcp_phi);
+                            plots1D.get("pos_real_track_mcp_d0").fill(mcp_d0);
+                            plots1D.get("pos_real_track_mcp_z0").fill(mcp_z0);
+                            plots1D.get("pos_real_track_mcp_C").fill(mcp_C);
                             if(mcps.contains(mcp)){
                                 plots1D.get("pos_real_duplicate_tracks_mcp_momentum").fill(mcp.getMomentum().magnitude());
+                                plots1D.get("pos_real_duplicate_tracks_mcp_tanlambda").fill(mcp_slope);
+                                plots1D.get("pos_real_duplicate_tracks_mcp_phi0").fill(mcp_phi);
+                                plots1D.get("pos_real_duplicate_tracks_mcp_d0").fill(mcp_d0);
+                                plots1D.get("pos_real_duplicate_tracks_mcp_z0").fill(mcp_z0);
+                                plots1D.get("pos_real_duplicate_tracks_mcp_C").fill(mcp_C);
                             }
                         }
                     }
@@ -860,117 +1260,81 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                 //matches 
                 mcps.add(mcp);
             }
-
-            //No MCP matched to this Track, so Track is fake...
-            else{
-
-                if(charge < 0){
-                    plots1D.get("ele_fake_track_momentum").fill(trackPmag);
-                    plots1D.get("ele_fake_track_tanlambda").fill(tanlambda);
-                }
-                else{
-                    plots1D.get("pos_fake_track_momentum").fill(trackPmag);
-                    plots1D.get("pos_fake_track_tanlambda").fill(tanlambda);
-                }
-
-                /*
-                //MCP based plots
-                if(mcp.getCharge() < 0){
-                    plots1D.get("ele_fake_track_mcp_momentum").fill(mcp.getMomentum().magnitude());
-                }
-                else{
-                    plots1D.get("pos_fake_track_mcp_momentum").fill(mcp.getMomentum().magnitude());
-                }
-                */
-
-            }
-
-            /*
-            //Truth Matching tool
-            TrackTruthMatching ttm = new TrackTruthMatching(track, rawtomc, allsimhits, kalmanTracks);
-            if (ttm != null) {
-                MCParticle mcp = ttm.getMCParticle();
-                
-                if (mcp != null) {
-                    trackToMCParticleRelations.add(new BaseLCRelation(track,mcp));
-                    
-                    //Hep3Vector origin = new BasicHep3Vector(0.,0.,0.);
-                    HelicalTrackFit mcp_htf  = TrackUtils.getHTF(mcp,bfield);
-                    HelicalTrackFit trk_htf  = TrackUtils.getHTF(track);
-                
-                    if (debug) {
-                        System.out.println("--------------------");
-                        System.out.println(trackCollectionName+" Track:");
-                        System.out.printf("d0 %f z0 %f R %f phi %f lambda %s\n", trk_htf.dca(), trk_htf.z0(), trk_htf.R(), trk_htf.phi0(), trk_htf.slope());
-                        System.out.printf("Nhits = %d \n",ttm.getNHits());
-                        System.out.printf("NGoodHits = %d  purity = %f\n",ttm.getNGoodHits(),ttm.getPurity());
-                        
-                    }
-                    BaseTrack truth_trk  = new BaseTrack();
-                    truth_trk.setTrackParameters(mcp_htf.parameters(),bfield);
-                    truth_trk.getTrackStates().clear();
-                    double[] ref = new double[] { 0., 0., 0. };
-                    SymmetricMatrix cov = new SymmetricMatrix(5);
-                    TrackState stateIP = new BaseTrackState(mcp_htf.parameters(),ref,cov.asPackedArray(true),TrackState.AtIP,bfield);
-                    truth_trk.getTrackStates().add(stateIP);
-                    truth_trk.setChisq(-1);
-                    truth_trk.setNDF(-1);
-                    truth_trk.setFitSuccess(false);
-                    truth_trk.setRefPointIsDCA(true);
-                    truth_trk.setTrackType(-1);
-                    truthTrackCollection.add(truth_trk);
-                    trackToTruthTrackRelations.add(new BaseLCRelation(track,truth_trk));
-                    
-                    
-                    if (debug) {
-                        double d0    = truth_trk.getTrackStates().get(0).getD0();
-                        double z0    = truth_trk.getTrackStates().get(0).getZ0();
-                        double C     = truth_trk.getTrackStates().get(0).getOmega();
-                        double phi   = truth_trk.getTrackStates().get(0).getPhi();
-                        double slope = truth_trk.getTrackStates().get(0).getTanLambda();
-                        System.out.printf("TruthTrack \n");
-                        System.out.printf("d0 %f z0 %f R %f phi %f lambda %s\n", d0, z0, 1./C, phi, slope);
-                        System.out.printf("MCParticle  \n");
-                        Hep3Vector pVec = mcp.getMomentum();
-                        System.out.printf("ptTrue = %f \n", Math.sqrt(pVec.x()*pVec.x() + pVec.z()*pVec.z()));
-                        double mom_param = 2.99792458e-04;
-                        double trkMom = trk_htf.R() * bfield * mom_param;
-                        System.out.printf("pt = %f \n", trkMom);
-                        
-                        System.out.println("--------------------");
-                    }
-                }//mcp not null
-                else {
-                    System.out.printf("PF::FakeTrack");
-                }
-            } //ttm not null
-            else {
-                System.out.printf("Error::TrackTruthMatching returns null \n");
-            }
-        */
         }
-        
-        //int flag = 1 << LCIOConstants.TRBIT_HITS;
-        //event.put(trackCollectionName+"Truth", truthTrackCollection, Track.class, flag);
-        //event.put(trackCollectionName+"ToTruthTrackRelations", trackToTruthTrackRelations, LCRelation.class, 0);
-        //event.put(trackCollectionName+"ToMCParticleRelations", trackToMCParticleRelations, LCRelation.class, 0);
-    }//closes process
+    }
+
+    //Fit MCP to helical track and return fit params
+    public double[] getMCPTrackParameters(MCParticle mcp, double bfield){
+
+        HelicalTrackFit mcp_htf  = TrackUtils.getHTF(mcp,bfield);
+        BaseTrack truth_trk  = new BaseTrack();
+        truth_trk.setTrackParameters(mcp_htf.parameters(),bfield);
+        truth_trk.getTrackStates().clear();
+        double[] ref = new double[] { 0., 0., 0. };
+        SymmetricMatrix cov = new SymmetricMatrix(5);
+        TrackState stateIP = new BaseTrackState(mcp_htf.parameters(),ref,cov.asPackedArray(true),TrackState.AtIP,bfield);
+        truth_trk.getTrackStates().add(stateIP);
+        truth_trk.setChisq(-1);
+        truth_trk.setNDF(-1);
+        truth_trk.setFitSuccess(false);
+        truth_trk.setRefPointIsDCA(true);
+        truth_trk.setTrackType(-1);
+        //Parameter references
+        double d0    = truth_trk.getTrackStates().get(0).getD0();
+        double z0    = truth_trk.getTrackStates().get(0).getZ0();
+        double C     = truth_trk.getTrackStates().get(0).getOmega();
+        double phi   = truth_trk.getTrackStates().get(0).getPhi();
+        double slope = truth_trk.getTrackStates().get(0).getTanLambda();
+
+        double[] params = {d0, z0, C, phi, slope};
+        return params;
+    }
 
     public Map<MCParticle, Map<Integer, List<SimTrackerHit>>> getTrackableMCPs(List<MCParticle> mcparticles, List<SimTrackerHit> simhits, RelationalTable rawtomc, int NhitsRequired){
         Map<MCParticle, Map<Integer, List<SimTrackerHit>>> trackableMCPs = new HashMap<MCParticle, Map<Integer, List<SimTrackerHit>>>();
 
         for(MCParticle particle : mcparticles){
-            double P = particle.getMomentum().magnitude();
             if(Math.abs(particle.getPDGID()) != 11)
                 continue;
-            //if(!particle.getParents().contains(622) && !particle.getParents().contains(623) && P < fee) 
-                //continue;
-            double px = particle.getPX();
-            double py = particle.getPY();
-            double pz = particle.getPZ();
-            double tanlambda = py/pz;
-            plots1D.get("mcp_tanlambda").fill(tanlambda);
-            plots2D.get("mcp_momentum_v_tanlambda").fill(P, tanlambda);
+            int charge = (int) particle.getCharge();
+
+
+            //Fit MCP to helical track to get params
+            double[] mcpParams = getMCPTrackParameters(particle, bfield);
+            double d0 = mcpParams[0];
+            double z0 = mcpParams[1];
+            double C = mcpParams[2];
+            double phi0 = mcpParams[3];
+            double tanlambda = mcpParams[4];
+            double momentum = particle.getMomentum().magnitude();
+
+            //plots for all charged MCPs
+            if(charge < 0){
+                plots1D.get("ele_mcp_momentum").fill(momentum);
+                plots1D.get("ele_mcp_tanlambda").fill(tanlambda);
+                plots2D.get("ele_mcp_momentum_v_tanlambda").fill(momentum, tanlambda);
+                plots1D.get("ele_mcp_d0").fill(d0);
+                plots2D.get("ele_mcp_momentum_v_d0").fill(momentum, d0);
+                plots1D.get("ele_mcp_z0").fill(z0);
+                plots2D.get("ele_mcp_momentum_v_z0").fill(momentum, z0);
+                plots1D.get("ele_mcp_C").fill(C);
+                plots2D.get("ele_mcp_momentum_v_C").fill(momentum, C);
+                plots1D.get("ele_mcp_phi0").fill(phi0);
+                plots2D.get("ele_mcp_momentum_v_phi0").fill(momentum, phi0);
+            }
+            else{
+                plots1D.get("pos_mcp_momentum").fill(momentum);
+                plots1D.get("pos_mcp_tanlambda").fill(tanlambda);
+                plots2D.get("pos_mcp_momentum_v_tanlambda").fill(momentum, tanlambda);
+                plots1D.get("pos_mcp_d0").fill(d0);
+                plots2D.get("pos_mcp_momentum_v_d0").fill(momentum, d0);
+                plots1D.get("pos_mcp_z0").fill(z0);
+                plots2D.get("pos_mcp_momentum_v_z0").fill(momentum, z0);
+                plots1D.get("pos_mcp_C").fill(C);
+                plots2D.get("pos_mcp_momentum_v_C").fill(momentum, C);
+                plots1D.get("pos_mcp_phi0").fill(phi0);
+                plots2D.get("pos_mcp_momentum_v_phi0").fill(momentum, phi0);
+            }
 
             Map<Integer, List<SimTrackerHit>> layerhitsMap = new HashMap<Integer, List<SimTrackerHit>>();
             for(SimTrackerHit simhit : simhits){
@@ -991,22 +1355,35 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
                 }
             }
 
+            //Check n layers hit
             if(particle.getCharge() < 0)
                 plots2D.get("ele_mcp_momentum_v_nLayersHit").fill(particle.getMomentum().magnitude(), layerhitsMap.size());
             else
                 plots2D.get("pos_mcp_momentum_v_nLayersHit").fill(particle.getMomentum().magnitude(), layerhitsMap.size());
 
+            //Require minimum number of SimTrackerHits
             if(layerhitsMap.size() < NhitsRequired)
                 continue;
+
             if(particle.getCharge() < 0){
                 plots1D.get("ele_trackable_mcp_nSimTrackerHits").fill(layerhitsMap.size());
                 plots2D.get("ele_trackable_mcp_momentum_v_nSimTrackerHits").fill(particle.getMomentum().magnitude(), layerhitsMap.size());
                 plots1D.get("ele_trackable_mcp_momentum").fill(particle.getMomentum().magnitude());
+                plots1D.get("ele_trackable_mcp_tanlambda").fill(tanlambda);
+                plots1D.get("ele_trackable_mcp_phi0").fill(phi0);
+                plots1D.get("ele_trackable_mcp_d0").fill(d0);
+                plots1D.get("ele_trackable_mcp_z0").fill(z0);
+                plots1D.get("ele_trackable_mcp_C").fill(C);
             }
             else{
                 plots1D.get("pos_trackable_mcp_nSimTrackerHits").fill(layerhitsMap.size());
                 plots2D.get("pos_trackable_mcp_momentum_v_nSimTrackerHits").fill(particle.getMomentum().magnitude(), layerhitsMap.size());
                 plots1D.get("pos_trackable_mcp_momentum").fill(particle.getMomentum().magnitude());
+                plots1D.get("pos_trackable_mcp_tanlambda").fill(tanlambda);
+                plots1D.get("pos_trackable_mcp_phi0").fill(phi0);
+                plots1D.get("pos_trackable_mcp_d0").fill(d0);
+                plots1D.get("pos_trackable_mcp_z0").fill(z0);
+                plots1D.get("pos_trackable_mcp_C").fill(C);
             }
 
             trackableMCPs.put(particle, layerhitsMap);
