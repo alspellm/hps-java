@@ -16,7 +16,7 @@ import org.lcsim.event.TrackerHit;
 
 import hep.physics.vec.BasicHep3Vector;
 
-public class TrackTruthMatching_new {
+public class TrackTruthMatcher {
 
     private MCParticle _mcp = null;
     private int _nhits;
@@ -30,18 +30,18 @@ public class TrackTruthMatching_new {
     private Set<Integer> _layersOnTrack = new HashSet<Integer>();
     private Map<RawTrackerHit, List<MCParticle>> _stripHitsToMCPsMap = new HashMap<RawTrackerHit, List<MCParticle>>();
 
-    public TrackTruthMatching_new(Track track, RelationalTable rawtomc){
+    public TrackTruthMatcher(Track track, RelationalTable rawtomc){
         doAnalysis(track, rawtomc);
     }
 
     //Purity cut is a number less than 1
     //enforces minimum ratio of bestMCPLayerHits / totalNLayerHits
     //For example: 10 layer hits / 12 total layer hits is purity of 0.83
-    public TrackTruthMatching_new(Track track, RelationalTable rawtomc, double purityCut){
+    public TrackTruthMatcher(Track track, RelationalTable rawtomc, double purityCut){
         doAnalysis(track, rawtomc, purityCut);
     }
 
-    public TrackTruthMatching_new(Track track, RelationalTable rawtomc, double purityCut, int nHitsRequired){
+    public TrackTruthMatcher(Track track, RelationalTable rawtomc, double purityCut, int nHitsRequired){
         doAnalysis(track, rawtomc, purityCut, nHitsRequired);
     }
 

@@ -31,7 +31,7 @@ import org.lcsim.event.TrackState;
 import org.lcsim.event.base.BaseTrack;
 import org.lcsim.event.base.BaseTrackState;
 import org.hps.recon.tracking.TrackUtils;
-//import org.hps.recon.utils.TrackTruthMatching_new;
+//import org.hps.recon.utils.TrackTruthMatcher;
 //import org.hps.recon.utils.TrackTruthMatching;
 import org.lcsim.fit.helicaltrack.HelicalTrackFit;
 
@@ -47,14 +47,11 @@ import org.lcsim.event.RawTrackerHit;
  * This driver creates an MCParticle relation to be persisted for each track collection
  * It also saves a TruthTrack
  */
-public class TrackToMCParticleRelationsDriver_alic extends Driver {
+public class TrackTruthRelationsDriver extends Driver {
     
     //Collection Names
-    private String trackCollectionName = "GBLTracks";
+    private String trackCollectionName;
     
-    //If the tracks are kalman tracks
-    private boolean kalmanTracks     = true;
-
     private double bfield;
     private double bfield_y;
 
@@ -76,6 +73,18 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
     private Map<String, IHistogram1D> plots1D;
     private Map<String, IHistogram2D> plots2D;
     boolean enablePlots = false;    
+
+    public void setPurityCut(double input){
+        this.purityCut = input;
+    }
+
+    public void setNHitsRequired(int input){
+        this.nHitsRequired = input;
+    }
+
+    public void setNGoodHitsRequired(int input){
+        this.nGoodHitsRequired = input;
+    }
 
     public void setEnablePlots(boolean input){
         this.enablePlots = input;
@@ -869,10 +878,6 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
         this.trackCollectionName = trackCollectionName;
     }
 
-    public void setKalmanTracks(boolean val) {
-        kalmanTracks = val;
-    }
-
     public void setDebug(boolean val) {
         debug = val;
     }
@@ -957,7 +962,7 @@ public class TrackToMCParticleRelationsDriver_alic extends Driver {
             */
 
             //Use New TrackTruthMatching tool to match Track -> MCP
-            TrackTruthMatching_new tt = new TrackTruthMatching_new(track, rawtomc, 0.0, 0);
+            TrackTruthMatcher tt = new TrackTruthMatcher(track, rawtomc, 0.0, 0);
 
             //Check nHits on Track
             //If nHits < required, dont analyze this Track
