@@ -1180,7 +1180,7 @@ public class TrackClusterTruthMatchingDriver extends Driver {
             int charge = -1* (int)Math.signum(track.getTrackStates().get(0).getOmega());
 
             //run Track to MCP truth matching
-            TrackTruthMatching_new truthMatcher = new TrackTruthMatching_new(track, rawtomc, 0, 6);
+            TrackTruthMatcher truthMatcher = new TrackTruthMatcher(track, rawtomc, 0, 6);
             
             //Get all MCPs that leave hits on this Track
             Map<MCParticle, Set<Integer>> mcpsOnTrack = truthMatcher.getLayerHitsForAllMCPs();
