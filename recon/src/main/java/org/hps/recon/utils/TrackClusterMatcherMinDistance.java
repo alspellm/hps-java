@@ -36,8 +36,8 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
     protected HashMap<Cluster, Track> clusterToTrack;
     protected RelationalTable hitToRotated = null;
     protected RelationalTable hitToStrips = null;
-    protected RelationalTable trackToData = new BaseRelationalTable(RelationalTable.Mode.ONE_TO_ONE, RelationalTable.Weighting.UNWEIGHTED);
-    protected String trackClusterCollectionName = "default";
+    protected RelationalTable trackToData;
+    protected String trackClusterCollectionName = "GBLTracks";
     protected String rootFile = String.format("%s_TrackClusterMatching.root",this.trackCollectionName);
     //Keep false. May be used in future 03.19.21
     protected Boolean buildParamHistos = false;
@@ -392,6 +392,7 @@ public class TrackClusterMatcherMinDistance extends AbstractTrackClusterMatcher{
          * This matcher works for both GBL and KF Tracks.
          * Returns Map of Tracks matched do unique Clusters
          */
+        trackToData = new BaseRelationalTable(RelationalTable.Mode.ONE_TO_ONE, RelationalTable.Weighting.UNWEIGHTED);
 
         //define cuts
         this.maxMatchDt = cuts.getMaxMatchDt();
