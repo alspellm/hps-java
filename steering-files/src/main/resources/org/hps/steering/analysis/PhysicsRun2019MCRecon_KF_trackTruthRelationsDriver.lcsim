@@ -44,6 +44,10 @@
         <driver name="TrackTruthRelationsDriver" type="org.hps.recon.utils.TrackTruthRelationsDriver">
             <enablePlots>True</enablePlots>
             <trackCollectionName>KalmanFullTracks</trackCollectionName>
+            <purityCut>0.8</purityCut>
+            <nHitsRequired>10</nHitsRequired>
+            <nGoodHitsRequired>10</nGoodHitsRequired>
+
         </driver>
 
         <driver name="EventMarkerDriver" type="org.lcsim.job.EventMarkerDriver">
