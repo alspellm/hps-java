@@ -50,7 +50,7 @@ import org.lcsim.event.RawTrackerHit;
 public class TrackTruthRelationsDriver extends Driver {
     
     //Collection Names
-    private String trackCollectionName;
+    private String trackCollectionName = "";
     
     private double bfield;
     private double bfield_y;
@@ -90,6 +90,10 @@ public class TrackTruthRelationsDriver extends Driver {
         this.enablePlots = input;
         if(enablePlots)
             this.bookHistograms();
+    }
+
+    public void setTrackCollectionName(String input) {
+        this.trackCollectionName = input;
     }
 
     public void saveHistograms() {
@@ -874,9 +878,6 @@ public class TrackTruthRelationsDriver extends Driver {
             saveHistograms();
     }
 
-    public void setTrackCollectionName(String trackCollectionName) {
-        this.trackCollectionName = trackCollectionName;
-    }
 
     public void setDebug(boolean val) {
         debug = val;

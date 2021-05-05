@@ -177,7 +177,7 @@
         <driver name="TrackDataDriver" type="org.hps.recon.tracking.TrackDataDriver" />
         <driver name="ReconParticleDriver" type="org.hps.recon.particle.HpsReconParticleDriver" > 
             <ecalClusterCollectionName>EcalClustersCorr</ecalClusterCollectionName>
-            <trackCollectionNames>GBLTracks</trackCollectionNames>
+            <matcherTrackCollectionName>GBLTracks</matcherTrackCollectionName>
             <beamPositionX> 0 </beamPositionX>
             <beamSigmaX> 0.05 </beamSigmaX>
             <beamPositionY> 0 </beamPositionY>
@@ -195,8 +195,7 @@
         </driver>         
         <driver name="ReconParticleDriver_Kalman" type="org.hps.recon.particle.HpsReconParticleDriver" > 
             <ecalClusterCollectionName>EcalClustersCorr</ecalClusterCollectionName>
-            <trackCollectionNames>KalmanFullTracks</trackCollectionNames>
-            <trackCollectionName>KalmanFullTracks</trackCollectionName>
+            <matcherTrackCollectionName>KalmanFullTracks</matcherTrackCollectionName>
             <unconstrainedV0CandidatesColName>UnconstrainedV0Candidates_KF</unconstrainedV0CandidatesColName>
             <unconstrainedV0VerticesColName>UnconstrainedV0Vertices_KF</unconstrainedV0VerticesColName>
             <beamConV0CandidatesColName>BeamspotConstrainedV0Candidates_KF</beamConV0CandidatesColName>
