@@ -246,6 +246,12 @@ public class TrackTruthRelationsDriver extends Driver {
         plots2D.put(String.format("ele_n_mcps_on_layer_striphits"),
                 histogramFactory.createHistogram2D(String.format("ele_n_mcps_on_layer_striphits"), 20, 0, 20, 15, 0, 15));
 
+        plots1D.put(String.format("ele_truth_track_good_hit_layers"), 
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_good_hit_layers"), 15, 0, 15));
+
+        plots1D.put(String.format("ele_truth_track_bad_hit_layers"), 
+                histogramFactory.createHistogram1D(String.format("ele_truth_track_good_bad_layers"), 15, 0, 15));
+
 
         //pos
         plots1D.put(String.format("pos_truth_track_momentum"),
@@ -332,6 +338,12 @@ public class TrackTruthRelationsDriver extends Driver {
         plots2D.put(String.format("pos_truth_tracks_trackP_v_nHits_on_track"),
                 histogramFactory.createHistogram2D(String.format("pos_truth_tracks_trackP_v_nHits_on_track"), 800, 0, 800, 15, 0, 15));
 
+        plots1D.put(String.format("pos_truth_track_good_hit_layers"), 
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_good_hit_layers"), 15, 0, 15));
+
+        plots1D.put(String.format("pos_truth_track_bad_hit_layers"), 
+                histogramFactory.createHistogram1D(String.format("pos_truth_track_bad_hit_layers"), 15, 0, 15));
+
 //Purity = 1 Plots
 
         //ele
@@ -415,6 +427,12 @@ public class TrackTruthRelationsDriver extends Driver {
 
         plots2D.put(String.format("ele_real_track_n_mcps_on_layer_striphits"),
                 histogramFactory.createHistogram2D(String.format("ele_real_track_n_mcps_on_layer_striphits"), 20, 0, 20, 15, 0, 15));
+
+        plots1D.put(String.format("ele_real_track_good_hit_layers"), 
+                histogramFactory.createHistogram1D(String.format("ele_real_track_good_hit_layers"), 15, 0, 15));
+
+        plots1D.put(String.format("ele_real_track_bad_hit_layers"), 
+                histogramFactory.createHistogram1D(String.format("ele_real_track_bad_hit_layers"), 15, 0, 15));
 
         plots2D.put(String.format("ele_real_track_v_matched_mcp_momentum"),
                 histogramFactory.createHistogram2D(String.format("ele_real_track_v_matched_mcp_momentum"), 1600, -8, 8, 1600, -8, 8));
@@ -512,6 +530,12 @@ public class TrackTruthRelationsDriver extends Driver {
 
         plots2D.put(String.format("pos_real_track_n_mcps_on_layer_striphits"),
                 histogramFactory.createHistogram2D(String.format("pos_real_track_n_mcps_on_layer_striphits"), 20, 0, 20, 15, 0, 15));
+
+        plots1D.put(String.format("pos_real_track_good_hit_layers"), 
+                histogramFactory.createHistogram1D(String.format("pos_real_track_good_hit_layers"), 15, 0, 15));
+
+        plots1D.put(String.format("pos_real_track_bad_hit_layers"), 
+                histogramFactory.createHistogram1D(String.format("pos_real_track_bad_hit_layers"), 15, 0, 15));
 
         plots2D.put(String.format("pos_real_track_v_matched_mcp_momentum"),
                 histogramFactory.createHistogram2D(String.format("pos_real_track_v_matched_mcp_momentum"), 1600, -8, 8, 1600, -8, 8));
@@ -1052,6 +1076,13 @@ public class TrackTruthRelationsDriver extends Driver {
                             plots2D.get("ele_n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit).size());
                         }
                     }
+                    //plot good and bad hit layers
+                    for(Integer layer : tt.getGoodHitLayers()){
+                        plots1D.get("ele_truth_track_good_hit_layers").fill(layer);
+                    }
+                    for(Integer layer : tt.getBadHitLayers()){
+                        plots1D.get("ele_truth_track_bad_hit_layers").fill(layer);
+                    }
                 }
 
                 else{
@@ -1092,6 +1123,14 @@ public class TrackTruthRelationsDriver extends Driver {
                             plots1D.get("pos_n_mcps_on_striphit").fill(tt.getMCPsOnRawTrackerHit(rawhit).size());
                             plots2D.get("pos_n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit).size());
                         }
+                    }
+
+                    //plot good and bad hit layers
+                    for(Integer layer : tt.getGoodHitLayers()){
+                        plots1D.get("pos_truth_track_good_hit_layers").fill(layer);
+                    }
+                    for(Integer layer : tt.getBadHitLayers()){
+                        plots1D.get("pos_truth_track_bad_hit_layers").fill(layer);
                     }
                 }
 
@@ -1152,6 +1191,7 @@ public class TrackTruthRelationsDriver extends Driver {
                                 plots2D.get("ele_fake_track_n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit).size());
                             }
                         }
+
                     }
 
                     else{
@@ -1179,6 +1219,7 @@ public class TrackTruthRelationsDriver extends Driver {
                                 plots2D.get("pos_fake_track_n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit).size());
                             }
                         }
+
                     }
                 }
 
@@ -1219,6 +1260,14 @@ public class TrackTruthRelationsDriver extends Driver {
                                 plots2D.get("ele_real_track_n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit).size());
                             }
                         }
+
+                        //plot good and bad hit layers
+                        for(Integer layer : tt.getGoodHitLayers()){
+                            plots1D.get("ele_real_track_good_hit_layers").fill(layer);
+                        }
+                        for(Integer layer : tt.getBadHitLayers()){
+                            plots1D.get("ele_real_track_bad_hit_layers").fill(layer);
+                        }
                     }
 
                     else{
@@ -1254,6 +1303,14 @@ public class TrackTruthRelationsDriver extends Driver {
                                 plots1D.get("pos_real_track_n_mcps_on_striphit").fill(tt.getMCPsOnRawTrackerHit(rawhit).size());
                                 plots2D.get("pos_real_track_n_mcps_on_layer_striphits").fill(layer,tt.getMCPsOnRawTrackerHit(rawhit).size());
                             }
+                        }
+
+                        //plot good and bad hit layers
+                        for(Integer layer : tt.getGoodHitLayers()){
+                            plots1D.get("pos_real_track_good_hit_layers").fill(layer);
+                        }
+                        for(Integer layer : tt.getBadHitLayers()){
+                            plots1D.get("pos_real_track_bad_hit_layers").fill(layer);
                         }
                     }
 
