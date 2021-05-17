@@ -118,6 +118,22 @@ public class TrackTruthMatcher {
     public List<MCParticle> getMCPsOnRawTrackerHit(RawTrackerHit rawhit){
         return this._stripHitsToMCPsMap.get(rawhit);
     }
+ 
+    public Set<Integer> getBadHitLayers(){
+        Set<Integer> badLayers = new HashSet<Integer>();
+        Set<Integer> trackLayers = getLayersOnTrack();
+        Set<Integer> goodLayers = getLayerHitsForAllMCPs().get(this._mcp);
+        for(Integer layer : trackLayers){
+            if(!goodLayers.contains(layer)){
+                badLayers.add(layer);
+            }
+        }
+        return badLayers;
+    }
+
+    public Set<Integer> getGoodHitLayers(){
+        return getLayerHitsForAllMCPs().get(this._mcp);
+    }
 
     public void getMCPsOnTrack(Track track, RelationalTable rawtomc){
 
