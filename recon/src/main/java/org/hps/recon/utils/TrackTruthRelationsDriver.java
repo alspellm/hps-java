@@ -1185,6 +1185,10 @@ public class TrackTruthRelationsDriver extends Driver {
                 //If Track is real
                 if(realTrack){
 
+                    //Add this MCP to a list to check for duplicate Track->MCP
+                    //matches 
+                    mcps.add(mcp);
+
                     if(charge < 0){
                         plots1D.get("ele_real_track_momentum").fill(trackPmag);
                         plots1D.get("ele_real_track_tanlambda").fill(tanlambda);
@@ -1261,18 +1265,20 @@ public class TrackTruthRelationsDriver extends Driver {
                     
                     //Explicity require fill numerator with subset of
                     //denominator
-                    if(trackableMCPMap.containsKey(mcp)){
+                    if(trackableMCPMap.containsKey(mcp) ){
                         if(mcp.getCharge() < 0){
-                            plots1D.get("ele_real_track_mcp_momentum").fill(mcp.getMomentum().magnitude());
-                            plots1D.get("ele_real_track_mcp_tanlambda").fill(mcp_slope);
-                            plots1D.get("ele_real_track_mcp_phi0").fill(mcp_phi);
-                            plots1D.get("ele_real_track_mcp_d0").fill(mcp_d0);
-                            plots1D.get("ele_real_track_mcp_z0").fill(mcp_z0);
-                            plots1D.get("ele_real_track_mcp_C").fill(mcp_C);
-                            if(nHits >= 12)
-                                plots1D.get("ele_real_track_nhits_gteq_12_mcp_momentum").fill(mcp.getMomentum().magnitude());
+                            if(!mcps.contains(mcp)){
+                                plots1D.get("ele_real_track_mcp_momentum").fill(mcp.getMomentum().magnitude());
+                                plots1D.get("ele_real_track_mcp_tanlambda").fill(mcp_slope);
+                                plots1D.get("ele_real_track_mcp_phi0").fill(mcp_phi);
+                                plots1D.get("ele_real_track_mcp_d0").fill(mcp_d0);
+                                plots1D.get("ele_real_track_mcp_z0").fill(mcp_z0);
+                                plots1D.get("ele_real_track_mcp_C").fill(mcp_C);
+                                if(nHits >= 12)
+                                    plots1D.get("ele_real_track_nhits_gteq_12_mcp_momentum").fill(mcp.getMomentum().magnitude());
+                            }
 
-                            if(mcps.contains(mcp)){
+                            else{
                                 plots1D.get("ele_real_duplicate_tracks_mcp_momentum").fill(mcp.getMomentum().magnitude());
                                 plots1D.get("ele_real_duplicate_tracks_mcp_tanlambda").fill(mcp_slope);
                                 plots1D.get("ele_real_duplicate_tracks_mcp_phi0").fill(mcp_phi);
@@ -1282,15 +1288,17 @@ public class TrackTruthRelationsDriver extends Driver {
                             }
                         }
                         else{
-                            if(nHits >= 12)
-                                plots1D.get("pos_real_track_nhits_gteq_12_mcp_momentum").fill(mcp.getMomentum().magnitude());
-                            plots1D.get("pos_real_track_mcp_momentum").fill(mcp.getMomentum().magnitude());
-                            plots1D.get("pos_real_track_mcp_tanlambda").fill(mcp_slope);
-                            plots1D.get("pos_real_track_mcp_phi0").fill(mcp_phi);
-                            plots1D.get("pos_real_track_mcp_d0").fill(mcp_d0);
-                            plots1D.get("pos_real_track_mcp_z0").fill(mcp_z0);
-                            plots1D.get("pos_real_track_mcp_C").fill(mcp_C);
-                            if(mcps.contains(mcp)){
+                            if(!mcps.contains(mcp)){
+                                if(nHits >= 12)
+                                    plots1D.get("pos_real_track_nhits_gteq_12_mcp_momentum").fill(mcp.getMomentum().magnitude());
+                                plots1D.get("pos_real_track_mcp_momentum").fill(mcp.getMomentum().magnitude());
+                                plots1D.get("pos_real_track_mcp_tanlambda").fill(mcp_slope);
+                                plots1D.get("pos_real_track_mcp_phi0").fill(mcp_phi);
+                                plots1D.get("pos_real_track_mcp_d0").fill(mcp_d0);
+                                plots1D.get("pos_real_track_mcp_z0").fill(mcp_z0);
+                                plots1D.get("pos_real_track_mcp_C").fill(mcp_C);
+                            }
+                            else{
                                 plots1D.get("pos_real_duplicate_tracks_mcp_momentum").fill(mcp.getMomentum().magnitude());
                                 plots1D.get("pos_real_duplicate_tracks_mcp_tanlambda").fill(mcp_slope);
                                 plots1D.get("pos_real_duplicate_tracks_mcp_phi0").fill(mcp_phi);
@@ -1302,9 +1310,6 @@ public class TrackTruthRelationsDriver extends Driver {
                     }
                 }
 
-                //Add this MCP to a list to check for duplicate Track->MCP
-                //matches 
-                mcps.add(mcp);
             }
         }
     }
