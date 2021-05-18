@@ -1225,11 +1225,6 @@ public class TrackTruthRelationsDriver extends Driver {
 
                 //If Track is real
                 if(realTrack){
-
-                    //Add this MCP to a list to check for duplicate Track->MCP
-                    //matches 
-                    mcps.add(mcp);
-
                     if(charge < 0){
                         plots1D.get("ele_real_track_momentum").fill(trackPmag);
                         plots1D.get("ele_real_track_tanlambda").fill(tanlambda);
@@ -1365,6 +1360,10 @@ public class TrackTruthRelationsDriver extends Driver {
                             }
                         }
                     }
+
+                    //Add this MCP to a list to check for duplicate Track->MCP
+                    //matches 
+                    mcps.add(mcp);
                 }
 
             }
