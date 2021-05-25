@@ -22,7 +22,7 @@ import java.util.Set;
 
 import org.lcsim.event.LCRelation;
 import org.lcsim.event.RelationalTable;
-//import org.lcsim.event.base.BaseLCRelation;
+import org.lcsim.event.base.BaseLCRelation;
 import org.lcsim.event.base.BaseRelationalTable;
 
 import org.lcsim.event.MCParticle;
@@ -41,14 +41,17 @@ import org.lcsim.geometry.Detector;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.RawTrackerHit;
 
-//import org.lcsim.lcio.LCIOConstants;
+import org.lcsim.lcio.LCIOConstants;
 
 /**
  * This driver creates an MCParticle relation to be persisted for each track collection
  * It also saves a TruthTrack
  */
 public class TrackTruthRelationsDriver extends Driver {
-    
+
+    //Write output to LCIO
+    protected boolean writeToLCIO = false; 
+
     //Collection Names
     private String trackCollectionName = "";
     
@@ -74,6 +77,10 @@ public class TrackTruthRelationsDriver extends Driver {
     private Map<String, IHistogram2D> plots2D;
     boolean enablePlots = false;    
 
+    public void setWriteToLCIO(boolean input){
+        this.writeToLCIO = input;
+    }
+
     public void setPurityCut(double input){
         this.purityCut = input;
     }
@@ -97,7 +104,7 @@ public class TrackTruthRelationsDriver extends Driver {
     }
 
     public void saveHistograms() {
-        String rootFile = String.format("TrackToMCParticleRelations.root");
+        String rootFile = String.format("TrackToMCParticleRelations.root",this.trackCollectionName);
         RootFileStore store = new RootFileStore(rootFile);
         try {
             store.open();
@@ -951,19 +958,19 @@ public class TrackTruthRelationsDriver extends Driver {
         String MCHitInputCollectionName = "TrackerHits";
         List<SimTrackerHit> allsimhits = event.get(SimTrackerHit.class, MCHitInputCollectionName);
 
+        //MCParticleRelations
+        List<LCRelation> trackToMCParticleRelations    =  new ArrayList<LCRelation>();
+
+        //Truth Tracks and Relations
+        List<LCRelation> trackToTruthTrackRelations    =  new ArrayList<LCRelation>();
+        List<Track>      truthTrackCollection          =  new ArrayList<Track>();
+
+
         //Retrieve all MCPs
         List<MCParticle> allmcps = event.get(MCParticle.class, "MCParticle");
         //Check for Trackable MCPs
         Map<MCParticle, Map<Integer, List<SimTrackerHit>>> trackableMCPMap = getTrackableMCPs(allmcps, allsimhits, rawtomc,this.nGoodHitsRequired);
 
-
-        //MCParticleRelations
-        List<LCRelation> trackToMCParticleRelations    =  new ArrayList<LCRelation>();
-        
-        //Truth Tracks and Relations
-        List<LCRelation> trackToTruthTrackRelations    =  new ArrayList<LCRelation>();
-        List<Track>      truthTrackCollection          =  new ArrayList<Track>();
-        
         List<MCParticle> mcps = new ArrayList<MCParticle>();
         for (Track track : trackCollection) {
             boolean realTrack = true;
@@ -1364,17 +1371,46 @@ public class TrackTruthRelationsDriver extends Driver {
                     //Add this MCP to a list to check for duplicate Track->MCP
                     //matches 
                     mcps.add(mcp);
-                }
+                    
+                    //Add track to mcp relations
+                    trackToMCParticleRelations.add(new BaseLCRelation(track,mcp));
 
+                    //Transform MCP into helical track
+                    HelicalTrackFit mcp_htf  = TrackUtils.getHTF(mcp,bfield);
+                    BaseTrack truth_trk  = new BaseTrack();
+                    truth_trk.setTrackParameters(mcp_htf.parameters(),bfield);
+                    truth_trk.getTrackStates().clear();
+                    double[] ref = new double[] { 0., 0., 0. };
+                    SymmetricMatrix cov = new SymmetricMatrix(5);
+                    TrackState stateIP = new BaseTrackState(mcp_htf.parameters(),ref,cov.asPackedArray(true),TrackState.AtIP,bfield);
+                    truth_trk.getTrackStates().add(stateIP);
+                    truth_trk.setChisq(-1);
+                    truth_trk.setNDF(-1);
+                    truth_trk.setFitSuccess(false);
+                    truth_trk.setRefPointIsDCA(true);
+                    truth_trk.setTrackType(-1);
+                    truthTrackCollection.add(truth_trk);
+                    trackToTruthTrackRelations.add(new BaseLCRelation(track,truth_trk));
+                }
             }
         }
+
+        if(writeToLCIO){
+            //end of process, add collections to lcio
+            int flag = 1 << LCIOConstants.TRBIT_HITS;
+            event.put(trackCollectionName+"Truth", truthTrackCollection, Track.class, flag);
+            event.put(trackCollectionName+"ToTruthTrackRelations", trackToTruthTrackRelations, LCRelation.class, 0);
+            event.put(trackCollectionName+"ToMCParticleRelations", trackToMCParticleRelations, LCRelation.class, 0);
+        }
+
     }
 
     //Fit MCP to helical track and return fit params
     public double[] getMCPTrackParameters(MCParticle mcp, double bfield){
 
         HelicalTrackFit mcp_htf  = TrackUtils.getHTF(mcp,bfield);
-        plots1D.get("mcp_helicalTrackFit_phi").fill(mcp_htf.phi0());
+        if(enablePlots)
+            plots1D.get("mcp_helicalTrackFit_phi").fill(mcp_htf.phi0());
         BaseTrack truth_trk  = new BaseTrack();
         truth_trk.setTrackParameters(mcp_htf.parameters(),bfield);
         truth_trk.getTrackStates().clear();
